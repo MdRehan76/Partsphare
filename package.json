@@ -1,0 +1,20 @@
+{
+  "name": "partsphere",
+  "version": "1.0.0",
+  "description": "PartSphere — Circular E-Commerce Platform for Vehicle Spare Parts & Services",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n \"API,WEB\" -c \"cyan,magenta\" \"npm run dev --prefix backend\" \"npm run dev --prefix frontend/customer\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:customer": "npm run dev --prefix frontend/customer",
+    "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend/customer",
+    "db:migrate": "npm run db:migrate --prefix backend",
+    "db:push": "npm run db:push --prefix backend",
+    "db:seed": "npm run db:seed --prefix backend",
+    "db:studio": "npm run db:studio --prefix backend",
+    "db:reset": "npm run db:reset --prefix backend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

@@ -1,0 +1,207 @@
+.subscriptions-page {
+  padding-bottom: 80px;
+}
+
+.sub-hero {
+  background: linear-gradient(135deg, #0A192F 0%, #172554 50%, #0F766E 100%);
+  color: #fff;
+  padding: 60px 0;
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.sub-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.sub-hero-title {
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+
+.sub-hero-desc {
+  font-size: 1.15rem;
+  color: #CBD5E1;
+  max-width: 650px;
+  margin: 0 auto 24px;
+  line-height: 1.6;
+}
+
+/* Active Membership Banner */
+.active-membership-banner {
+  background: linear-gradient(90deg, rgba(2, 132, 199, 0.1), rgba(13, 148, 136, 0.15));
+  border: 1px solid var(--color-teal-400);
+  border-radius: var(--radius-xl);
+  padding: 20px 28px;
+  margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.active-membership-info h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.active-membership-info p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Plans Grid */
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 28px;
+  align-items: stretch;
+  margin-bottom: 60px;
+}
+
+.plan-card {
+  background: var(--bg-surface);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-2xl);
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  transition: transform var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.plan-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--color-primary-400);
+  box-shadow: var(--shadow-xl);
+}
+
+.plan-card.popular {
+  border-color: var(--color-primary-500);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.popular-badge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-primary-500);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 4px 14px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.plan-header {
+  margin-bottom: 24px;
+}
+
+.plan-name {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.plan-tagline {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  min-height: 40px;
+}
+
+.plan-pricing {
+  margin: 20px 0;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.plan-price {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.plan-duration {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.plan-benefits {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.benefit-icon {
+  color: var(--color-teal-500);
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+/* FAQ or Guarantee section */
+.sub-perks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.sub-perk-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  text-align: center;
+}
+
+.sub-perk-icon {
+  font-size: 2.5rem;
+  margin-bottom: 14px;
+}
+
+.sub-perk-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.sub-perk-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}

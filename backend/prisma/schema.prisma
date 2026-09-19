@@ -1,0 +1,1315 @@
+// PartSphere (PartNexa) — Complete Database Schema
+// Scalable multi-tenant schema covering Customer, Shop, Delivery Partner, and Platform Admin roles.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  CUSTOMER
+  SHOP_OWNER
+  DELIVERY_PARTNER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum VehicleType {
+  CAR
+  BIKE
+  SCOOTER
+  TRUCK
+  OTHER
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  ELECTRIC
+  CNG
+  HYBRID
+}
+
+enum ProductCondition {
+  GENUINE_NEW
+  REFURBISHED
+  USED_VERIFIED
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  PENDING_APPROVAL
+  REJECTED
+  ARCHIVED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  RETURN_REQUESTED
+  RETURNED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  RAZORPAY
+  CASH_ON_DELIVERY
+  WALLET
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+enum DIFMType {
+  HOME_INSTALLATION
+  SHOP_INSTALLATION
+  NO_INSTALLATION
+}
+
+enum DIFMStatus {
+  PENDING
+  ACCEPTED
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum DeliveryAssignmentStatus {
+  ASSIGNED
+  ACCEPTED
+  PICKED_UP
+  IN_TRANSIT
+  DELIVERED
+  FAILED
+  REJECTED
+}
+
+enum KYCStatus {
+  NOT_SUBMITTED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum KYCDocumentType {
+  PAN_CARD
+  AADHAAR_CARD
+  DRIVING_LICENSE
+  SHOP_REGISTRATION
+  GST_CERTIFICATE
+  VEHICLE_RC
+  OTHER
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum UsedPartStatus {
+  DRAFT
+  PENDING_VERIFICATION
+  VERIFIED
+  LISTED
+  SOLD
+  REJECTED
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PENDING
+  PAUSED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  PUSH
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum StockMovementType {
+  PURCHASE
+  SALE
+  RETURN
+  ADJUSTMENT
+  DAMAGE
+  TRANSFER
+}
+
+enum StockAvailability {
+  IN_STOCK
+  OUT_OF_STOCK
+  LOW_STOCK
+  BACKORDER
+}
+
+enum ReminderType {
+  OIL_CHANGE
+  BRAKE_INSPECTION
+  GENERAL_SERVICE
+  BATTERY_CHECK
+  TIRE_ROTATION
+  INSURANCE_RENEWAL
+  POLLUTION_CHECK
+  CUSTOM
+}
+
+// ============================================================
+// 1. USER & AUTH
+// ============================================================
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  phone     String?    @unique
+  password  String
+  firstName String
+  lastName  String
+  avatar    String?
+  role      UserRole   @default(CUSTOMER)
+  status    UserStatus @default(ACTIVE)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Auth & sessions
+  refreshTokens   RefreshToken[]
+  accounts        Account[]
+  sessions        Session[]
+  
+  // Profile & relations
+  addresses       Address[]
+  customerVehicles CustomerVehicle[]
+  orders          Order[]
+  cart            Cart?
+  usedPartListings UsedPartListing[]
+  usedPartPayouts UsedPartPayout[]
+  reviews         Review[]
+  notifications   Notification[]
+  supportTickets  SupportTicket[]     @relation("UserTickets")
+  assignedTickets SupportTicket[]     @relation("AdminAssignedTickets")
+  subscriptions   CustomerSubscription[]
+  shop            Shop?
+  deliveryPartner DeliveryPartner?
+  kyc             KYC?
+  serviceRecords  VehicleServiceRecord[]
+  reminders       MaintenanceReminder[]
+  auditLogs       AuditLog[]
+  supplier        Supplier?
+
+  @@index([role, status])
+  @@map("users")
+}
+
+model Account {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String   // e.g., google, credentials
+  providerAccountId String
+  refreshToken      String?  @db.Text
+  accessToken       String?  @db.Text
+  expiresAt         Int?
+  tokenType         String?
+  scope             String?
+  idToken           String?  @db.Text
+  sessionState      String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isRevoked Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRevoked])
+  @@map("refresh_tokens")
+}
+
+// ============================================================
+// 2. ADDRESS
+// ============================================================
+
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String?  // Home, Work, Other
+  fullName  String
+  phone     String
+  line1     String
+  line2     String?
+  city      String
+  state     String
+  pincode   String
+  landmark  String?
+  latitude  Float?
+  longitude Float?
+  isDefault Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]
+
+  @@index([userId, isDefault])
+  @@map("addresses")
+}
+
+// ============================================================
+// 3. VEHICLE MASTER DATA & GARAGE
+// ============================================================
+
+model VehicleMake {
+  id        String      @id @default(uuid())
+  name      String      @unique // Maruti Suzuki, Honda, Hero, Hyundai, Tata, etc.
+  type      VehicleType
+  logoUrl   String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  models    VehicleModel[]
+
+  @@index([type])
+  @@map("vehicle_makes")
+}
+
+model VehicleModel {
+  id        String      @id @default(uuid())
+  makeId    String
+  make      VehicleMake @relation(fields: [makeId], references: [id], onDelete: Cascade)
+  name      String      // Swift, Activa, Splendor, Creta, Nexon, etc.
+  type      VehicleType
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  variants  VehicleVariant[]
+
+  @@unique([makeId, name])
+  @@index([makeId, type])
+  @@map("vehicle_models")
+}
+
+model VehicleVariant {
+  id        String       @id @default(uuid())
+  modelId   String
+  model     VehicleModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  name      String       // LXi, VXi, 6G Standard, Drum, etc.
+  year      Int          // Manufacturing Year (e.g. 2023)
+  fuelType  FuelType
+  engineCC  Int?         // 1197, 109, 97, etc.
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  customerVehicles        CustomerVehicle[]
+  productCompatibilities  ProductCompatibility[]
+
+  @@unique([modelId, name, year, fuelType])
+  @@index([modelId, year, fuelType])
+  @@map("vehicle_variants")
+}
+
+model CustomerVehicle {
+  id        String         @id @default(uuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   VehicleVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  nickname  String?        // "My Swift", "Family Activa"
+  regNumber String?        // KA-01-AB-1234
+  isPrimary Boolean        @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  serviceRecords VehicleServiceRecord[]
+  reminders      MaintenanceReminder[]
+
+  @@index([userId, isPrimary])
+  @@map("customer_vehicles")
+}
+
+// ============================================================
+// 4. PRODUCT CATALOG & BRANDS
+// ============================================================
+
+model Brand {
+  id        String   @id @default(uuid())
+  name      String   @unique // Bosch, Brembo, Motul, Exide, Denso, Lumax
+  slug      String   @unique
+  logoUrl   String?
+  isOem     Boolean  @default(false)
+  country   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products  Product[]
+
+  @@map("brands")
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  name        String
+  slug        String     @unique
+  description String?
+  imageUrl    String?
+  parentId    String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryHierarchy")
+  sortOrder   Int        @default(0)
+  isActive    Boolean    @default(true)
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  products    Product[]
+  commissionConfigs CommissionConfig[]
+
+  @@index([parentId, isActive])
+  @@map("categories")
+}
+
+model Supplier {
+  id            String   @id @default(uuid())
+  userId        String?  @unique
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name          String
+  slug          String   @unique
+  contactPerson String
+  email         String
+  phone         String
+  address       String?
+  gstNumber     String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  inventories   SupplierInventory[]
+
+  @@map("suppliers")
+}
+
+model Product {
+  id          String           @id @default(uuid())
+  name        String
+  slug        String           @unique
+  description String?          @db.Text
+  sku         String           @unique
+  categoryId  String
+  category    Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  brandId     String?
+  brandRel    Brand?           @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  brand       String?          // Fallback / denormalized brand name
+  condition   ProductCondition @default(GENUINE_NEW)
+  partNumber  String?          // OEM part number
+  weight      Float?           // kg
+  dimensions  String?          // LxWxH cm
+  status      ProductStatus    @default(ACTIVE)
+
+  // SEO & metadata
+  metaTitle       String?
+  metaDescription String?
+
+  // Baseline Pricing
+  basePrice   Decimal @default(0) @db.Decimal(10, 2)
+  mrp         Decimal @default(0) @db.Decimal(10, 2)
+  tags        String[] @default([])
+
+  deletedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  images          ProductImage[]
+  specifications  ProductSpecification[]
+  compatibilities ProductCompatibility[]
+  inventories     Inventory[]
+  supplierStock   SupplierInventory[]
+  orderItems      OrderItem[]
+  cartItems       CartItem[]
+  reviews         Review[]
+  usedPartListings UsedPartListing[]
+
+  @@index([categoryId, status])
+  @@index([brandId])
+  @@index([partNumber])
+  @@index([condition])
+  @@map("products")
+}
+
+model ProductSpecification {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  key       String   // e.g., "Voltage", "Material", "Viscosity", "Terminal Type"
+  value     String   // e.g., "12V", "Ceramic", "10W-40"
+  unit      String?  // e.g., "V", "Ah", "L"
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([productId, sortOrder])
+  @@map("product_specifications")
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  altText   String?
+  isPrimary Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([productId, isPrimary])
+  @@map("product_images")
+}
+
+model ProductCompatibility {
+  id        String         @id @default(uuid())
+  productId String
+  product   Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   VehicleVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  notes     String?        // e.g., "Front only", "Fits 2018-2022 facelift"
+  createdAt DateTime       @default(now())
+
+  @@unique([productId, variantId])
+  @@index([variantId])
+  @@map("product_compatibilities")
+}
+
+// ============================================================
+// 5. INVENTORY & STOCK MOVEMENTS
+// ============================================================
+
+model Inventory {
+  id                 String            @id @default(uuid())
+  productId          String
+  product            Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  shopId             String
+  shop               Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  quantity           Int               @default(0)
+  reservedQty        Int               @default(0) // Locked during checkout
+  sellingPrice       Decimal           @db.Decimal(10, 2)
+  availabilityStatus StockAvailability @default(IN_STOCK)
+  isAvailable        Boolean           @default(true)
+  lowStockThreshold  Int               @default(5)
+  updatedAt          DateTime          @updatedAt
+
+  stockMovements     StockMovement[]
+
+  @@unique([productId, shopId])
+  @@index([shopId, isAvailable])
+  @@map("inventories")
+}
+
+model SupplierInventory {
+  id            String    @id @default(uuid())
+  productId     String
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplierId    String
+  supplier      Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  costPrice     Decimal   @db.Decimal(10, 2)
+  stockQuantity Int       @default(0)
+  leadTimeDays  Int       @default(3)
+  isAvailable   Boolean   @default(true)
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([productId, supplierId])
+  @@map("supplier_inventories")
+}
+
+model StockMovement {
+  id            String            @id @default(uuid())
+  inventoryId   String
+  inventory     Inventory         @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  type          StockMovementType
+  quantity      Int               // Delta (+ for in, - for out)
+  previousQty   Int
+  newQty        Int
+  reason        String?           // "Order #123", "Restock from supplier", "Inventory audit"
+  referenceType String?           // "ORDER", "SUPPLIER_PURCHASE", "RETURN"
+  referenceId   String?           // ID of the related order or purchase
+  createdAt     DateTime          @default(now())
+
+  @@index([inventoryId, createdAt])
+  @@map("stock_movements")
+}
+
+// ============================================================
+// 6. CART
+// ============================================================
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt DateTime   @updatedAt
+
+  items     CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id            String   @id @default(uuid())
+  cartId        String
+  cart          Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  shopId        String
+  shop          Shop     @relation(fields: [shopId], references: [id], onDelete: Restrict)
+  quantity      Int      @default(1)
+  priceSnapshot Decimal  @db.Decimal(10, 2) // Price at moment item added
+  addedAt       DateTime @default(now())
+
+  @@unique([cartId, productId, shopId])
+  @@map("cart_items")
+}
+
+// ============================================================
+// 7. ORDERS & TRACKING
+// ============================================================
+
+model Order {
+  id                  String        @id @default(uuid())
+  orderNumber         String        @unique // PS-2024-001234
+  userId              String
+  user                User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  addressId           String
+  address             Address       @relation(fields: [addressId], references: [id], onDelete: Restrict)
+
+  status              OrderStatus   @default(PENDING)
+  paymentMethod       PaymentMethod
+  paymentStatus       PaymentStatus @default(PENDING)
+
+  // Financial Breakdown
+  subtotal            Decimal       @db.Decimal(10, 2)
+  deliveryFee         Decimal       @default(0) @db.Decimal(10, 2)
+  discount            Decimal       @default(0) @db.Decimal(10, 2)
+  installationFee     Decimal       @default(0) @db.Decimal(10, 2)
+  homeVisitSurcharge  Decimal       @default(0) @db.Decimal(10, 2)
+  total               Decimal       @db.Decimal(10, 2)
+
+  couponCode          String?
+  notes               String?
+
+  // DIFM Selection
+  difmType            DIFMType?     @default(NO_INSTALLATION)
+
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  // Relations
+  items               OrderItem[]
+  payment             Payment?
+  tracking            OrderTracking[]
+  statusHistory       OrderStatusHistory[]
+  difmRequest         DIFMRequest?
+  deliveryAssignments DeliveryAssignment[]
+  commissionLedgers   CommissionLedger[]
+
+  @@index([userId, status])
+  @@index([orderNumber])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String   @id @default(uuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  shopId     String
+  shop       Shop     @relation(fields: [shopId], references: [id], onDelete: Restrict)
+  quantity   Int
+  unitPrice  Decimal  @db.Decimal(10, 2)
+  totalPrice Decimal  @db.Decimal(10, 2)
+  createdAt  DateTime @default(now())
+
+  @@index([orderId])
+  @@index([shopId])
+  @@map("order_items")
+}
+
+model OrderStatusHistory {
+  id              String      @id @default(uuid())
+  orderId         String
+  order           Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus      OrderStatus
+  toStatus        OrderStatus
+  reason          String?
+  changedByUserId String?
+  createdAt       DateTime    @default(now())
+
+  @@index([orderId, createdAt])
+  @@map("order_status_history")
+}
+
+model OrderTracking {
+  id        String      @id @default(uuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  message   String?
+  location  String?
+  latitude  Float?
+  longitude Float?
+  createdAt DateTime    @default(now())
+
+  @@index([orderId, createdAt])
+  @@map("order_tracking")
+}
+
+// ============================================================
+// 8. CHECKOUT / DIFM & SERVICE BOOKING
+// ============================================================
+
+model DIFMRequest {
+  id                 String          @id @default(uuid())
+  orderId            String          @unique
+  order              Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  shopId             String?
+  shop               Shop?           @relation(fields: [shopId], references: [id], onDelete: SetNull)
+  type               DIFMType
+  status             DIFMStatus      @default(PENDING)
+
+  // Scheduling details
+  preferredDate      DateTime?
+  scheduledDate      DateTime?
+  installationFee    Decimal         @default(0) @db.Decimal(10, 2)
+  homeVisitSurcharge Decimal         @default(0) @db.Decimal(10, 2)
+  technicianName     String?
+  technicianPhone    String?
+  notes              String?
+
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  serviceBooking     ServiceBooking?
+
+  @@index([shopId, status])
+  @@map("difm_requests")
+}
+
+model ServiceBooking {
+  id             String      @id @default(uuid())
+  difmRequestId  String      @unique
+  difmRequest    DIFMRequest @relation(fields: [difmRequestId], references: [id], onDelete: Cascade)
+  shopId         String
+  shop           Shop        @relation(fields: [shopId], references: [id], onDelete: Restrict)
+  scheduledSlot  String      // "10:00 AM - 12:00 PM"
+  completionCode String?     // OTP/PIN for customer signoff
+  isCompleted    Boolean     @default(false)
+  completedAt    DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@map("service_bookings")
+}
+
+// ============================================================
+// 9. PAYMENTS (Zero raw card storage!)
+// ============================================================
+
+model Payment {
+  id                String        @id @default(uuid())
+  orderId           String        @unique
+  order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  method            PaymentMethod
+  status            PaymentStatus @default(PENDING)
+  amount            Decimal       @db.Decimal(10, 2)
+  currency          String        @default("INR")
+
+  // Razorpay Gateway References (Safe tokens only)
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+
+  // COD Specific Tracking
+  codCollectedBy    String?       // Delivery partner or shop ID
+  codCollectedAt    DateTime?
+
+  // Refunds
+  refundId          String?
+  refundAmount      Decimal?      @db.Decimal(10, 2)
+  refundedAt        DateTime?
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([orderId, status])
+  @@index([razorpayOrderId])
+  @@map("payments")
+}
+
+// ============================================================
+// 10. SHOPS
+// ============================================================
+
+model Shop {
+  id                 String    @id @default(uuid())
+  ownerId            String    @unique
+  owner              User      @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  name               String
+  slug               String    @unique
+  description        String?   @db.Text
+  phone              String
+  email              String?
+  gstNumber          String?
+  logoUrl            String?
+  bannerUrl          String?
+
+  // Shop Physical Address & Geolocation
+  addressLine1       String
+  addressLine2       String?
+  city               String
+  state              String
+  pincode            String
+  latitude           Float?
+  longitude          Float?
+
+  // Verification & Status
+  isVerified         Boolean   @default(false)
+  isActive           Boolean   @default(true)
+  serviceAvailable   Boolean   @default(true)
+  rating             Float     @default(0)
+  totalRatings       Int       @default(0)
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Relations
+  inventories        Inventory[]
+  difmRequests       DIFMRequest[]
+  serviceBookings    ServiceBooking[]
+  commissionLedgers  CommissionLedger[]
+  orderItems         OrderItem[]
+  cartItems          CartItem[]
+  serviceRecords     VehicleServiceRecord[]
+
+  @@index([city, isVerified, isActive])
+  @@map("shops")
+}
+
+// ============================================================
+// 11. DELIVERY PARTNERS & KYC OBJECT STORAGE
+// ============================================================
+
+model DeliveryPartner {
+  id              String               @id @default(uuid())
+  userId          String               @unique
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleType     String?              // Bike, Scooter, Van
+  vehicleNum      String?
+  licenseNumber   String?
+  isOnline        Boolean              @default(false)
+  currentLat      Float?
+  currentLng      Float?
+  rating          Float                @default(0)
+  totalDeliveries Int                  @default(0)
+
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  assignments     DeliveryAssignment[]
+
+  @@index([isOnline])
+  @@map("delivery_partners")
+}
+
+model KYC {
+  id              String        @id @default(uuid())
+  userId          String        @unique
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          KYCStatus     @default(NOT_SUBMITTED)
+  panNumber       String?
+  aadharNumber    String?
+  rejectionReason String?
+  reviewedAt      DateTime?
+  reviewedBy      String?       // Admin user ID
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  documents       KYCDocument[]
+
+  @@map("kyc")
+}
+
+model KYCDocument {
+  id                 String          @id @default(uuid())
+  kycId              String
+  kyc                KYC             @relation(fields: [kycId], references: [id], onDelete: Cascade)
+  documentType       KYCDocumentType
+  objectKey          String          // Secure S3/Supabase Storage object path (no raw files in DB!)
+  fileUrl            String          // Pre-signed or CDN accessible link
+  mimeType           String          // image/jpeg, application/pdf
+  verificationStatus KYCStatus       @default(PENDING)
+  rejectionReason    String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([kycId, documentType])
+  @@map("kyc_documents")
+}
+
+model DeliveryAssignment {
+  id                String                   @id @default(uuid())
+  orderId           String
+  order             Order                    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  deliveryPartnerId String
+  deliveryPartner   DeliveryPartner          @relation(fields: [deliveryPartnerId], references: [id], onDelete: Restrict)
+  status            DeliveryAssignmentStatus @default(ASSIGNED)
+  assignedAt        DateTime                 @default(now())
+  acceptedAt        DateTime?
+  pickedUpAt        DateTime?
+  deliveredAt       DateTime?
+  distanceKm        Float?
+  deliveryFee       Decimal                  @default(0) @db.Decimal(10, 2)
+  notes             String?
+
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  @@index([deliveryPartnerId, status])
+  @@index([orderId])
+  @@map("delivery_assignments")
+}
+
+// ============================================================
+// 12. SUBSCRIPTIONS & ENTITLEMENTS
+// ============================================================
+
+model SubscriptionPlan {
+  id           String                    @id @default(uuid())
+  name         String                    // Basic, Silver, Gold Total Protection
+  slug         String                    @unique
+  description  String?                   @db.Text
+  price        Decimal                   @db.Decimal(10, 2)
+  durationDays Int                       // 90, 180, 365
+  features     String[]                  @default([])
+  isActive     Boolean                   @default(true)
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  subscriptions CustomerSubscription[]
+  entitlements  SubscriptionEntitlement[]
+
+  @@map("subscription_plans")
+}
+
+model SubscriptionEntitlement {
+  id          String           @id @default(uuid())
+  planId      String
+  plan        SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  featureCode String           // "FREE_TOWING", "LABOR_DISCOUNT_PERCENT", "FREE_WASH"
+  featureName String
+  limitValue  Int?             // e.g. 3 free tows per year
+  isUnlimited Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  @@index([planId, featureCode])
+  @@map("subscription_entitlements")
+}
+
+model CustomerSubscription {
+  id         String                @id @default(uuid())
+  userId     String
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId     String
+  plan       SubscriptionPlan      @relation(fields: [planId], references: [id], onDelete: Restrict)
+  status     SubscriptionStatus    @default(PENDING)
+  startDate  DateTime?
+  endDate    DateTime?
+  autoRenew  Boolean               @default(true)
+  paymentId  String?
+
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+
+  payments   SubscriptionPayment[]
+
+  @@index([userId, status])
+  @@map("customer_subscriptions")
+}
+
+model SubscriptionPayment {
+  id             String               @id @default(uuid())
+  subscriptionId String
+  subscription   CustomerSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  amount         Decimal              @db.Decimal(10, 2)
+  paymentMethod  PaymentMethod
+  paymentStatus  PaymentStatus        @default(PENDING)
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  createdAt      DateTime             @default(now())
+
+  @@index([subscriptionId])
+  @@map("subscription_payments")
+}
+
+// ============================================================
+// 13. USED PARTS & RESALE
+// ============================================================
+
+model UsedPartListing {
+  id          String                 @id @default(uuid())
+  sellerId    String
+  seller      User                   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  productId   String?                // Matched catalog product if standardized
+  product     Product?               @relation(fields: [productId], references: [id], onDelete: SetNull)
+  title       String
+  description String                 @db.Text
+  askingPrice Decimal                @db.Decimal(10, 2)
+  resalePrice Decimal?               @db.Decimal(10, 2)
+  condition   String                 // "Gently used - 8,000 km", "Refurbished alternator"
+  images      String[]               @default([])
+  status      UsedPartStatus         @default(DRAFT)
+  isSold      Boolean                @default(false)
+  soldAt      DateTime?
+
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  verification UsedPartVerification?
+  payout       UsedPartPayout?
+
+  @@index([sellerId, status])
+  @@index([productId])
+  @@map("used_part_listings")
+}
+
+model UsedPartVerification {
+  id              String          @id @default(uuid())
+  listingId       String          @unique
+  listing         UsedPartListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  adminId         String?         // Admin reviewer ID
+  conditionRating Int?            // 1 to 10 scale
+  notes           String?
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime        @default(now())
+
+  @@map("used_part_verifications")
+}
+
+model UsedPartPayout {
+  id             String          @id @default(uuid())
+  listingId      String          @unique
+  listing        UsedPartListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  sellerId       String
+  seller         User            @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  amount         Decimal         @db.Decimal(10, 2)
+  status         PayoutStatus    @default(PENDING)
+  transactionRef String?
+  processedAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([sellerId, status])
+  @@map("used_part_payouts")
+}
+
+// ============================================================
+// 14. COMMISSIONS & PLATFORM LEDGER
+// ============================================================
+
+model CommissionConfig {
+  id            String    @id @default(uuid())
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  ratePercent   Decimal   @db.Decimal(5, 2) // e.g. 15.00%
+  minCommission Decimal?  @db.Decimal(10, 2)
+  maxCommission Decimal?  @db.Decimal(10, 2)
+  effectiveFrom DateTime  @default(now())
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("commission_configs")
+}
+
+model CommissionLedger {
+  id               String       @id @default(uuid())
+  orderId          String
+  order            Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  shopId           String
+  shop             Shop         @relation(fields: [shopId], references: [id], onDelete: Restrict)
+  grossAmount      Decimal      @db.Decimal(10, 2)
+  commissionRate   Decimal      @db.Decimal(5, 2)
+  commissionAmount Decimal      @db.Decimal(10, 2)
+  platformCut      Decimal      @db.Decimal(10, 2)
+  shopPayout       Decimal      @db.Decimal(10, 2)
+  payoutStatus     PayoutStatus @default(PENDING)
+  payoutRef        String?
+  paidAt           DateTime?
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([shopId, payoutStatus])
+  @@index([orderId])
+  @@map("commission_ledgers")
+}
+
+// ============================================================
+// 15. SUPPORT SYSTEM
+// ============================================================
+
+model SupportTicket {
+  id              String         @id @default(uuid())
+  ticketNumber    String         @unique // TKT-89421
+  userId          String
+  user            User           @relation("UserTickets", fields: [userId], references: [id], onDelete: Cascade)
+  assignedAdminId String?
+  assignedAdmin   User?          @relation("AdminAssignedTickets", fields: [assignedAdminId], references: [id], onDelete: SetNull)
+  subject         String
+  status          TicketStatus   @default(OPEN)
+  priority        TicketPriority @default(MEDIUM)
+  category        String?        // "Order", "Payment", "DIFM", "Parts Inquiry"
+  orderId         String?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  messages        TicketMessage[]
+
+  @@index([userId, status])
+  @@index([assignedAdminId, status])
+  @@map("support_tickets")
+}
+
+model TicketMessage {
+  id          String        @id @default(uuid())
+  ticketId    String
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId    String        // User ID
+  isAdmin     Boolean       @default(false)
+  body        String        @db.Text
+  attachments String[]      @default([]) // S3 object paths
+  createdAt   DateTime      @default(now())
+
+  @@index([ticketId, createdAt])
+  @@map("ticket_messages")
+}
+
+// ============================================================
+// 16. NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id        String              @id @default(uuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   NotificationChannel @default(IN_APP)
+  status    NotificationStatus  @default(PENDING)
+  title     String
+  body      String              @db.Text
+  data      Json?               // Deep link or payload
+  isRead    Boolean             @default(false)
+  readAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+// ============================================================
+// 17. CRM & SERVICE HISTORY
+// ============================================================
+
+model VehicleServiceRecord {
+  id                    String          @id @default(uuid())
+  customerVehicleId     String
+  customerVehicle       CustomerVehicle @relation(fields: [customerVehicleId], references: [id], onDelete: Cascade)
+  userId                String
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopId                String?
+  shop                  Shop?           @relation(fields: [shopId], references: [id], onDelete: SetNull)
+  serviceDate           DateTime
+  mileage               Int             // Odometer in km
+  serviceDetails        String          @db.Text
+  partsReplaced         String[]        @default([])
+  totalCost             Decimal         @db.Decimal(10, 2)
+  invoiceUrl            String?
+  nextServiceDueMileage Int?
+  nextServiceDueDate    DateTime?
+  notes                 String?
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([customerVehicleId, serviceDate])
+  @@index([userId])
+  @@map("vehicle_service_records")
+}
+
+model MaintenanceReminder {
+  id                String          @id @default(uuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerVehicleId String
+  customerVehicle   CustomerVehicle @relation(fields: [customerVehicleId], references: [id], onDelete: Cascade)
+  reminderType      ReminderType    @default(GENERAL_SERVICE)
+  title             String
+  message           String?
+  dueDate           DateTime?
+  dueMileage        Int?
+  isDismissed       Boolean         @default(false)
+  isCompleted       Boolean         @default(false)
+  completedAt       DateTime?
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([userId, isCompleted, isDismissed])
+  @@index([customerVehicleId])
+  @@map("maintenance_reminders")
+}
+
+// ============================================================
+// 18. AUDIT LOGGING
+// ============================================================
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String   // e.g. "USER_LOGIN", "ORDER_PLACED", "INVENTORY_DEDUCTED", "KYC_APPROVED"
+  entityType String   // "Order", "Product", "User", "Inventory"
+  entityId   String?
+  ipAddress  String?
+  userAgent  String?
+  changes    Json?    // Pre & post state snapshot
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([userId, createdAt])
+  @@map("audit_logs")
+}
+
+// ============================================================
+// 19. REVIEWS & RATINGS
+// ============================================================
+
+model Review {
+  id                 String   @id @default(uuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId          String
+  product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating             Int      // 1 to 5
+  title              String?
+  body               String?  @db.Text
+  isVerifiedPurchase Boolean  @default(false)
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([userId, productId])
+  @@index([productId, rating])
+  @@map("reviews")
+}
+
+// ============================================================
+// 20. COUPONS
+// ============================================================
+
+model Coupon {
+  id            String    @id @default(uuid())
+  code          String    @unique
+  description   String?
+  discountType  String    // PERCENT | FLAT
+  discountValue Decimal   @db.Decimal(10, 2)
+  minOrderValue Decimal   @default(0) @db.Decimal(10, 2)
+  maxDiscount   Decimal?  @db.Decimal(10, 2)
+  usageLimit    Int?
+  usageCount    Int       @default(0)
+  isActive      Boolean   @default(true)
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@map("coupons")
+}
