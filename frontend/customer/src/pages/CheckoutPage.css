@@ -961,3 +961,239 @@
   gap: 16px;
   flex-wrap: wrap;
 }
+
+/* Payment Failure / Cancelled View */
+.payment-result-view {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.payment-failure-card {
+  max-width: 620px;
+  margin: 40px auto;
+  background: var(--bg-surface);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: var(--radius-2xl);
+  padding: 40px 36px;
+  text-align: center;
+  box-shadow: 0 16px 36px rgba(239, 68, 68, 0.08);
+}
+
+[data-theme="dark"] .payment-failure-card {
+  background: var(--bg-surface);
+  border-color: rgba(239, 68, 68, 0.35);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+}
+
+.failure-badge-icon {
+  font-size: 3.5rem;
+  line-height: 1;
+  margin-bottom: 16px;
+}
+
+.failure-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.failure-subtitle {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.failure-details-box {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.failure-advice {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 26px;
+  line-height: 1.5;
+  text-align: left;
+}
+
+[data-theme="dark"] .failure-advice {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.payment-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 540px) {
+  .payment-action-buttons {
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+/* Payment Assurance Banner */
+.payment-assurance-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.payment-assurance-banner.paid {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.payment-assurance-banner.cod {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.assurance-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.assurance-text strong {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.assurance-text p {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Status Pills */
+.status-pill-paid {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="dark"] .status-pill-paid {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.status-pill-cod {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="dark"] .status-pill-cod {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.status-pill-pending {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+[data-theme="dark"] .status-pill-pending {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+/* Safe Metadata Notice */
+.safe-metadata-notice {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: 24px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Verifying Payment Overlay */
+.payment-verifying-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.payment-verifying-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-2xl);
+  padding: 36px 32px;
+  text-align: center;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: var(--shadow-xl);
+}
+
+.verifying-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--color-teal-500);
+  border-radius: 50%;
+  animation: rzp-spin 0.8s linear infinite;
+  margin: 0 auto 20px;
+}
+
+.verifying-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.verifying-sub {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+

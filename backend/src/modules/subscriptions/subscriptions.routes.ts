@@ -1,27 +1,26 @@
-import { Router, Request, Response, NextFunction } from 'express';
-import * as subService from './subscriptions.service';
-import { successResponse } from '../../utils/response';
+import { Router } from 'express';
+import * as subController from './subscriptions.controller';
 import { authenticate } from '../../middleware/auth.middleware';
-import { AuthenticatedRequest } from '../../types';
 
 const router = Router();
 
-router.get('/plans', async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    const plans = await subService.listActivePlans();
-    return successResponse(res, plans);
-  } catch (error) {
-    next(error);
-  }
-});
+// Public routes
+router.get('/plans', subController.listPlans);
+router.get('/plans/:id', subController.getPlanDetails);
 
-router.get('/my', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const subscription = await subService.getUserSubscription(req.user!.id);
-    return successResponse(res, subscription);
-  } catch (error) {
-    next(error);
-  }
-});
+// Protected routes (require customer authentication)
+router.use(authenticate);
+
+router.get('/my', subController.getMySubscriptions);
+router.get('/my/active', subController.getMyActiveSubscription);
+router.post('/subscribe', subController.subscribeToPlan);
+router.post('/verify-payment', subController.verifySubscriptionPayment);
+router.post('/:id/cancel', subController.cancelSubscription);
+router.patch('/:id/cancel', subController.cancelSubscription);
+router.patch('/:id/auto-renew', subController.toggleAutoRenew);
+router.post('/:id/renew', subController.renewSubscription);
+router.post('/:id/expire', subController.expireSubscription);
+router.post('/:id/use-entitlement', subController.useEntitlement);
+router.post('/:id/entitlements/use', subController.useEntitlement);
 
 export default router;

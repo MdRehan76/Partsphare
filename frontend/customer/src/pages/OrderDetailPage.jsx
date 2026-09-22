@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ordersService } from '../services';
+import { ordersService, paymentsService } from '../services';
 import { Button, Badge, Skeleton } from '../components/ui';
+import RazorpayModal from '../components/checkout/RazorpayModal';
 import toast from 'react-hot-toast';
 import './OrderDetailPage.css';
 
@@ -10,6 +11,12 @@ const OrderDetailPage = () => {
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Payment states
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [activePaymentSession, setActivePaymentSession] = useState(null);
+  const [isRetryingPayment, setIsRetryingPayment] = useState(false);
+  const [isSwitchingToCOD, setIsSwitchingToCOD] = useState(false);
 
   useEffect(() => {
     document.title = `Order #${id} | PartNexa`;
@@ -29,6 +36,82 @@ const OrderDetailPage = () => {
       fallbackOrder();
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLaunchPayment = async () => {
+    setIsRetryingPayment(true);
+    try {
+      const res = await paymentsService.retryPayment(order.id);
+      const sessionData = res.data?.data;
+      setActivePaymentSession(sessionData);
+      setIsPaymentModalOpen(true);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to start payment session.');
+    } finally {
+      setIsRetryingPayment(false);
+    }
+  };
+
+  const handlePaymentSuccess = async (result) => {
+    setIsPaymentModalOpen(false);
+    const toastId = toast.loading('Verifying payment signature with backend...');
+    try {
+      await paymentsService.verifyPayment({
+        orderId: result.orderId,
+        razorpayOrderId: result.razorpayOrderId,
+        razorpayPaymentId: result.razorpayPaymentId,
+        razorpaySignature: result.razorpaySignature,
+      });
+      toast.success('Payment verified! Order is now confirmed.', { id: toastId });
+      fetchOrderDetail();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Verification failed.', { id: toastId });
+    }
+  };
+
+  const handlePaymentFailure = async (errData) => {
+    setIsPaymentModalOpen(false);
+    try {
+      await paymentsService.recordFailure({
+        orderId: errData.orderId,
+        errorCode: errData.errorCode || 'PAYMENT_FAILED',
+        errorReason: errData.errorDescription || 'Payment declined by bank',
+      });
+    } catch (e) {
+      console.error(e);
+    }
+    toast.error(errData.errorDescription || 'Payment declined');
+    fetchOrderDetail();
+  };
+
+  const handlePaymentCancel = async (cancelData) => {
+    setIsPaymentModalOpen(false);
+    try {
+      await paymentsService.recordFailure({
+        orderId: cancelData.orderId,
+        errorCode: 'PAYMENT_CANCELLED_BY_USER',
+        errorReason: 'Payment cancelled in modal',
+      });
+    } catch (e) {
+      console.error(e);
+    }
+    toast.error('Payment cancelled');
+    fetchOrderDetail();
+  };
+
+  const handleSwitchToCOD = async () => {
+    setIsSwitchingToCOD(true);
+    try {
+      await paymentsService.switchPaymentMethod(order.id, {
+        paymentMethod: 'CASH_ON_DELIVERY',
+      });
+      toast.success('Order switched to Cash on Delivery! 📦');
+      fetchOrderDetail();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to switch payment method.');
+    } finally {
+      setIsSwitchingToCOD(false);
     }
   };
 
@@ -242,8 +325,84 @@ const OrderDetailPage = () => {
             </div>
           </div>
 
-          {/* Right Column: Address & Technician info */}
+          {/* Right Column: Address & Technician info & Payment Details */}
           <div className="order-detail-side-col">
+            {/* Payment & Gateway Card */}
+            <div className="order-side-card" id="order-payment-status-card">
+              <h3 className="card-title-bordered">💳 Payment Status & Gateway</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.9rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Method:</span>
+                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {order?.paymentMethod === 'CASH_ON_DELIVERY' ? '💵 Cash on Delivery' : '⚡ Razorpay Demo'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Status:</span>
+                  <span>
+                    {order?.paymentStatus === 'CAPTURED' ? (
+                      <span className="status-pill-paid">✓ CAPTURED & PAID</span>
+                    ) : order?.paymentMethod === 'CASH_ON_DELIVERY' ? (
+                      <span className="status-pill-cod">⏳ PENDING COD</span>
+                    ) : order?.paymentStatus === 'FAILED' ? (
+                      <span className="status-pill-pending">❌ PAYMENT FAILED</span>
+                    ) : (
+                      <span className="status-pill-pending">⏳ PENDING</span>
+                    )}
+                  </span>
+                </div>
+
+                {order?.payment?.razorpayPaymentId && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Payment ID:</span>
+                    <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
+                      {order.payment.razorpayPaymentId}
+                    </span>
+                  </div>
+                )}
+
+                {order?.payment?.razorpayOrderId && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Gateway Ref:</span>
+                    <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      {order.payment.razorpayOrderId}
+                    </span>
+                  </div>
+                )}
+
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  🔒 Anti-tamper signature verified · No raw card details stored
+                </div>
+
+                {/* If payment is failed or pending online, allow Retry or Switch to COD */}
+                {order?.paymentStatus !== 'CAPTURED' && order?.paymentMethod !== 'CASH_ON_DELIVERY' && (
+                  <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      fullWidth
+                      onClick={handleLaunchPayment}
+                      loading={isRetryingPayment}
+                      id="order-retry-payment-btn"
+                    >
+                      🔄 Complete / Retry Payment
+                    </Button>
+                    <Button
+                      variant="teal"
+                      size="sm"
+                      fullWidth
+                      onClick={handleSwitchToCOD}
+                      loading={isSwitchingToCOD}
+                      id="order-switch-cod-btn"
+                    >
+                      💵 Switch to Cash on Delivery
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="order-side-card">
               <h3 className="card-title-bordered">📍 Delivery Address</h3>
               <div style={{ fontSize: '0.9rem', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
@@ -297,6 +456,15 @@ const OrderDetailPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Razorpay Modal for Retrying Payment on Order Detail */}
+      <RazorpayModal
+        isOpen={isPaymentModalOpen}
+        paymentData={activePaymentSession}
+        onSuccess={handlePaymentSuccess}
+        onFailure={handlePaymentFailure}
+        onCancel={handlePaymentCancel}
+      />
     </div>
   );
 };

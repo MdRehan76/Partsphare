@@ -39,3 +39,14 @@ export const getCheckoutQuote = async (req: AuthenticatedRequest, res: Response,
     next(error);
   }
 };
+
+export const getOrderTracking = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const orderId = req.params.id as string;
+    const tracking = await ordersService.getOrderTracking(orderId);
+    return successResponse(res, tracking);
+  } catch (error) {
+    next(error);
+  }
+};
+

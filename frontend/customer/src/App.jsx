@@ -17,6 +17,8 @@ import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import ServicesPage from './pages/ServicesPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
+import SubscriptionPlanDetailPage from './pages/SubscriptionPlanDetailPage';
+import MySubscriptionsPage from './pages/MySubscriptionsPage';
 import SellUsedPartPage from './pages/SellUsedPartPage';
 import OrdersPage from './pages/OrdersPage';
 import OrderDetailPage from './pages/OrderDetailPage';
@@ -69,6 +71,15 @@ const AppRoutes = () => (
         {/* Services & Maintenance Subscriptions */}
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/subscriptions" element={<SubscriptionsPage />} />
+        <Route path="/subscriptions/:id" element={<SubscriptionPlanDetailPage />} />
+        <Route
+          path="/my-subscriptions"
+          element={
+            <ProtectedRoute>
+              <MySubscriptionsPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Circular Economy: Sell Used Parts */}
         <Route path="/sell-used-parts" element={<SellUsedPartPage />} />

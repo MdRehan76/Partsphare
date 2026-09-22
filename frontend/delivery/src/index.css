@@ -1,0 +1,481 @@
+/* ============================================================
+   PartSphere Delivery Partner Portal — Design System
+   Matches global PartNexa design tokens with full Light & Dark mode
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* Brand Tokens */
+  --color-primary: #0284C7;
+  --color-primary-dark: #0369A1;
+  --color-primary-light: #38BDF8;
+  --color-primary-glow: rgba(2, 132, 199, 0.25);
+
+  --color-amber: #F59E0B;
+  --color-amber-dark: #D97706;
+  --color-amber-light: #FBBF24;
+  --color-amber-glow: rgba(245, 158, 11, 0.2);
+
+  --color-emerald: #10B981;
+  --color-emerald-dark: #059669;
+  --color-emerald-glow: rgba(16, 185, 129, 0.2);
+
+  --color-success: #10B981;
+  --color-success-bg: rgba(16, 185, 129, 0.12);
+  --color-warning: #F59E0B;
+  --color-warning-bg: rgba(245, 158, 11, 0.12);
+  --color-error: #EF4444;
+  --color-error-bg: rgba(239, 68, 68, 0.12);
+  --color-info: #0284C7;
+  --color-info-bg: rgba(2, 132, 199, 0.12);
+
+  /* Light Theme (Default) */
+  --color-bg: #F8FAFC;
+  --color-bg-card: #FFFFFF;
+  --color-bg-elevated: #F1F5F9;
+  --color-bg-hover: #E2E8F0;
+
+  --color-surface: rgba(15, 23, 42, 0.03);
+  --color-surface-hover: rgba(15, 23, 42, 0.06);
+  --color-glass: rgba(255, 255, 255, 0.94);
+
+  --color-border: rgba(15, 23, 42, 0.09);
+  --color-border-strong: rgba(15, 23, 42, 0.18);
+
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #334155;
+  --color-text-muted: #64748B;
+  --color-text-inverse: #FFFFFF;
+
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.1);
+  --shadow-xl: 0 20px 45px rgba(15, 23, 42, 0.14);
+  --shadow-primary: 0 4px 20px rgba(2, 132, 199, 0.25);
+
+  --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', 'Inter', sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  --sidebar-width: 260px;
+  --navbar-height: 70px;
+}
+
+/* Dark Mode Tokens */
+[data-theme="dark"] {
+  --color-bg: #0B0F19;
+  --color-bg-card: #111827;
+  --color-bg-elevated: #1E293B;
+  --color-bg-hover: #283548;
+
+  --color-surface: rgba(255, 255, 255, 0.05);
+  --color-surface-hover: rgba(255, 255, 255, 0.09);
+  --color-glass: rgba(17, 24, 39, 0.94);
+
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-strong: rgba(255, 255, 255, 0.2);
+
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #64748B;
+  --color-text-inverse: #0B0F19;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.7);
+  --shadow-primary: 0 4px 25px rgba(2, 132, 199, 0.4);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-primary);
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* ============================================================
+   SHARED UTILITIES & COMMON COMPONENTS
+   ============================================================ */
+.delivery-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.delivery-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+}
+
+.delivery-card:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.delivery-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-online {
+  background: var(--color-emerald-glow);
+  color: var(--color-emerald);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-offline {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.badge-assigned {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  border: 1px solid rgba(2, 132, 199, 0.3);
+}
+
+.badge-transit {
+  background: var(--color-amber-glow);
+  color: var(--color-amber);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-delivered {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-cod {
+  background: rgba(234, 88, 12, 0.12);
+  color: #EA580C;
+  border: 1px solid rgba(234, 88, 12, 0.3);
+}
+
+.badge-usedpart {
+  background: rgba(147, 51, 234, 0.12);
+  color: #9333EA;
+  border: 1px solid rgba(147, 51, 234, 0.3);
+}
+
+/* Pulsing Beacon */
+.beacon-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+}
+
+.beacon-online {
+  background-color: #10B981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulse-green 2s infinite;
+}
+
+.beacon-offline {
+  background-color: #64748B;
+}
+
+@keyframes pulse-green {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  border: none;
+  transition: all var(--transition-fast);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: #FFFFFF;
+  box-shadow: var(--shadow-primary);
+}
+
+.btn-primary:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.btn-amber {
+  background: linear-gradient(135deg, var(--color-amber), var(--color-amber-dark));
+  color: #FFFFFF;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+}
+
+.btn-amber:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.btn-emerald {
+  background: linear-gradient(135deg, var(--color-emerald), var(--color-emerald-dark));
+  color: #FFFFFF;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.btn-emerald:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover {
+  background: var(--color-bg-hover);
+}
+
+.btn-danger {
+  background: var(--color-error);
+  color: #FFFFFF;
+}
+
+.btn-danger:hover {
+  background: #DC2626;
+}
+
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.775rem;
+  border-radius: var(--radius-sm);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* Form Controls */
+.form-group {
+  margin-bottom: 1.1rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.825rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  color: var(--color-text-secondary);
+}
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  transition: all var(--transition-fast);
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-glow);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Duty Switch */
+.duty-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: var(--radius-full);
+  font-size: 0.825rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+  transition: all var(--transition-base);
+}
+
+.duty-switch-btn.online {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.duty-switch-btn.offline {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+}
+
+/* Navigation Map Simulator */
+.map-canvas-sim {
+  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  color: #FFFFFF;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="light"] .map-canvas-sim {
+  background: linear-gradient(135deg, #E2E8F0 0%, #CBD5E1 100%);
+  color: #0F172A;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+/* Step Progression Pipeline */
+.delivery-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1.25rem 0;
+  position: relative;
+}
+
+.delivery-steps::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: var(--color-border-strong);
+  z-index: 1;
+  transform: translateY(-50%);
+}
+
+.step-node {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: var(--color-bg-elevated);
+  border: 2px solid var(--color-border);
+  color: var(--color-text-muted);
+  transition: all var(--transition-base);
+}
+
+.step-node.completed .step-circle {
+  background: var(--color-emerald);
+  border-color: var(--color-emerald);
+  color: #FFFFFF;
+}
+
+.step-node.active .step-circle {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #FFFFFF;
+  box-shadow: 0 0 0 4px var(--color-primary-glow);
+}
+
+.step-label {
+  font-size: 0.725rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.step-node.active .step-label {
+  color: var(--color-primary);
+}
+
+.step-node.completed .step-label {
+  color: var(--color-emerald);
+}
+
+/* Inspection Grading Badges */
+.grade-pill {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  cursor: pointer;
+  font-weight: 700;
+  text-align: center;
+  transition: all var(--transition-fast);
+}
+
+.grade-pill.selected {
+  background: var(--color-primary);
+  color: #FFFFFF;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-primary);
+}

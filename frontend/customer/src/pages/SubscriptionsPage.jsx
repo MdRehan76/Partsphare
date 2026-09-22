@@ -1,272 +1,546 @@
 import { useState, useEffect } from 'react';
-import { subscriptionsService } from '../services';
+import { Link, useNavigate } from 'react-router-dom';
+import { subscriptionsService, vehiclesService } from '../services';
 import { useAuth } from '../contexts/AuthContext';
 import { Button, Modal, Input, Badge } from '../components/ui';
+import RazorpayModal from '../components/checkout/RazorpayModal';
 import toast from 'react-hot-toast';
 import './SubscriptionsPage.css';
 
-const DEFAULT_PLANS = [
-  {
-    id: 'plan_basic',
-    name: 'PartNexa Basic Care',
-    duration: '6 Months',
-    price: 499,
-    tagline: 'Essential protection & periodic checkups for daily city commutes',
-    popular: false,
-    benefits: [
-      '1 Complimentary 24-point Vehicle Health Inspection',
-      '10% Flat Discount on all mechanical labor charges',
-      'Priority delivery on genuine spare parts',
-      'Free Emergency Battery Jumpstart (within city limits)',
-      'Digital Vehicle Health & Service History Passbook',
-    ],
-  },
-  {
-    id: 'plan_silver',
-    name: 'PartNexa Silver Elite',
-    duration: '1 Year',
-    price: 1499,
-    tagline: 'Complete peace of mind with labor waivers and doorstep convenience',
-    popular: true,
-    benefits: [
-      '2 Comprehensive Full Vehicle Health Inspections',
-      '2 Free Oil Change Labor Waivers',
-      '15% Discount on genuine OEM/OES spare parts',
-      'Free Doorstep Vehicle Pickup & Drop for service visits',
-      '1 Free AC Cabin Filter Replacement Labor',
-      '24/7 Dedicated Concierge Support Line',
-    ],
-  },
-  {
-    id: 'plan_gold',
-    name: 'PartNexa Gold Concierge',
-    duration: '1 Year',
-    price: 2999,
-    tagline: 'VIP automotive membership with unlimited checkups and RSA coverage',
-    popular: false,
-    benefits: [
-      'Unlimited Vehicle Health & Diagnostic Scans',
-      '4 Free Doorstep Maintenance Service Visits',
-      '20% Maximum Discount on all genuine spare parts',
-      '24x7 Pan-India Roadside Assistance (RSA) with Flatbed Towing',
-      'Zero cancellation or rescheduling fees anytime',
-      'Personal Master Technician assigned to your vehicle',
-    ],
-  },
-];
-
 const SubscriptionsPage = () => {
   const { user } = useAuth();
-  const [plans, setPlans] = useState(DEFAULT_PLANS);
-  const [mySubscription, setMySubscription] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const [billingCycle, setBillingCycle] = useState('MONTHLY'); // 'MONTHLY' | 'YEARLY'
+  const [plans, setPlans] = useState([]);
+  const [activeSubscription, setActiveSubscription] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Subscribe Checkout Dialog State
   const [subscribingPlan, setSubscribingPlan] = useState(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [vehicles, setVehicles] = useState([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState('');
   const [regNumber, setRegNumber] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('RAZORPAY'); // 'RAZORPAY' | 'CASH_ON_DELIVERY'
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Razorpay Gateway Modal State
+  const [isRazorpayOpen, setIsRazorpayOpen] = useState(false);
+  const [paymentSession, setPaymentSession] = useState(null);
 
   useEffect(() => {
-    document.title = 'Maintenance Subscriptions | PartNexa Care';
-    loadData();
-  }, [user]);
+    document.title = 'Maintenance Subscriptions & Care Plans | PartNexa';
+    loadPlansAndData();
+  }, [billingCycle, user]);
 
-  const loadData = async () => {
+  const loadPlansAndData = async () => {
     setLoading(true);
     try {
-      const res = await subscriptionsService.getPlans();
-      if (res.data?.data && res.data.data.length > 0) {
+      const res = await subscriptionsService.getPlans({ frequency: billingCycle });
+      if (res.data?.data) {
         setPlans(res.data.data);
       }
-    } catch {
-      // Use DEFAULT_PLANS
+    } catch (err) {
+      console.error('Failed to load plans:', err);
     }
 
     if (user) {
       try {
-        const myRes = await subscriptionsService.getMySubscription();
+        const myRes = await subscriptionsService.getMySubscriptions();
         if (myRes.data?.data) {
-          setMySubscription(myRes.data.data);
+          setActiveSubscription(myRes.data.data.activeSubscription);
         }
       } catch {
-        // No active subscription
+        // Not subscribed
+      }
+
+      try {
+        const vRes = await vehiclesService.getGarage();
+        const userVehicles = vRes.data?.data || [];
+        setVehicles(userVehicles);
+        const primary = userVehicles.find((v) => v.isPrimary) || userVehicles[0];
+        if (primary) {
+          setSelectedVehicleId(primary.id);
+          setRegNumber(primary.regNumber || '');
+        }
+      } catch {
+        // No vehicles
       }
     }
     setLoading(false);
   };
 
   const handleOpenSubscribe = (plan) => {
+    if (!user) {
+      toast('Please log in or create an account to activate a membership.', { icon: '🔐' });
+      navigate('/login?redirect=/subscriptions');
+      return;
+    }
     setSubscribingPlan(plan);
-    setModalOpen(true);
+    setCheckoutModalOpen(true);
   };
 
-  const handleConfirmSubscribe = (e) => {
+  const handleVehicleSelect = (e) => {
+    const vId = e.target.value;
+    setSelectedVehicleId(vId);
+    const chosen = vehicles.find((v) => v.id === vId);
+    if (chosen?.regNumber) {
+      setRegNumber(chosen.regNumber);
+    }
+  };
+
+  const handleProceedToPayment = async (e) => {
     e.preventDefault();
-    if (!regNumber) {
-      toast.error('Please enter your vehicle registration number');
+    if (!regNumber.trim()) {
+      toast.error('Please provide a vehicle registration number for membership coverage.');
       return;
     }
 
-    toast.success(
-      `🎉 Subscribed to ${subscribingPlan.name}! Your PartNexa Care membership is active.`
-    );
-    setMySubscription({
-      plan: subscribingPlan,
-      status: 'ACTIVE',
-      expiresAt: new Date(Date.now() + 365 * 24 * 3600 * 1000).toLocaleDateString(),
-      vehicleReg: regNumber,
-    });
-    setModalOpen(false);
-    setRegNumber('');
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        planId: subscribingPlan.id,
+        billingCycle,
+        vehicleId: selectedVehicleId || undefined,
+        vehicleReg: regNumber.trim().toUpperCase(),
+        paymentMethod,
+        autoRenew: true,
+      };
+
+      const res = await subscriptionsService.subscribe(payload);
+      const data = res.data?.data;
+
+      if (!data.requiresOnlinePayment) {
+        // COD / Pay on first visit flow: immediate activation!
+        setCheckoutModalOpen(false);
+        toast.success('🎉 Subscription Activated! Payment scheduled on first service.');
+        navigate('/my-subscriptions');
+      } else {
+        // Online Razorpay flow: open sandbox modal
+        setCheckoutModalOpen(false);
+        setPaymentSession({
+          ...data.paymentSession,
+          orderId: data.paymentSession.subscriptionId,
+          orderNumber: `SUB-${subscribingPlan.slug.toUpperCase()}`,
+        });
+        setIsRazorpayOpen(true);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to initiate subscription.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRazorpaySuccess = async (result) => {
+    setIsRazorpayOpen(false);
+    const toastId = toast.loading('Verifying subscription payment with backend HMAC...');
+
+    try {
+      await subscriptionsService.verifyPayment({
+        subscriptionId: result.orderId,
+        razorpayOrderId: result.razorpayOrderId,
+        razorpayPaymentId: result.razorpayPaymentId,
+        razorpaySignature: result.razorpaySignature,
+      });
+
+      toast.success('🎉 Membership activated successfully! Welcome to PartNexa Care.', { id: toastId });
+      navigate('/my-subscriptions');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Payment verification failed.', { id: toastId });
+    }
+  };
+
+  const handleRazorpayFailure = (errData) => {
+    setIsRazorpayOpen(false);
+    toast.error(errData.errorDescription || 'Subscription payment was declined by bank.');
+  };
+
+  const handleRazorpayCancel = () => {
+    setIsRazorpayOpen(false);
+    toast('Subscription payment window closed.', { icon: 'ℹ️' });
   };
 
   return (
-    <div className="subscriptions-page">
-      {/* Hero */}
+    <div className="subscriptions-page" id="subscriptions-page">
+      {/* Hero Header */}
       <section className="sub-hero">
         <div className="container">
-          <div className="sub-hero-badge">🛡️ PartNexa Care Membership</div>
+          <div className="sub-hero-badge">🛡️ PartNexa Care Memberships</div>
           <h1 className="sub-hero-title">Zero-Stress Vehicle Maintenance Plans</h1>
           <p className="sub-hero-desc">
-            Keep your car or two-wheeler in prime factory condition with annual servicing,
-            exclusive discounts on authentic parts, and 24/7 roadside assistance.
+            Continuous automotive protection with free scheduled servicing, nationwide 24/7 roadside assistance,
+            exclusive genuine spare parts discounts, and certified technician coverage.
           </p>
+
+          {/* Active Membership Banner Callout */}
+          {activeSubscription && (
+            <div className="active-membership-banner" id="active-subscription-banner">
+              <div className="active-membership-info">
+                <div className="active-pill-row">
+                  <span className="live-dot" />
+                  <span className="active-tag">Active Membership</span>
+                  <Badge variant="success">ACTIVE</Badge>
+                </div>
+                <h3 className="active-plan-title">
+                  {activeSubscription.plan?.name || 'PartNexa Care'} ({activeSubscription.billingCycle || 'Yearly'})
+                </h3>
+                <p className="active-meta">
+                  Covered Vehicle: <strong>{activeSubscription.vehicleReg || 'All Garaged Vehicles'}</strong> · Valid until:{' '}
+                  <strong>{new Date(activeSubscription.endDate).toLocaleDateString()}</strong> · Auto-renew:{' '}
+                  <strong>{activeSubscription.autoRenew ? 'Enabled' : 'Disabled'}</strong>
+                </p>
+              </div>
+              <div className="active-actions">
+                <Link to="/my-subscriptions">
+                  <Button variant="teal" size="sm" id="view-my-membership-btn">
+                    Manage My Subscription →
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Billing Cycle Toggle */}
+          <div className="billing-cycle-switch" id="billing-cycle-switch">
+            <button
+              className={`cycle-btn ${billingCycle === 'MONTHLY' ? 'active' : ''}`}
+              onClick={() => setBillingCycle('MONTHLY')}
+              id="cycle-monthly-btn"
+            >
+              Monthly Billing
+            </button>
+            <button
+              className={`cycle-btn ${billingCycle === 'YEARLY' ? 'active' : ''}`}
+              onClick={() => setBillingCycle('YEARLY')}
+              id="cycle-yearly-btn"
+            >
+              Yearly Billing
+              <span className="save-badge">Save Up to 30%</span>
+            </button>
+          </div>
         </div>
       </section>
 
       <div className="container">
-        {/* Active Subscription Banner */}
-        {mySubscription && (
-          <div className="active-membership-banner">
-            <div className="active-membership-info">
-              <h3>
-                🌟 Active Membership: {mySubscription.plan?.name || 'PartNexa Silver Elite'}
-              </h3>
-              <p>
-                Covered Vehicle: <strong>{mySubscription.vehicleReg || 'KA01AB1234'}</strong> · Valid
-                until: <strong>{mySubscription.expiresAt || 'September 2027'}</strong>
-              </p>
-            </div>
-            <Badge variant="success">ACTIVE</Badge>
-          </div>
-        )}
+        {/* Tiered Plans Grid */}
+        <div className="plans-grid" id="subscription-plans-grid">
+          {plans.map((plan) => {
+            const isPopular = plan.isPopular || plan.slug === 'standard-care';
+            const price = billingCycle === 'YEARLY' ? plan.yearlyPrice : plan.monthlyPrice;
 
-        {/* Plans Grid */}
-        <div className="plans-grid">
-          {plans.map((plan) => (
-            <div
-              key={plan.id}
-              className={`plan-card ${plan.popular ? 'popular' : ''}`}
-              id={`plan-card-${plan.id}`}
-            >
-              {plan.popular && <div className="popular-badge">Most Popular</div>}
+            return (
+              <div
+                key={plan.id}
+                className={`plan-card ${isPopular ? 'popular' : ''}`}
+                id={`plan-card-${plan.slug}`}
+              >
+                {isPopular && <div className="popular-badge">⭐ Most Popular</div>}
 
-              <div>
                 <div className="plan-header">
                   <h2 className="plan-name">{plan.name}</h2>
-                  <p className="plan-tagline">{plan.tagline}</p>
+                  <p className="plan-tagline">{plan.description}</p>
                 </div>
 
                 <div className="plan-pricing">
-                  <span className="plan-price">₹{plan.price.toLocaleString('en-IN')}</span>
-                  <span className="plan-duration"> / {plan.duration}</span>
+                  <span className="plan-currency">₹</span>
+                  <span className="plan-price">{Number(price).toLocaleString('en-IN')}</span>
+                  <span className="plan-duration">/{billingCycle === 'YEARLY' ? 'year' : 'month'}</span>
                 </div>
 
+                {billingCycle === 'YEARLY' && plan.savingsPercent > 0 && (
+                  <div className="plan-savings-pill">
+                    ⚡ Includes {plan.savingsPercent}% annual commitment discount
+                  </div>
+                )}
+
+                {/* Service Limits Highlights */}
+                <div className="plan-limits-section">
+                  <div className="limits-title">Service Limits:</div>
+                  <div className="limits-chips">
+                    {plan.serviceLimits?.map((sl, idx) => (
+                      <span key={idx} className="limit-chip">
+                        • {sl.feature}: <strong>{sl.limit}</strong>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Discount Highlights */}
+                <div className="plan-discounts-row">
+                  {plan.discountBenefits?.map((db, idx) => (
+                    <span key={idx} className="discount-tag">
+                      🏷️ {db.discountPercent}% off {db.category}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Feature bullets */}
                 <ul className="plan-benefits">
-                  {plan.benefits.map((b, i) => (
-                    <li key={i} className="benefit-item">
+                  {plan.features?.map((f, idx) => (
+                    <li key={idx} className="benefit-item">
                       <span className="benefit-icon">✓</span>
-                      <span>{b}</span>
+                      <span>{f}</span>
                     </li>
                   ))}
                 </ul>
+
+                <div className="plan-card-footer">
+                  <Button
+                    variant={isPopular ? 'teal' : 'primary'}
+                    size="lg"
+                    fullWidth
+                    onClick={() => handleOpenSubscribe(plan)}
+                    id={`subscribe-btn-${plan.slug}`}
+                  >
+                    Subscribe Now · ₹{Number(price).toLocaleString('en-IN')}
+                  </Button>
+
+                  <Link to={`/subscriptions/${plan.slug}`} className="plan-detail-link" id={`view-details-${plan.slug}`}>
+                    View Full Specifications & Limits →
+                  </Link>
+                </div>
               </div>
+            );
+          })}
+        </div>
 
-              <Button
-                variant={plan.popular ? 'primary' : 'outline'}
-                size="lg"
-                fullWidth
-                onClick={() => handleOpenSubscribe(plan)}
-              >
-                Choose {plan.name}
-              </Button>
+        {/* Plan Comparison Matrix Section */}
+        <section className="comparison-matrix-section" id="comparison-matrix">
+          <div className="section-header-centered">
+            <h2 className="matrix-heading">Detailed Plan Comparison</h2>
+            <p className="matrix-sub">
+              Compare included services, discount percentages, emergency assistance, and service quotas
+            </p>
+          </div>
+
+          <div className="matrix-table-wrap">
+            <table className="matrix-table">
+              <thead>
+                <tr>
+                  <th className="feature-col">Feature & Coverage</th>
+                  <th>Basic Care</th>
+                  <th className="highlight-col">Standard Care ⭐</th>
+                  <th>Premium Care 👑</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="row-title">Monthly Price</td>
+                  <td>₹299 / mo</td>
+                  <td className="highlight-col">₹699 / mo</td>
+                  <td>₹1,299 / mo</td>
+                </tr>
+                <tr>
+                  <td className="row-title">Yearly Price (30% off)</td>
+                  <td>₹2,499 / yr</td>
+                  <td className="highlight-col">₹5,999 / yr</td>
+                  <td>₹11,999 / yr</td>
+                </tr>
+                <tr>
+                  <td className="row-title">24/7 Breakdown Assistance</td>
+                  <td>✓ Nationwide</td>
+                  <td className="highlight-col">✓ Nationwide</td>
+                  <td>✓ Priority VIP Dispatch</td>
+                </tr>
+                <tr>
+                  <td className="row-title">Emergency Towing Radius</td>
+                  <td>2 Tows (up to 25 km)</td>
+                  <td className="highlight-col">5 Tows (up to 50 km)</td>
+                  <td>Unlimited Nationwide</td>
+                </tr>
+                <tr>
+                  <td className="row-title">Periodic General Service</td>
+                  <td>✕ Optional Add-on</td>
+                  <td className="highlight-col">1 Free Service / Term</td>
+                  <td>2 Free Comprehensive Services</td>
+                </tr>
+                <tr>
+                  <td className="row-title">Computer Diagnostic Scan</td>
+                  <td>✕</td>
+                  <td className="highlight-col">2 Scans (40-Point OBD)</td>
+                  <td>Unlimited On-Demand Scans</td>
+                </tr>
+                <tr>
+                  <td className="row-title">Spare Parts Discount</td>
+                  <td>5% Flat</td>
+                  <td className="highlight-col">10% Flat</td>
+                  <td>20% VIP Maximum</td>
+                </tr>
+                <tr>
+                  <td className="row-title">Workshop Labor Discount</td>
+                  <td>10% Flat</td>
+                  <td className="highlight-col">20% Flat</td>
+                  <td>30% Flat</td>
+                </tr>
+                <tr>
+                  <td className="row-title">DIFM Doorstep Delivery Fee</td>
+                  <td>Standard (₹49)</td>
+                  <td className="highlight-col">FREE (₹0)</td>
+                  <td>FREE (₹0)</td>
+                </tr>
+                <tr>
+                  <td className="row-title">Doorstep DIFM Labor Waiver</td>
+                  <td>✕</td>
+                  <td className="highlight-col">✕</td>
+                  <td>100% Free Mechanic Labor</td>
+                </tr>
+                <tr>
+                  <td className="row-title">Valet Pickup & Drop</td>
+                  <td>✕</td>
+                  <td className="highlight-col">✕</td>
+                  <td>4 Free Visits / Term</td>
+                </tr>
+                <tr>
+                  <td className="row-title">Vehicle Eligibility</td>
+                  <td>All 2W & 4W Vehicles</td>
+                  <td className="highlight-col">Cars & Bikes &gt; 150cc</td>
+                  <td>All Passenger & Luxury Vehicles</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* Why PartNexa Care */}
+        <section className="why-care-section">
+          <div className="sub-perks-grid">
+            <div className="sub-perk-card">
+              <div className="sub-perk-icon">🛡️</div>
+              <h3 className="sub-perk-title">100% Genuine Spare Parts</h3>
+              <p className="sub-perk-desc">
+                All maintenance visits use factory-certified OEM and verified high-grade OES components with warranty.
+              </p>
             </div>
-          ))}
-        </div>
-
-        {/* Perks / Why PartNexa Care */}
-        <div className="sub-perks-grid">
-          <div className="sub-perk-card">
-            <div className="sub-perk-icon">🔧</div>
-            <h3 className="sub-perk-title">100% Genuine Spare Parts</h3>
-            <p className="sub-perk-desc">
-              All parts used during service visits are authentic OES or OEM factory verified components.
-            </p>
+            <div className="sub-perk-card">
+              <div className="sub-perk-icon">🔧</div>
+              <h3 className="sub-perk-title">Certified Master Technicians</h3>
+              <p className="sub-perk-desc">
+                Skilled mechanics equipped with digital OBD scanners, mobile hoists, and torque calibration rigs.
+              </p>
+            </div>
+            <div className="sub-perk-card">
+              <div className="sub-perk-icon">📍</div>
+              <h3 className="sub-perk-title">Doorstep Convenience</h3>
+              <p className="sub-perk-desc">
+                Never wait in line at garages. Schedule servicing at your home, office, or apartment bay.
+              </p>
+            </div>
           </div>
-          <div className="sub-perk-card">
-            <div className="sub-perk-icon">🚗</div>
-            <h3 className="sub-perk-title">Free Doorstep Delivery & Service</h3>
-            <p className="sub-perk-desc">
-              Technicians come directly to your home or office with diagnostic kits and replacement fluids.
-            </p>
-          </div>
-          <div className="sub-perk-card">
-            <div className="sub-perk-icon">📜</div>
-            <h3 className="sub-perk-title">Warranty Protected</h3>
-            <p className="sub-perk-desc">
-              Every maintenance service carries a 6-month / 10,000 km PartNexa guarantee.
-            </p>
-          </div>
-        </div>
+        </section>
       </div>
 
-      {/* Subscribe Modal */}
-      {modalOpen && (
+      {/* Subscribe & Checkout Modal */}
+      {checkoutModalOpen && subscribingPlan && (
         <Modal
-          isOpen={modalOpen}
-          onClose={() => setModalOpen(false)}
-          title={`Subscribe to ${subscribingPlan?.name}`}
+          isOpen={checkoutModalOpen}
+          onClose={() => setCheckoutModalOpen(false)}
+          title={`Activate ${subscribingPlan.name}`}
           size="md"
         >
-          <form onSubmit={handleConfirmSubscribe}>
-            <div style={{ marginBottom: '16px' }}>
-              <div
-                style={{
-                  background: 'var(--bg-tertiary)',
-                  padding: '14px',
-                  borderRadius: 'var(--radius-md)',
-                  marginBottom: '16px',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
-                  <span>{subscribingPlan?.name}</span>
-                  <span style={{ color: 'var(--color-primary-600)' }}>
-                    ₹{subscribingPlan?.price.toLocaleString('en-IN')}
-                  </span>
-                </div>
-                <div className="text-xs text-muted" style={{ marginTop: '4px' }}>
-                  Coverage: {subscribingPlan?.duration} · Cancel anytime
-                </div>
+          <form onSubmit={handleProceedToPayment} className="sub-checkout-form" id="subscription-checkout-form">
+            {/* Plan Summary Card */}
+            <div className="sub-checkout-summary">
+              <div className="checkout-plan-row">
+                <span className="checkout-plan-name">{subscribingPlan.name}</span>
+                <span className="checkout-plan-price">
+                  ₹{Number(billingCycle === 'YEARLY' ? subscribingPlan.yearlyPrice : subscribingPlan.monthlyPrice).toLocaleString('en-IN')}
+                </span>
               </div>
+              <div className="checkout-plan-meta">
+                Billing: <strong>{billingCycle === 'YEARLY' ? 'Annual (365 Days)' : 'Monthly (30 Days)'}</strong> · Cancel anytime
+              </div>
+            </div>
 
+            {/* Covered Vehicle Input */}
+            <div className="form-group">
+              <label className="form-label" htmlFor="sub-vehicle-select">Select Vehicle from Garage</label>
+              {vehicles.length > 0 ? (
+                <select
+                  id="sub-vehicle-select"
+                  className="form-input"
+                  value={selectedVehicleId}
+                  onChange={handleVehicleSelect}
+                >
+                  {vehicles.map((veh) => (
+                    <option key={veh.id} value={veh.id}>
+                      {veh.variant?.model?.make?.name} {veh.variant?.model?.name} {veh.regNumber ? `(${veh.regNumber})` : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+            </div>
+
+            <div className="form-group">
               <Input
-                label="Vehicle Registration Number"
-                placeholder="e.g. KA03 HA 4821"
+                label="Vehicle Registration Number *"
+                placeholder="e.g. KA01AB1234 or MH02CD5678"
                 value={regNumber}
                 onChange={(e) => setRegNumber(e.target.value.toUpperCase())}
                 required
+                id="sub-reg-input"
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
+            {/* Payment Method Selector */}
+            <div className="form-group">
+              <label className="form-label">Payment Method</label>
+              <div className="sub-payment-options">
+                <label className={`sub-pay-option ${paymentMethod === 'RAZORPAY' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="subPaymentMethod"
+                    value="RAZORPAY"
+                    checked={paymentMethod === 'RAZORPAY'}
+                    onChange={() => setPaymentMethod('RAZORPAY')}
+                  />
+                  <div className="pay-option-content">
+                    <div className="pay-option-title">⚡ Razorpay Sandbox / Demo Gateway</div>
+                    <div className="pay-option-sub">UPI, Credit/Debit Card, Net Banking (Instant Activation)</div>
+                  </div>
+                </label>
+
+                <label className={`sub-pay-option ${paymentMethod === 'CASH_ON_DELIVERY' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="subPaymentMethod"
+                    value="CASH_ON_DELIVERY"
+                    checked={paymentMethod === 'CASH_ON_DELIVERY'}
+                    onChange={() => setPaymentMethod('CASH_ON_DELIVERY')}
+                  />
+                  <div className="pay-option-content">
+                    <div className="pay-option-title">💵 Cash / UPI on First Service Visit (COD)</div>
+                    <div className="pay-option-sub">Activate immediately; pay during your first technician appointment</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div className="sub-checkout-actions">
+              <Button type="button" variant="ghost" onClick={() => setCheckoutModalOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" variant="primary">
-                Activate Membership
+              <Button
+                type="submit"
+                variant="teal"
+                loading={isSubmitting}
+                id="confirm-subscription-btn"
+              >
+                Proceed to Checkout
               </Button>
             </div>
           </form>
         </Modal>
       )}
+
+      {/* Razorpay Sandbox Gateway Modal */}
+      <RazorpayModal
+        isOpen={isRazorpayOpen}
+        paymentData={paymentSession}
+        onSuccess={handleRazorpaySuccess}
+        onFailure={handleRazorpayFailure}
+        onCancel={handleRazorpayCancel}
+      />
     </div>
   );
 };

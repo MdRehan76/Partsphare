@@ -55,9 +55,27 @@ export const ordersService = {
   getCheckoutQuote: (data) => api.post('/orders/checkout-quote', data),
 };
 
+export const paymentsService = {
+  createPaymentOrder: (data) => api.post('/payments/create-order', data),
+  verifyPayment: (data) => api.post('/payments/verify', data),
+  recordFailure: (data) => api.post('/payments/fail', data),
+  retryPayment: (orderId) => api.post(`/payments/retry/${orderId}`),
+  getPaymentStatus: (orderId) => api.get(`/payments/status/${orderId}`),
+  switchPaymentMethod: (orderId, data) => api.patch(`/payments/switch-method/${orderId}`, data),
+};
+
 export const subscriptionsService = {
-  getPlans: () => api.get('/subscriptions/plans'),
-  getMySubscription: () => api.get('/subscriptions/my'),
+  getPlans: (params) => api.get('/subscriptions/plans', { params }),
+  getPlan: (idOrSlug, params) => api.get(`/subscriptions/plans/${idOrSlug}`, { params }),
+  getMySubscriptions: () => api.get('/subscriptions/my'),
+  getMySubscription: () => api.get('/subscriptions/my/active'),
+  subscribe: (data) => api.post('/subscriptions/subscribe', data),
+  verifyPayment: (data) => api.post('/subscriptions/verify-payment', data),
+  cancelSubscription: (id, data) => api.patch(`/subscriptions/${id}/cancel`, data),
+  toggleAutoRenew: (id, autoRenew) => api.patch(`/subscriptions/${id}/auto-renew`, { autoRenew }),
+  renewSubscription: (id) => api.post(`/subscriptions/${id}/renew`),
+  expireSubscription: (id) => api.post(`/subscriptions/${id}/expire`),
+  useEntitlement: (id, data) => api.post(`/subscriptions/${id}/use-entitlement`, data),
 };
 
 export const servicesService = {
@@ -66,8 +84,16 @@ export const servicesService = {
 };
 
 export const usedPartsService = {
-  listUsedParts: () => api.get('/usedparts'),
+  listUsedParts: (params) => api.get('/usedparts', { params }),
+  getPublicListing: (id) => api.get(`/usedparts/${id}`),
   createListing: (data) => api.post('/usedparts', data),
+  getMyListings: (params) => api.get('/usedparts/my', { params }),
+  getMyListing: (id) => api.get(`/usedparts/my/${id}`),
+  cancelListing: (id, data) => api.patch(`/usedparts/my/${id}/cancel`, data),
+  uploadPhotos: (formData) =>
+    api.post('/usedparts/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
 };
 
 export const supportService = {

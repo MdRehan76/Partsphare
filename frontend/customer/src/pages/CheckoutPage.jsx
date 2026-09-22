@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
-import { usersService, ordersService } from '../services';
+import { usersService, ordersService, paymentsService } from '../services';
 import { Button, Input } from '../components/ui';
+import RazorpayModal from '../components/checkout/RazorpayModal';
 import toast from 'react-hot-toast';
 import './CheckoutPage.css';
 
@@ -48,6 +49,15 @@ const CheckoutPage = () => {
   const [orderNotes, setOrderNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState(null);
+
+  // Razorpay Sandbox & Payment Lifecycle States
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [activePaymentSession, setActivePaymentSession] = useState(null);
+  const [paymentSuccessData, setPaymentSuccessData] = useState(null);
+  const [paymentFailureData, setPaymentFailureData] = useState(null);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+  const [isRetryingPayment, setIsRetryingPayment] = useState(false);
+  const [isSwitchingToCOD, setIsSwitchingToCOD] = useState(false);
 
   // Fetch addresses on mount
   useEffect(() => {
@@ -179,16 +189,150 @@ const CheckoutPage = () => {
       const res = await ordersService.createOrder(payload);
       const createdOrder = res.data?.data;
 
-      if (createdOrder) {
+      if (!createdOrder) {
+        throw new Error('Failed to create order');
+      }
+
+      if (paymentMethod === 'COD') {
+        // COD flow: immediately confirmed, payment collection pending
         await clearCart();
         setConfirmedOrder(createdOrder);
-        toast.success('Order placed successfully with PartNexa fitment guarantee! 🎉');
+        toast.success('Order confirmed with Cash on Delivery! 📦');
+      } else {
+        // Razorpay Sandbox flow:
+        // Request backend payment order session with safe gateway reference
+        const sessionRes = await paymentsService.createPaymentOrder({ orderId: createdOrder.id });
+        const sessionData = sessionRes.data?.data;
+
+        setActivePaymentSession(sessionData);
+        setPaymentFailureData(null);
+        setIsPaymentModalOpen(true);
       }
     } catch (err) {
       const errMsg = err.response?.data?.message || 'Failed to place order. Please try again.';
       toast.error(errMsg);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Authoritative Backend Verification of Razorpay Sandbox Payment
+  // Never trust frontend success callback alone!
+  const handlePaymentSuccess = async (result) => {
+    setIsPaymentModalOpen(false);
+    setIsVerifyingPayment(true);
+    const toastId = toast.loading('Verifying payment signature with backend HMAC-SHA256...');
+
+    try {
+      const verifyRes = await paymentsService.verifyPayment({
+        orderId: result.orderId,
+        razorpayOrderId: result.razorpayOrderId,
+        razorpayPaymentId: result.razorpayPaymentId,
+        razorpaySignature: result.razorpaySignature,
+      });
+
+      const verifiedData = verifyRes.data?.data;
+      await clearCart();
+      setPaymentFailureData(null);
+      setPaymentSuccessData(verifiedData);
+      setConfirmedOrder(verifiedData.order);
+      toast.success('Payment verified & order confirmed! 🎉', { id: toastId });
+    } catch (err) {
+      console.error('Payment verification failed:', err);
+      const errMsg = err.response?.data?.message || 'Backend payment verification failed.';
+      toast.error(errMsg, { id: toastId });
+
+      setPaymentFailureData({
+        orderId: result.orderId,
+        orderNumber: activePaymentSession?.orderNumber,
+        errorCode: 'SIGNATURE_VERIFICATION_FAILED',
+        errorDescription: errMsg,
+        amount: activePaymentSession?.amount,
+      });
+    } finally {
+      setIsVerifyingPayment(false);
+    }
+  };
+
+  // Payment Failure (e.g. Bank Decline)
+  const handlePaymentFailure = async (errData) => {
+    setIsPaymentModalOpen(false);
+    try {
+      await paymentsService.recordFailure({
+        orderId: errData.orderId,
+        errorCode: errData.errorCode || 'BAD_REQUEST_PAYMENT_DECLINED',
+        errorReason: errData.errorDescription || errData.reason || 'Payment was declined by bank',
+      });
+    } catch (e) {
+      console.error('Failed to record payment failure:', e);
+    }
+
+    setPaymentFailureData({
+      orderId: errData.orderId,
+      orderNumber: activePaymentSession?.orderNumber,
+      errorCode: errData.errorCode || 'BAD_REQUEST_PAYMENT_DECLINED',
+      errorDescription: errData.errorDescription || 'The card/payment was declined by the simulated bank.',
+      amount: activePaymentSession?.amount,
+    });
+    toast.error(errData.errorDescription || 'Payment declined by bank');
+  };
+
+  // Payment Cancelled by User
+  const handlePaymentCancel = async (cancelData) => {
+    setIsPaymentModalOpen(false);
+    try {
+      await paymentsService.recordFailure({
+        orderId: cancelData.orderId,
+        errorCode: cancelData.errorCode || 'PAYMENT_CANCELLED_BY_USER',
+        errorReason: cancelData.reason || 'Payment cancelled by customer in modal',
+      });
+    } catch (e) {
+      console.error('Failed to record payment cancellation:', e);
+    }
+
+    setPaymentFailureData({
+      orderId: cancelData.orderId,
+      orderNumber: activePaymentSession?.orderNumber,
+      errorCode: 'PAYMENT_CANCELLED_BY_USER',
+      errorDescription: cancelData.reason || 'You closed the Razorpay sandbox window before completing payment.',
+      amount: activePaymentSession?.amount,
+    });
+    toast.error('Payment cancelled');
+  };
+
+  // Retry Payment via Razorpay
+  const handleRetryPayment = async (orderId) => {
+    setIsRetryingPayment(true);
+    try {
+      const res = await paymentsService.retryPayment(orderId);
+      const sessionData = res.data?.data;
+      setActivePaymentSession(sessionData);
+      setPaymentFailureData(null);
+      setIsPaymentModalOpen(true);
+      toast.success('Restarted payment session. Please complete checkout.');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to retry payment. Please try again.');
+    } finally {
+      setIsRetryingPayment(false);
+    }
+  };
+
+  // Switch Payment Method to Cash on Delivery (COD)
+  const handleSwitchToCOD = async (orderId) => {
+    setIsSwitchingToCOD(true);
+    try {
+      const res = await paymentsService.switchPaymentMethod(orderId, {
+        paymentMethod: 'CASH_ON_DELIVERY',
+      });
+      const updatedOrder = res.data?.data?.order;
+      await clearCart();
+      setPaymentFailureData(null);
+      setConfirmedOrder(updatedOrder);
+      toast.success('Switched to Cash on Delivery! Order is confirmed. 📦');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to switch payment method.');
+    } finally {
+      setIsSwitchingToCOD(false);
     }
   };
 
@@ -212,19 +356,155 @@ const CheckoutPage = () => {
   const distanceKm = quote?.difm?.distanceKm || 4.8;
   const durationMinutes = quote?.difm?.durationMinutes || 25;
 
-  // Order Confirmation Modal View
-  if (confirmedOrder) {
+  // View: Payment Failure / Cancelled State with Retry & Switch to COD
+  if (paymentFailureData && !confirmedOrder) {
     return (
-      <div className="checkout-page confirmation-view">
+      <div className="checkout-page payment-result-view" id="payment-failure-screen">
         <div className="container">
-          <div className="order-confirmation-card">
-            <div className="confirmation-badge-icon">✅</div>
-            <h1 className="confirmation-title">Order Confirmed!</h1>
-            <p className="confirmation-subtitle">
-              Order Reference: <strong>{confirmedOrder.orderNumber}</strong>
+          <div className="payment-failure-card">
+            <div className="failure-badge-icon">⚠️</div>
+            <h1 className="failure-title">Payment Not Completed</h1>
+            <p className="failure-subtitle">
+              {paymentFailureData.errorCode === 'PAYMENT_CANCELLED_BY_USER'
+                ? 'The payment session was cancelled by you.'
+                : 'The transaction could not be processed by the sandbox payment gateway.'}
             </p>
 
+            <div className="failure-details-box">
+              <div className="conf-row">
+                <span className="conf-label">Order Reference:</span>
+                <span className="conf-val font-mono">{paymentFailureData.orderNumber || paymentFailureData.orderId}</span>
+              </div>
+              <div className="conf-row">
+                <span className="conf-label">Reason / Code:</span>
+                <span className="conf-val text-danger font-semibold">
+                  {paymentFailureData.errorDescription} ({paymentFailureData.errorCode})
+                </span>
+              </div>
+              <div className="conf-row">
+                <span className="conf-label">Order Status:</span>
+                <span className="conf-val status-pill-pending">PENDING PAYMENT</span>
+              </div>
+              <div className="conf-divider" />
+              <div className="conf-row total-row">
+                <span className="conf-label">Amount Outstanding:</span>
+                <span className="conf-val total-amount">
+                  ₹{Number(paymentFailureData.amount || pricing.grandTotal).toLocaleString('en-IN')}
+                </span>
+              </div>
+            </div>
+
+            <div className="failure-advice">
+              💡 Don't worry! Your order has been saved. You can retry paying online with Razorpay Sandbox or instantly switch this order to Cash on Delivery (COD).
+            </div>
+
+            <div className="payment-action-buttons">
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => handleRetryPayment(paymentFailureData.orderId)}
+                loading={isRetryingPayment}
+                id="retry-payment-button"
+              >
+                🔄 Retry Razorpay Payment
+              </Button>
+              <Button
+                variant="teal"
+                size="md"
+                onClick={() => handleSwitchToCOD(paymentFailureData.orderId)}
+                loading={isSwitchingToCOD}
+                id="switch-cod-button"
+              >
+                💵 Switch to Cash on Delivery (COD)
+              </Button>
+              <Link to={`/orders/${paymentFailureData.orderId}`}>
+                <Button variant="outline" size="md">
+                  View in Order History
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Razorpay Modal for Retries */}
+        <RazorpayModal
+          isOpen={isPaymentModalOpen}
+          paymentData={activePaymentSession}
+          onSuccess={handlePaymentSuccess}
+          onFailure={handlePaymentFailure}
+          onCancel={handlePaymentCancel}
+        />
+      </div>
+    );
+  }
+
+  // View: Order Confirmation (For both Verified Razorpay and Confirmed COD)
+  if (confirmedOrder) {
+    const isRazorpay = confirmedOrder.paymentMethod === 'RAZORPAY';
+    const payment = confirmedOrder.payment || paymentSuccessData?.payment;
+
+    return (
+      <div className="checkout-page confirmation-view" id="order-confirmation-screen">
+        <div className="container">
+          <div className="order-confirmation-card">
+            <div className="confirmation-badge-icon">{isRazorpay ? '✅' : '📦'}</div>
+            <h1 className="confirmation-title">
+              {isRazorpay ? 'Payment Verified & Order Confirmed!' : 'Order Placed (Cash on Delivery)'}
+            </h1>
+            <p className="confirmation-subtitle">
+              Order Reference: <strong className="font-mono">{confirmedOrder.orderNumber}</strong>
+            </p>
+
+            {/* Payment & Security Assurance Banner */}
+            <div className={`payment-assurance-banner ${isRazorpay ? 'paid' : 'cod'}`}>
+              <div className="assurance-icon">{isRazorpay ? '🔒' : '💵'}</div>
+              <div className="assurance-text">
+                {isRazorpay ? (
+                  <>
+                    <strong>Payment Captured via Razorpay Sandbox</strong>
+                    <p>Cryptographically verified with backend HMAC-SHA256 signature. Safe metadata stored.</p>
+                  </>
+                ) : (
+                  <>
+                    <strong>Cash on Delivery (Pending Collection)</strong>
+                    <p>Payment of ₹{Number(confirmedOrder.total).toLocaleString('en-IN')} will be collected upon parts delivery / technician fitment completion.</p>
+                  </>
+                )}
+              </div>
+            </div>
+
             <div className="confirmation-details-box">
+              {/* Payment Safe Metadata */}
+              <div className="conf-row">
+                <span className="conf-label">Payment Method:</span>
+                <span className="conf-val">
+                  {isRazorpay ? '💳 Razorpay Sandbox / Demo Gateway' : '💵 Cash on Delivery (COD)'}
+                </span>
+              </div>
+
+              <div className="conf-row">
+                <span className="conf-label">Payment Status:</span>
+                <span className={`conf-val ${isRazorpay ? 'status-pill-paid' : 'status-pill-cod'}`}>
+                  {isRazorpay ? '✓ CAPTURED & PAID' : '⏳ PENDING COD COLLECTION'}
+                </span>
+              </div>
+
+              {isRazorpay && payment?.razorpayPaymentId && (
+                <div className="conf-row">
+                  <span className="conf-label">Payment ID:</span>
+                  <span className="conf-val font-mono">{payment.razorpayPaymentId}</span>
+                </div>
+              )}
+
+              {isRazorpay && payment?.razorpayOrderId && (
+                <div className="conf-row">
+                  <span className="conf-label">Gateway Order ID:</span>
+                  <span className="conf-val font-mono">{payment.razorpayOrderId}</span>
+                </div>
+              )}
+
+              <div className="conf-divider" />
+
               <div className="conf-row">
                 <span className="conf-label">Fitment Mode:</span>
                 <span className="conf-val">
@@ -250,13 +530,6 @@ const CheckoutPage = () => {
                 </span>
               </div>
 
-              <div className="conf-row">
-                <span className="conf-label">Payment Mode:</span>
-                <span className="conf-val">
-                  {confirmedOrder.paymentMethod === 'CASH_ON_DELIVERY' ? 'Cash on Delivery (Pending)' : 'Razorpay Sandbox (Demo Paid)'}
-                </span>
-              </div>
-
               <div className="conf-divider" />
 
               <div className="conf-row total-row">
@@ -265,14 +538,19 @@ const CheckoutPage = () => {
               </div>
             </div>
 
+            {/* Safe metadata notice */}
+            <div className="safe-metadata-notice">
+              🛡️ <strong>Zero Credential Storage Guarantee:</strong> PartSphere never stores card numbers, CVVs, or bank credentials. Only safe transaction IDs and gateway references are retained.
+            </div>
+
             <div className="confirmation-actions">
               <Link to={`/orders/${confirmedOrder.id}`}>
-                <Button variant="primary" size="md">
+                <Button variant="primary" size="md" id="view-order-details-btn">
                   View Order Details & Tracking
                 </Button>
               </Link>
               <Link to="/products">
-                <Button variant="outline" size="md">
+                <Button variant="outline" size="md" id="continue-shopping-btn">
                   Continue Shopping
                 </Button>
               </Link>
@@ -841,6 +1119,28 @@ const CheckoutPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Razorpay Sandbox Checkout Modal */}
+      <RazorpayModal
+        isOpen={isPaymentModalOpen}
+        paymentData={activePaymentSession}
+        onSuccess={handlePaymentSuccess}
+        onFailure={handlePaymentFailure}
+        onCancel={handlePaymentCancel}
+      />
+
+      {/* Backend Authoritative Verification Overlay */}
+      {isVerifyingPayment && (
+        <div className="payment-verifying-overlay" id="payment-verifying-overlay">
+          <div className="payment-verifying-card">
+            <div className="verifying-spinner" />
+            <h3 className="verifying-title">Verifying Payment with Server</h3>
+            <p className="verifying-sub">
+              Performing HMAC-SHA256 signature verification & double-spend check...
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -104,25 +104,47 @@ export const initialShops = [
   {
     id: 'shop-1',
     name: 'Apex Auto Care & Spares',
+    slug: 'apex-auto-care',
+    ownerId: 'shop-owner-1',
+    ownerName: 'Rajesh Verma',
+    email: 'apex.auto@partsphare.test',
     city: 'Bengaluru',
+    state: 'Karnataka',
     rating: 4.8,
+    totalRatings: 128,
     isVerified: true,
+    verificationStatus: 'VERIFIED',
+    commissionRate: 12,
+    vehicleCategories: ['CAR', 'BIKE', 'SCOOTER'],
     address: '12th Main Road, HAL 2nd Stage, Indiranagar',
+    addressLine1: '12th Main Road, HAL 2nd Stage, Indiranagar',
     pincode: '560038',
     latitude: 12.9716,
     longitude: 77.5946,
     phone: '+91 98450 12345',
     operatingHours: '08:30 AM - 08:30 PM',
     supportedDIFMTypes: ['HOME_INSTALLATION', 'SHOP_INSTALLATION'],
-    servicesOffered: ['Brake Fitment', 'Battery Replacement', 'Electrical Systems', 'Doorstep Mechanic'],
+    servicesOffered: ['Brake Fitment', 'Battery Replacement', 'Electrical Systems', 'Doorstep Mechanic', 'Engine Diagnostics', 'Periodic Maintenance'],
+    serviceAvailable: true,
+    isActive: true,
   },
   {
     id: 'shop-2',
     name: 'Speedy Wheels Garage & Spares',
+    slug: 'speedy-wheels-garage',
+    ownerId: 'shop-owner-2',
+    ownerName: 'Sunil Rao',
+    email: 'speedy.wheels@partsphare.test',
     city: 'Mumbai',
+    state: 'Maharashtra',
     rating: 4.6,
+    totalRatings: 94,
     isVerified: true,
+    verificationStatus: 'VERIFIED',
+    commissionRate: 10,
+    vehicleCategories: ['CAR'],
     address: 'Link Road, Andheri West',
+    addressLine1: 'Link Road, Andheri West',
     pincode: '400053',
     latitude: 19.1363,
     longitude: 72.8277,
@@ -130,14 +152,26 @@ export const initialShops = [
     operatingHours: '09:00 AM - 08:00 PM',
     supportedDIFMTypes: ['HOME_INSTALLATION', 'SHOP_INSTALLATION'],
     servicesOffered: ['Engine Diagnostics', 'Spark Plug & Ignition', 'Suspension', 'Lubrication'],
+    serviceAvailable: true,
+    isActive: true,
   },
   {
     id: 'shop-3',
     name: 'Sai Car Clinic & Genuine Parts',
+    slug: 'sai-car-clinic',
+    ownerId: 'shop-owner-3',
+    ownerName: 'Manoj Gupta',
+    email: 'sai.clinic@partsphare.test',
     city: 'New Delhi',
+    state: 'Delhi',
     rating: 4.9,
+    totalRatings: 180,
     isVerified: true,
+    verificationStatus: 'VERIFIED',
+    commissionRate: 15,
+    vehicleCategories: ['CAR', 'BIKE'],
     address: 'Block C, Connaught Place',
+    addressLine1: 'Block C, Connaught Place',
     pincode: '110001',
     latitude: 28.6315,
     longitude: 77.2167,
@@ -145,14 +179,26 @@ export const initialShops = [
     operatingHours: '09:00 AM - 09:00 PM',
     supportedDIFMTypes: ['HOME_INSTALLATION', 'SHOP_INSTALLATION'],
     servicesOffered: ['OEM Fitment', 'Brakes & Hydraulics', 'Electrical Lighting', 'Used Part Fitting'],
+    serviceAvailable: true,
+    isActive: true,
   },
   {
     id: 'shop-4',
     name: 'Precision Auto Works & Tuners',
+    slug: 'precision-auto-works',
+    ownerId: 'shop-owner-4',
+    ownerName: 'Kavita Reddy',
+    email: 'precision.auto@partsphare.test',
     city: 'Bengaluru',
+    state: 'Karnataka',
     rating: 4.9,
+    totalRatings: 215,
     isVerified: true,
+    verificationStatus: 'VERIFIED',
+    commissionRate: 12,
+    vehicleCategories: ['CAR', 'BIKE', 'SCOOTER'],
     address: '80 Feet Road, 4th Block, Koramangala',
+    addressLine1: '80 Feet Road, 4th Block, Koramangala',
     pincode: '560034',
     latitude: 12.9352,
     longitude: 77.6245,
@@ -160,6 +206,8 @@ export const initialShops = [
     operatingHours: '08:00 AM - 08:00 PM',
     supportedDIFMTypes: ['HOME_INSTALLATION', 'SHOP_INSTALLATION'],
     servicesOffered: ['Performance Brakes', 'Starter Motor Replacement', 'Battery Diagnostics', 'Doorstep Mechanic'],
+    serviceAvailable: true,
+    isActive: true,
   },
 ];
 
@@ -528,7 +576,312 @@ export const initialProducts = [
 ];
 
 // ============================================================================
-// 4. IN-MEMORY STORE CLASS
+// 4. SUBSCRIPTION PLANS & ENTITLEMENTS INITIAL DATA
+// ============================================================================
+export const initialSubscriptionPlans = [
+  {
+    id: 'plan-basic-care',
+    name: 'Basic Care',
+    slug: 'basic-care',
+    description: 'Essential emergency roadside assistance, battery jumpstart support, and baseline discounts for commuter vehicles.',
+    price: 299,
+    monthlyPrice: 299,
+    yearlyPrice: 2499,
+    durationDays: 30,
+    features: [
+      '24/7 Nationwide Emergency Roadside Assistance',
+      '2 Free Breakdown Tows per period (up to 25 km)',
+      'Free Doorstep Battery Jumpstart & Flat Tyre Assistance',
+      '5% Flat Discount on Genuine Spare Parts',
+      '10% Labor Discount at Partnered Workshops',
+      'Digital Vehicle Health Passbook & Service History',
+    ],
+    includedServices: [
+      { name: 'Roadside Breakdown Assistance', description: '24/7 emergency dispatch across 500+ cities with live technician GPS tracking.' },
+      { name: 'Emergency Breakdown Towing', description: 'Flatbed or wheel-lift towing to nearest authorized service center (up to 25 km free).' },
+      { name: 'Doorstep Battery Jumpstart', description: 'Mobile technician dispatched with high-amperage booster pack within 30-45 minutes.' },
+      { name: 'Flat Tyre Repair / Spare Swapping', description: 'Tubeless puncture repair or spare wheel fitment on the spot.' },
+      { name: 'Digital Vehicle Passbook', description: 'Real-time maintenance logging with tamper-proof service records.' }
+    ],
+    discountBenefits: [
+      { category: 'Spare Parts', discountPercent: 5, description: '5% off on all OEM and certified OES spare parts.' },
+      { category: 'Workshop Labor', discountPercent: 10, description: '10% discount on labor fees at verified mechanical hubs.' },
+    ],
+    serviceLimits: [
+      { feature: 'Emergency Towing', limit: '2 per term (up to 25 km each)' },
+      { feature: 'Battery Jumpstart', limit: '2 per term' },
+      { feature: 'Flat Tyre Assist', limit: '2 per term' },
+    ],
+    eligibility: 'All 2-Wheelers & 4-Wheelers (Cars, Bikes, Scooters) under 15 years old.',
+    isPopular: false,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'plan-standard-care',
+    name: 'Standard Care',
+    slug: 'standard-care',
+    description: 'Comprehensive maintenance & preventive care membership with free scheduled general servicing and diagnostic scans.',
+    price: 699,
+    monthlyPrice: 699,
+    yearlyPrice: 5999,
+    durationDays: 30,
+    features: [
+      'All Basic Care features included',
+      '1 Free Periodic General Service (oil & filter change labor covered)',
+      '1 Free 40-Point Computerized Diagnostic Health Scan',
+      '5 Free Breakdown Tows per period (up to 50 km)',
+      '10% Flat Discount on Genuine Spare Parts',
+      '20% Labor Discount at Partnered Workshops',
+      'Free Doorstep Delivery on all Spare Part Orders',
+      'Priority Workshop Bay Booking',
+    ],
+    includedServices: [
+      { name: 'All Basic Care Features Included', description: 'Unlimited access to all emergency RSA and roadside assistance benefits.' },
+      { name: 'Periodic General Service', description: 'Comprehensive multipoint inspection, engine oil drain & fill, filter replacement, spark plug check, brake tuning, and wash.' },
+      { name: '40-Point Computer Diagnostic Scan', description: 'OBD-II scanner health report covering engine, transmission, ABS, airbag sensors, and battery health.' },
+      { name: 'Long-Distance Towing', description: '5 free tows up to 50 km radius to your preferred garage or home.' },
+      { name: 'Doorstep Delivery Waiver', description: '100% free delivery on all spare parts and DIFM orders.' }
+    ],
+    discountBenefits: [
+      { category: 'Spare Parts', discountPercent: 10, description: '10% off on all OEM/OES components.' },
+      { category: 'Workshop Labor', discountPercent: 20, description: '20% off all labor operations at partner garages.' },
+      { category: 'DIFM Delivery', discountPercent: 100, description: 'Free delivery on all orders.' },
+    ],
+    serviceLimits: [
+      { feature: 'Emergency Towing', limit: '5 per term (up to 50 km each)' },
+      { feature: 'Periodic General Service', limit: '1 per term' },
+      { feature: 'Computer Diagnostic Scan', limit: '2 per term' },
+      { feature: 'Battery Health Check', limit: 'Unlimited' },
+    ],
+    eligibility: 'All Cars and Motorcycles above 150cc.',
+    isPopular: true,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'plan-premium-care',
+    name: 'Premium Care',
+    slug: 'premium-care',
+    description: 'VIP automotive coverage with 2 comprehensive periodic services, unlimited towing, zero DIFM fees, and dedicated master mechanic.',
+    price: 1299,
+    monthlyPrice: 1299,
+    yearlyPrice: 11999,
+    durationDays: 30,
+    features: [
+      'Unlimited 24/7 Pan-India Breakdown Towing & RSA',
+      '2 Free Comprehensive Periodic General Services (all consumables & labor covered)',
+      'Unlimited Computerized Diagnostic Scans',
+      '20% VIP Discount on All Genuine Spare Parts',
+      '30% Labor Discount on Major Mechanical Repairs & Bodywork',
+      '100% Doorstep DIFM Installation Fee Waiver (Free Mechanic Visit)',
+      'Free Vehicle Pickup & Drop Valet Service',
+      'Dedicated Personal Master Technician',
+    ],
+    includedServices: [
+      { name: 'Unlimited 24/7 Breakdown Towing', description: 'Zero-distance restriction nationwide flatbed towing to any verified hub.' },
+      { name: '2 Comprehensive Annual Services', description: 'Synthetic oil, air filter, oil filter, cabin AC filter, coolant top-up, brake bleeding, and full detailing included.' },
+      { name: 'Unlimited OBD Diagnostics', description: 'On-demand doorstep computerized vehicle scans and sensor resets.' },
+      { name: 'Free Doorstep DIFM Fitment', description: 'Zero labor and home visit fee on all parts installed at home.' },
+      { name: 'Valet Concierge', description: 'Free insured driver pickup and drop for all garage servicing visits.' },
+      { name: 'Dedicated Master Technician', description: 'Direct WhatsApp/phone access to a certified senior automotive specialist.' }
+    ],
+    discountBenefits: [
+      { category: 'Spare Parts', discountPercent: 20, description: '20% maximum discount on all genuine parts.' },
+      { category: 'Workshop Labor', discountPercent: 30, description: '30% off all major mechanical, engine, and transmission repairs.' },
+      { category: 'DIFM Installation Fee', discountPercent: 100, description: '100% free doorstep DIFM mechanic labor.' },
+    ],
+    serviceLimits: [
+      { feature: 'Emergency Towing', limit: 'Unlimited nationwide' },
+      { feature: 'Periodic General Service', limit: '2 per term' },
+      { feature: 'Computer Diagnostic Scan', limit: 'Unlimited' },
+      { feature: 'Doorstep DIFM Home Visits', limit: 'Unlimited free visits' },
+      { feature: 'Pickup & Drop Valet', limit: '4 per term' },
+    ],
+    eligibility: 'All Passenger Cars, SUVs, Luxury Vehicles, and Fleet Vehicles.',
+    isPopular: false,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+];
+
+export const initialSubscriptionEntitlements = [
+  // Basic Care
+  { id: 'ent-basic-1', planId: 'plan-basic-care', featureCode: 'FREE_TOWING', featureName: 'Free Breakdown Towing', limitValue: 2, isUnlimited: false },
+  { id: 'ent-basic-2', planId: 'plan-basic-care', featureCode: 'BATTERY_JUMPSTART', featureName: 'Battery Jump Start', limitValue: 2, isUnlimited: false },
+  { id: 'ent-basic-3', planId: 'plan-basic-care', featureCode: 'FLAT_TYRE_ASSIST', featureName: 'Flat Tyre Assist', limitValue: 2, isUnlimited: false },
+  { id: 'ent-basic-4', planId: 'plan-basic-care', featureCode: 'PARTS_DISCOUNT_PCT', featureName: 'Parts Discount Percent', limitValue: 5, isUnlimited: false },
+  { id: 'ent-basic-5', planId: 'plan-basic-care', featureCode: 'LABOR_DISCOUNT_PCT', featureName: 'Labor Discount Percent', limitValue: 10, isUnlimited: false },
+
+  // Standard Care
+  { id: 'ent-std-1', planId: 'plan-standard-care', featureCode: 'FREE_TOWING', featureName: 'Free Breakdown Towing', limitValue: 5, isUnlimited: false },
+  { id: 'ent-std-2', planId: 'plan-standard-care', featureCode: 'GENERAL_SERVICE', featureName: 'Periodic General Service', limitValue: 1, isUnlimited: false },
+  { id: 'ent-std-3', planId: 'plan-standard-care', featureCode: 'DIAGNOSTIC_SCAN', featureName: 'Computer Diagnostic Scan', limitValue: 2, isUnlimited: false },
+  { id: 'ent-std-4', planId: 'plan-standard-care', featureCode: 'BATTERY_JUMPSTART', featureName: 'Battery Jump Start', limitValue: 5, isUnlimited: false },
+  { id: 'ent-std-5', planId: 'plan-standard-care', featureCode: 'PARTS_DISCOUNT_PCT', featureName: 'Parts Discount Percent', limitValue: 10, isUnlimited: false },
+  { id: 'ent-std-6', planId: 'plan-standard-care', featureCode: 'LABOR_DISCOUNT_PCT', featureName: 'Labor Discount Percent', limitValue: 20, isUnlimited: false },
+
+  // Premium Care
+  { id: 'ent-prem-1', planId: 'plan-premium-care', featureCode: 'FREE_TOWING', featureName: 'Free Breakdown Towing', limitValue: null, isUnlimited: true },
+  { id: 'ent-prem-2', planId: 'plan-premium-care', featureCode: 'GENERAL_SERVICE', featureName: 'Comprehensive General Service', limitValue: 2, isUnlimited: false },
+  { id: 'ent-prem-3', planId: 'plan-premium-care', featureCode: 'DIAGNOSTIC_SCAN', featureName: 'Computer Diagnostic Scan', limitValue: null, isUnlimited: true },
+  { id: 'ent-prem-4', planId: 'plan-premium-care', featureCode: 'PARTS_DISCOUNT_PCT', featureName: 'Parts Discount Percent', limitValue: 20, isUnlimited: false },
+  { id: 'ent-prem-5', planId: 'plan-premium-care', featureCode: 'LABOR_DISCOUNT_PCT', featureName: 'Labor Discount Percent', limitValue: 30, isUnlimited: false },
+  { id: 'ent-prem-6', planId: 'plan-premium-care', featureCode: 'VALET_PICKUP_DROP', featureName: 'Valet Pickup & Drop', limitValue: 4, isUnlimited: false },
+];
+
+// ============================================================================
+// 4B. USED PART LISTINGS INITIAL DATA
+// ============================================================================
+export const initialUsedPartListings = [
+  {
+    id: 'used_demo_1',
+    sellerId: 'demo-user-1',
+    title: 'OEM LED Headlight Assembly (Right)',
+    partNumber: '92102-M6000',
+    vehicleModel: 'Hyundai Creta 2018 - 2020 1.6L',
+    category: 'LIGHTING',
+    condition: 'EXCELLENT',
+    conditionGrade: 'A+',
+    description: 'Original OEM genuine headlight removed before upgrading to aftermarket matrix LEDs. Lenses clear, brackets intact, bulb connectors perfect.',
+    purchaseAge: '1-2 Years',
+    expectedPrice: 3800,
+    estimatedValuation: 3400,
+    finalValuation: 3400,
+    payoutStatus: 'PAID',
+    payoutAmount: 3400,
+    payoutMethod: 'UPI',
+    payoutTransactionRef: 'UPI_REF_892374921',
+    images: [
+      'https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=600&auto=format&fit=crop&q=80'
+    ],
+    location: 'Indiranagar, Bengaluru, Karnataka - 560038',
+    status: 'LISTED',
+    verificationStatus: 'APPROVED',
+    verificationNotes: 'Lenses verified free of micro-cracks. Electrical testing passed. High/low beam diodes 100% operational.',
+    isSold: false,
+    createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
+    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: 'used_demo_2',
+    sellerId: 'demo-user-1',
+    title: 'Front Brake Caliper Pair with Ceramic Pads',
+    partNumber: 'RE-BRK-350-BS6',
+    vehicleModel: 'Royal Enfield Classic 350 (BS6)',
+    category: 'BRAKES',
+    condition: 'GOOD',
+    conditionGrade: 'A',
+    description: 'ByBre OEM twin-piston calipers. Serviced at 6,000 km, ceramic pads with ~75% life remaining.',
+    purchaseAge: '6-12 Months',
+    expectedPrice: 2100,
+    estimatedValuation: 1800,
+    finalValuation: 1800,
+    payoutStatus: 'PAID',
+    payoutAmount: 1800,
+    payoutMethod: 'BANK_TRANSFER',
+    payoutTransactionRef: 'NEFT_HDFC_91283921',
+    images: [
+      'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=600&auto=format&fit=crop&q=80'
+    ],
+    location: 'Kothrud, Pune, Maharashtra - 411038',
+    status: 'PAID',
+    verificationStatus: 'APPROVED',
+    verificationNotes: 'Caliper pistons polished, no hydraulic fluid weeping. Seals intact.',
+    isSold: false,
+    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: 'used_demo_3',
+    sellerId: 'demo-user-1',
+    title: 'Alternator 12V 90A (Bosch OE)',
+    partNumber: 'F002G10814',
+    vehicleModel: 'Maruti Suzuki Swift DDiS Diesel',
+    category: 'ELECTRICAL',
+    condition: 'GOOD',
+    conditionGrade: 'B+',
+    description: 'Fully working Bosch alternator with pulley. Output tested steady 14.2V under load.',
+    purchaseAge: '2-3 Years',
+    expectedPrice: 3200,
+    estimatedValuation: 2700,
+    finalValuation: 2700,
+    payoutStatus: 'PENDING',
+    payoutAmount: 2700,
+    payoutMethod: 'UPI',
+    images: [
+      'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=600&auto=format&fit=crop&q=80'
+    ],
+    location: 'Noida Sector 62, Delhi NCR - 201301',
+    status: 'VALUED',
+    verificationStatus: 'APPROVED',
+    verificationNotes: 'Dynamic bench test passed. Output voltage 14.1V. Ready for seller payout authorization.',
+    isSold: false,
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+    updatedAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
+  },
+  {
+    id: 'used_demo_4',
+    sellerId: 'demo-user-1',
+    title: 'Electric Power Steering Column Motor',
+    partNumber: '53500-T9A-H01',
+    vehicleModel: 'Honda City 4th Gen i-VTEC',
+    category: 'SUSPENSION',
+    condition: 'EXCELLENT',
+    conditionGrade: null,
+    description: 'Original EPS rack module. Smooth torque sensor response, zero play.',
+    purchaseAge: '1-2 Years',
+    expectedPrice: 4800,
+    estimatedValuation: 4200,
+    finalValuation: null,
+    payoutStatus: 'PENDING',
+    payoutAmount: 0,
+    images: [
+      'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=600&auto=format&fit=crop&q=80'
+    ],
+    location: 'Andheri West, Mumbai, Maharashtra - 400053',
+    status: 'VERIFICATION_PENDING',
+    verificationStatus: 'INSPECTING',
+    verificationNotes: 'Part picked up by Delivery Partner. Currently at PartSphere Hub mechanical bay for bench testing.',
+    isSold: false,
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    updatedAt: new Date(Date.now() - 12 * 60 * 60 * 1000),
+  },
+  {
+    id: 'used_demo_5',
+    sellerId: 'demo-user-1',
+    title: 'Rear Combination Tail Lamp Set (LED)',
+    partNumber: '35670M68P00',
+    vehicleModel: 'Maruti Suzuki Baleno Alpha',
+    category: 'LIGHTING',
+    condition: 'LIKE_NEW',
+    conditionGrade: null,
+    description: 'Factory rear tail light set. Zero scratches, all clips in factory condition.',
+    purchaseAge: '< 6 Months',
+    expectedPrice: 2600,
+    estimatedValuation: 2300,
+    finalValuation: null,
+    payoutStatus: 'PENDING',
+    payoutAmount: 0,
+    images: [
+      'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=600&auto=format&fit=crop&q=80'
+    ],
+    location: 'Whitefield, Bengaluru, Karnataka - 560066',
+    status: 'SUBMITTED',
+    verificationStatus: 'SUBMITTED',
+    verificationNotes: 'Listing submitted by customer. Delivery partner pickup assignment pending.',
+    isSold: false,
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+  },
+];
+
+// ============================================================================
+// 5. IN-MEMORY STORE CLASS
 // ============================================================================
 class InMemoryStore {
   public users: any[] = [];
@@ -545,11 +898,47 @@ class InMemoryStore {
   public difmRequests: any[] = [];
   public payments: any[] = [];
   public orderTrackings: any[] = [];
+  public subscriptionPlans: any[] = [...initialSubscriptionPlans];
+  public subscriptionEntitlements: any[] = [...initialSubscriptionEntitlements];
+  public customerSubscriptions: any[] = [];
+  public subscriptionPayments: any[] = [];
+  public usedPartListings: any[] = [...initialUsedPartListings];
+  public shopJobs: any[] = [];
+  public commissionLedgers: any[] = [];
+  public shopDeliveries: any[] = [];
+  public usedPartIntakes: any[] = [];
+  public shopTickets: any[] = [];
+  public deliveryPartners: any[] = [];
+  public kycRecords: any[] = [];
+  public kycDocuments: any[] = [];
+  public deliveryAssignments: any[] = [];
+  public codReconciliations: any[] = [];
+  public supportTickets: any[] = [];
+  public platformConfigs: any = {
+    difm: {
+      homeVisitBaseSurcharge: 99,
+      homeVisitPerKmRate: 20,
+      freeDeliveryThreshold: 999,
+      standardDeliveryFee: 49,
+      defaultBaseServiceFee: 299,
+      optionAEnabled: true,
+      optionBEnabled: true,
+      optionCEnabled: true,
+    },
+    commissions: {
+      defaultRate: 12.0,
+      minRate: 10.0,
+      maxRate: 15.0,
+    },
+  };
 
   constructor() {
     this.seedDefaultUser();
     this.seedInventoriesAndShops();
     this.seedDefaultAddresses();
+    this.seedShopPortalData();
+    this.seedDeliveryPartnerData();
+    this.seedSupportTicketsData();
   }
 
   private seedInventoriesAndShops() {
@@ -608,8 +997,8 @@ class InMemoryStore {
     });
   }
 
-  private async seedDefaultUser() {
-    const passwordHash = await bcrypt.hash('Demo@1234', 10);
+  private seedDefaultUser() {
+    const passwordHash = bcrypt.hashSync('Demo@1234', 10);
     this.users.push({
       id: 'demo-user-1',
       firstName: 'Aarav',
@@ -623,18 +1012,888 @@ class InMemoryStore {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
+    const shopOwnerPassword = bcrypt.hashSync('Password@123', 10);
+    this.users.push({
+      id: 'shop-owner-1',
+      firstName: 'Rajesh',
+      lastName: 'Verma',
+      email: 'apex.auto@partsphare.test',
+      password: shopOwnerPassword,
+      phone: '+91 98450 12345',
+      avatar: null,
+      role: 'SHOP_OWNER',
+      status: 'ACTIVE',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const riderPassword = bcrypt.hashSync('Password@123', 10);
+    this.users.push({
+      id: 'rider-user-1',
+      firstName: 'Vikram',
+      lastName: 'Singh',
+      email: 'rider.vikram@partsphare.test',
+      password: riderPassword,
+      phone: '+91 98451 99882',
+      avatar: null,
+      role: 'DELIVERY_PARTNER',
+      status: 'ACTIVE',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const adminPassword = bcrypt.hashSync('Password@123', 10);
+    this.users.push({
+      id: 'admin-user-1',
+      firstName: 'Super',
+      lastName: 'Admin',
+      email: 'admin@partsphare.test',
+      password: adminPassword,
+      phone: '+91 99999 00000',
+      avatar: null,
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const adminAltPassword = bcrypt.hashSync('Admin@1234', 10);
+    this.users.push({
+      id: 'admin-user-2',
+      firstName: 'Platform',
+      lastName: 'Admin',
+      email: 'admin@partsphere.in',
+      password: adminAltPassword,
+      phone: '+91 99999 11111',
+      avatar: null,
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  }
+
+  private seedShopPortalData() {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    // Seed initial Jobs for shop-1 (Apex Auto Care)
+    this.shopJobs = [
+      {
+        id: 'job-101',
+        shopId: 'shop-1',
+        orderId: 'ord-seed-101',
+        orderNumber: 'PN-2026-90412',
+        difmRequestId: 'difm-seed-101',
+        jobType: 'DIFM_SHOP_VISIT',
+        status: 'SCHEDULED',
+        customerName: 'Rohit Sharma',
+        customerPhone: '+91 98765 43210',
+        customerEmail: 'rohit.sharma@example.com',
+        vehicleInfo: 'Maruti Suzuki Swift 1.2 DualJet (2021)',
+        vehicleCategory: 'CAR',
+        vehicleNumber: 'KA-05-MN-9812',
+        serviceName: 'Bosch Super 4 Spark Plug Installation',
+        serviceFee: 350,
+        homeVisitSurcharge: 0,
+        totalServiceAmount: 350,
+        locationType: 'SHOP',
+        serviceAddress: '12th Main Road, HAL 2nd Stage, Indiranagar, Bengaluru',
+        scheduledDate: new Date(`${todayStr}T14:00:00`),
+        scheduledSlot: '02:00 PM - 03:30 PM',
+        notes: 'Customer reported minor engine misfire on cold start.',
+        mechanicAssigned: 'Vikram Singh (Senior Mechanic)',
+        startedAt: null,
+        completedAt: null,
+        createdAt: new Date(Date.now() - 3600000 * 5),
+        updatedAt: new Date(Date.now() - 3600000 * 5),
+      },
+      {
+        id: 'job-102',
+        shopId: 'shop-1',
+        orderId: 'ord-seed-102',
+        orderNumber: 'PN-2026-90488',
+        difmRequestId: 'difm-seed-102',
+        jobType: 'DIFM_HOME_INSTALLATION',
+        status: 'IN_PROGRESS',
+        customerName: 'Priya Nair',
+        customerPhone: '+91 98451 22334',
+        customerEmail: 'priya.nair@example.com',
+        vehicleInfo: 'Hyundai Creta 1.5 SX (2022)',
+        vehicleCategory: 'CAR',
+        vehicleNumber: 'KA-03-HA-4411',
+        serviceName: 'Amaron Battery Doorstep Fitment & Alternator Check',
+        serviceFee: 500,
+        homeVisitSurcharge: 150,
+        totalServiceAmount: 650,
+        locationType: 'DOORSTEP',
+        serviceAddress: 'Flat 301, Palm Meadows, Whitefield, Bengaluru',
+        scheduledDate: new Date(`${todayStr}T11:00:00`),
+        scheduledSlot: '11:00 AM - 12:30 PM',
+        notes: 'Vehicle parked in basement B2 slot 44. Gate security notified.',
+        mechanicAssigned: 'Kiran Gowda (Doorstep Specialist)',
+        startedAt: new Date(Date.now() - 3600000 * 1),
+        completedAt: null,
+        createdAt: new Date(Date.now() - 3600000 * 8),
+        updatedAt: new Date(Date.now() - 3600000 * 1),
+      },
+      {
+        id: 'job-103',
+        shopId: 'shop-1',
+        orderId: 'ord-seed-103',
+        orderNumber: 'PN-2026-90350',
+        difmRequestId: 'difm-seed-103',
+        jobType: 'DIFM_SHOP_VISIT',
+        status: 'COMPLETED',
+        customerName: 'Anand Kulkarni',
+        customerPhone: '+91 98112 33445',
+        customerEmail: 'anand.k@example.com',
+        vehicleInfo: 'Honda City i-VTEC (2020)',
+        vehicleCategory: 'CAR',
+        vehicleNumber: 'KA-01-EF-7722',
+        serviceName: 'Front Brake Pad Replacement & Disc Inspection',
+        serviceFee: 750,
+        homeVisitSurcharge: 0,
+        totalServiceAmount: 750,
+        locationType: 'SHOP',
+        serviceAddress: '12th Main Road, Indiranagar',
+        scheduledDate: new Date(Date.now() - 86400000),
+        scheduledSlot: '10:00 AM - 11:30 AM',
+        notes: 'Brake pads replaced and bedded in. Road test confirmed smooth stopping.',
+        mechanicAssigned: 'Vikram Singh',
+        startedAt: new Date(Date.now() - 86400000 + 3600000),
+        completedAt: new Date(Date.now() - 86400000 + 7200000),
+        createdAt: new Date(Date.now() - 86400000 * 2),
+        updatedAt: new Date(Date.now() - 86400000),
+      },
+      {
+        id: 'job-104',
+        shopId: 'shop-1',
+        orderId: 'ord-seed-104',
+        orderNumber: 'PN-2026-90310',
+        difmRequestId: 'difm-seed-104',
+        jobType: 'CUSTOMER_VEHICLE_VISIT',
+        status: 'COMPLETED',
+        customerName: 'Sunil Mehta',
+        customerPhone: '+91 99001 88221',
+        customerEmail: 'sunil.mehta@example.com',
+        vehicleInfo: 'Royal Enfield Classic 350 (2023)',
+        vehicleCategory: 'BIKE',
+        vehicleNumber: 'KA-51-AB-1290',
+        serviceName: 'Motul 7100 Engine Oil Flush & Chain Lubrication',
+        serviceFee: 400,
+        homeVisitSurcharge: 0,
+        totalServiceAmount: 400,
+        locationType: 'SHOP',
+        serviceAddress: '12th Main Road, Indiranagar',
+        scheduledDate: new Date(Date.now() - 86400000 * 2),
+        scheduledSlot: '04:00 PM - 05:00 PM',
+        notes: 'Chain cleaned and tension set to 25mm slack. Oil filter replaced.',
+        mechanicAssigned: 'Santosh Rao',
+        startedAt: new Date(Date.now() - 86400000 * 2 + 1800000),
+        completedAt: new Date(Date.now() - 86400000 * 2 + 4500000),
+        createdAt: new Date(Date.now() - 86400000 * 3),
+        updatedAt: new Date(Date.now() - 86400000 * 2),
+      },
+    ];
+
+    // Seed Commission Ledger for shop-1 (Apex Auto Care)
+    // STRICT RULE DEMONSTRATED IN SEED DATA:
+    // Job 101: Scheduled, Paid via Razorpay -> LOCKED_PENDING_COMPLETION
+    // Job 102: In progress, Paid via Razorpay -> LOCKED_PENDING_COMPLETION
+    // Job 103: Completed, Paid via Razorpay -> RELEASED (both conditions met!)
+    // Job 104: Completed, COD pending payment -> LOCKED_PENDING_PAYMENT (payment not yet cleared!)
+    this.commissionLedgers = [
+      {
+        id: 'comm-101',
+        shopId: 'shop-1',
+        orderId: 'ord-seed-101',
+        orderNumber: 'PN-2026-90412',
+        jobId: 'job-101',
+        serviceName: 'Bosch Super 4 Spark Plug Installation',
+        grossAmount: 350,
+        commissionRate: 12,
+        commissionAmount: 42,
+        shopPayout: 308,
+        serviceStatus: 'SCHEDULED',
+        paymentStatus: 'PAID',
+        paymentMethod: 'RAZORPAY',
+        releaseStatus: 'LOCKED_PENDING_COMPLETION',
+        payoutStatus: 'PENDING',
+        payoutRef: null,
+        paidAt: null,
+        createdAt: new Date(Date.now() - 3600000 * 5),
+        updatedAt: new Date(Date.now() - 3600000 * 5),
+      },
+      {
+        id: 'comm-102',
+        shopId: 'shop-1',
+        orderId: 'ord-seed-102',
+        orderNumber: 'PN-2026-90488',
+        jobId: 'job-102',
+        serviceName: 'Amaron Battery Doorstep Fitment',
+        grossAmount: 650,
+        commissionRate: 12,
+        commissionAmount: 78,
+        shopPayout: 572,
+        serviceStatus: 'IN_PROGRESS',
+        paymentStatus: 'PAID',
+        paymentMethod: 'RAZORPAY',
+        releaseStatus: 'LOCKED_PENDING_COMPLETION',
+        payoutStatus: 'PENDING',
+        payoutRef: null,
+        paidAt: null,
+        createdAt: new Date(Date.now() - 3600000 * 8),
+        updatedAt: new Date(Date.now() - 3600000 * 1),
+      },
+      {
+        id: 'comm-103',
+        shopId: 'shop-1',
+        orderId: 'ord-seed-103',
+        orderNumber: 'PN-2026-90350',
+        jobId: 'job-103',
+        serviceName: 'Front Brake Pad Replacement',
+        grossAmount: 750,
+        commissionRate: 12,
+        commissionAmount: 90,
+        shopPayout: 660,
+        serviceStatus: 'COMPLETED',
+        paymentStatus: 'PAID',
+        paymentMethod: 'RAZORPAY',
+        releaseStatus: 'RELEASED',
+        payoutStatus: 'RELEASED',
+        payoutRef: null,
+        paidAt: null,
+        createdAt: new Date(Date.now() - 86400000 * 2),
+        updatedAt: new Date(Date.now() - 86400000),
+      },
+      {
+        id: 'comm-104',
+        shopId: 'shop-1',
+        orderId: 'ord-seed-104',
+        orderNumber: 'PN-2026-90310',
+        jobId: 'job-104',
+        serviceName: 'Motul 7100 Engine Oil Flush',
+        grossAmount: 400,
+        commissionRate: 12,
+        commissionAmount: 48,
+        shopPayout: 352,
+        serviceStatus: 'COMPLETED',
+        paymentStatus: 'PENDING',
+        paymentMethod: 'CASH_ON_DELIVERY',
+        releaseStatus: 'LOCKED_PENDING_PAYMENT',
+        payoutStatus: 'PENDING',
+        payoutRef: null,
+        paidAt: null,
+        createdAt: new Date(Date.now() - 86400000 * 3),
+        updatedAt: new Date(Date.now() - 86400000 * 2),
+      },
+    ];
+
+    // Seed Incoming Deliveries for shop-1
+    this.shopDeliveries = [
+      {
+        id: 'del-101',
+        shopId: 'shop-1',
+        trackingNumber: 'PND-782109',
+        orderId: 'ord-seed-101',
+        orderNumber: 'PN-2026-90412',
+        relatedJobId: 'job-101',
+        carrier: 'PartsNexa Logistics Express',
+        status: 'DELIVERED',
+        items: [
+          { productName: 'Bosch Super 4 Spark Plug FR78X (Set of 4)', sku: 'BOSCH-SP-FR78X', quantity: 1, condition: 'NEW' },
+        ],
+        eta: 'Delivered',
+        receivedAt: new Date(Date.now() - 3600000 * 3),
+        receivedBy: 'Ramesh (Inventory Desk)',
+        createdAt: new Date(Date.now() - 86400000),
+      },
+      {
+        id: 'del-102',
+        shopId: 'shop-1',
+        trackingNumber: 'PND-782194',
+        orderId: 'ord-seed-102',
+        orderNumber: 'PN-2026-90488',
+        relatedJobId: 'job-102',
+        carrier: 'Blue Dart Surface Hub',
+        status: 'IN_TRANSIT',
+        items: [
+          { productName: 'Amaron Pro DIN55 Automotive Battery', sku: 'AMR-PRO-55', quantity: 1, condition: 'NEW' },
+        ],
+        eta: 'Today, 03:30 PM',
+        receivedAt: null,
+        receivedBy: null,
+        createdAt: new Date(Date.now() - 3600000 * 4),
+      },
+      {
+        id: 'del-103',
+        shopId: 'shop-1',
+        trackingNumber: 'PND-782250',
+        orderId: 'ord-seed-105',
+        orderNumber: 'PN-2026-90510',
+        relatedJobId: null,
+        carrier: 'PartsNexa Hub Direct',
+        status: 'EXPECTED_TODAY',
+        items: [
+          { productName: 'Motul 7100 4T 10W-50 Synthetic 1L', sku: 'MOT-7100-10W50', quantity: 5, condition: 'NEW' },
+        ],
+        eta: 'Today, 05:00 PM',
+        receivedAt: null,
+        receivedBy: null,
+        createdAt: new Date(Date.now() - 3600000 * 2),
+      },
+    ];
+
+    // Seed Used-Part Intakes for shop-1
+    this.usedPartIntakes = [
+      {
+        id: 'intake-101',
+        shopId: 'shop-1',
+        listingId: 'used-part-1',
+        partTitle: 'OEM Maruti Suzuki Swift Alternator (Denso 12V 70A)',
+        sellerName: 'Vikram Singh',
+        vehicleModel: 'Maruti Swift Diesel 2018',
+        intakeDate: new Date(Date.now() - 86400000),
+        physicalCondition: 'GOOD',
+        technicalTestStatus: 'PASSED',
+        technicianNotes: 'Tested on test rig under 40A load. Steady 14.2V output confirmed.',
+        status: 'VERIFIED_ACCEPTED',
+        createdAt: new Date(Date.now() - 86400000),
+      },
+      {
+        id: 'intake-102',
+        shopId: 'shop-1',
+        listingId: 'used-part-2',
+        partTitle: 'Hyundai Creta Projector Headlamp Assembly (Right)',
+        sellerName: 'Deepak Patel',
+        vehicleModel: 'Hyundai Creta 2020',
+        intakeDate: new Date(),
+        physicalCondition: 'FAIR',
+        technicalTestStatus: 'NEEDS_TESTING',
+        technicianNotes: 'Lens intact, slight tab scuff. Need wiring harness test for leveling motor.',
+        status: 'IN_STORAGE',
+        createdAt: new Date(),
+      },
+    ];
+
+    // Seed Shop Support Tickets for shop-1
+    this.shopTickets = [
+      {
+        id: 'tkt-shop-101',
+        ticketNumber: 'TKT-SHP-101',
+        shopId: 'shop-1',
+        category: 'COMMISSION_PAYOUT',
+        subject: 'Payout settlement query for August batch',
+        priority: 'MEDIUM',
+        status: 'RESOLVED',
+        messages: [
+          {
+            id: 'msg-1',
+            senderName: 'Rajesh Verma',
+            senderRole: 'SHOP_OWNER',
+            message: 'Hi team, checking when the NEFT batch for August released commissions will be processed.',
+            createdAt: new Date(Date.now() - 86400000 * 2),
+          },
+          {
+            id: 'msg-2',
+            senderName: 'PartsNexa Finance Admin',
+            senderRole: 'ADMIN',
+            message: 'Processed via UTR PNX99201482 into your registered HDFC bank account.',
+            createdAt: new Date(Date.now() - 86400000),
+          },
+        ],
+        createdAt: new Date(Date.now() - 86400000 * 2),
+        updatedAt: new Date(Date.now() - 86400000),
+      },
+      {
+        id: 'tkt-shop-102',
+        ticketNumber: 'TKT-SHP-102',
+        shopId: 'shop-1',
+        category: 'PARTS_DELIVERY',
+        subject: 'Tracking update for shock absorber package',
+        priority: 'HIGH',
+        status: 'OPEN',
+        messages: [
+          {
+            id: 'msg-3',
+            senderName: 'Rajesh Verma',
+            senderRole: 'SHOP_OWNER',
+            message: 'Delivery PND-782194 ETA is 3:30 PM today. Customer appointment is at 4:00 PM. Kindly expedite driver dispatch.',
+            createdAt: new Date(),
+          },
+        ],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+  }
+
+  private seedDeliveryPartnerData() {
+    this.deliveryPartners = [
+      {
+        id: 'partner-1',
+        userId: 'rider-user-1',
+        vehicleType: 'Scooter (TVS Ntorq 125)',
+        vehicleNum: 'KA-01-EQ-9124',
+        licenseNumber: 'DL-KA01-2021004921',
+        isOnline: true,
+        currentLat: 12.9716,
+        currentLng: 77.5946,
+        rating: 4.9,
+        totalDeliveries: 142,
+        isActivated: true,
+        verificationStatus: 'APPROVED',
+        cashInHand: 1850,
+        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        updatedAt: new Date(),
+      },
+    ];
+
+    this.kycRecords = [
+      {
+        id: 'kyc-partner-1',
+        userId: 'rider-user-1',
+        status: 'APPROVED',
+        panNumber: 'ABCDE1234F',
+        aadharNumber: 'XXXX-XXXX-9012',
+        rejectionReason: null,
+        reviewedAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+        reviewedBy: 'admin-1',
+        createdAt: new Date(Date.now() - 26 * 24 * 60 * 60 * 1000),
+        updatedAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+      },
+    ];
+
+    this.kycDocuments = [
+      {
+        id: 'doc-1',
+        kycId: 'kyc-partner-1',
+        documentType: 'PAN_CARD',
+        objectKey: 'kyc/rider-user-1/pan_card.jpg',
+        fileUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600',
+        mimeType: 'image/jpeg',
+        verificationStatus: 'APPROVED',
+        createdAt: new Date(Date.now() - 26 * 24 * 60 * 60 * 1000),
+        updatedAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+      },
+      {
+        id: 'doc-2',
+        kycId: 'kyc-partner-1',
+        documentType: 'AADHAAR_CARD',
+        objectKey: 'kyc/rider-user-1/aadhaar_card.jpg',
+        fileUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600',
+        mimeType: 'image/jpeg',
+        verificationStatus: 'APPROVED',
+        createdAt: new Date(Date.now() - 26 * 24 * 60 * 60 * 1000),
+        updatedAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+      },
+      {
+        id: 'doc-3',
+        kycId: 'kyc-partner-1',
+        documentType: 'DRIVING_LICENSE',
+        objectKey: 'kyc/rider-user-1/driving_license.jpg',
+        fileUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600',
+        mimeType: 'image/jpeg',
+        verificationStatus: 'APPROVED',
+        createdAt: new Date(Date.now() - 26 * 24 * 60 * 60 * 1000),
+        updatedAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+      },
+      {
+        id: 'doc-4',
+        kycId: 'kyc-partner-1',
+        documentType: 'VEHICLE_RC',
+        objectKey: 'kyc/rider-user-1/vehicle_rc.jpg',
+        fileUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600',
+        mimeType: 'image/jpeg',
+        verificationStatus: 'APPROVED',
+        createdAt: new Date(Date.now() - 26 * 24 * 60 * 60 * 1000),
+        updatedAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+      },
+    ];
+
+    this.deliveryAssignments = [
+      {
+        id: 'assign-101',
+        orderId: 'ord-seed-101',
+        orderNumber: 'PN-2026-90412',
+        usedPartListingId: null,
+        deliveryPartnerId: 'partner-1',
+        type: 'CUSTOMER_DELIVERY',
+        status: 'IN_TRANSIT',
+        pickupLocation: {
+          name: 'PartSphere Central Hub - Indiranagar',
+          address: '12th Main Rd, HAL 2nd Stage, Indiranagar, Bengaluru - 560038',
+          lat: 12.9716,
+          lng: 77.6412,
+          contactPerson: 'Suresh (Hub Manager)',
+          phone: '+91 98450 11223',
+        },
+        dropLocation: {
+          name: 'Aarav Sharma',
+          address: 'Flat 402, Green Glen Layout, Bellandur, Bengaluru - 560103',
+          lat: 12.9260,
+          lng: 77.6762,
+          contactPerson: 'Aarav Sharma',
+          phone: '+91 98765 00002',
+        },
+        items: [
+          { title: 'Bosch Super 4 Spark Plug FR78X', quantity: 1, sku: 'BOSCH-SP-FR78X', price: 950 },
+        ],
+        paymentMethod: 'RAZORPAY',
+        paymentStatus: 'PAID',
+        codAmountToCollect: 0,
+        codAmountCollected: 0,
+        codStatus: 'NOT_APPLICABLE',
+        deliveryFee: 120,
+        distanceKm: 6.4,
+        navigationInfo: {
+          currentDistance: '2.1 km away',
+          etaMinutes: 8,
+          routeSummary: 'Via Marathahalli - Sarjapur Outer Ring Rd',
+        },
+        notes: 'Express order. Customer requested gate call on arrival.',
+        assignedAt: new Date(Date.now() - 3600000 * 2),
+        acceptedAt: new Date(Date.now() - 3600000 * 1.8),
+        pickedUpAt: new Date(Date.now() - 3600000 * 0.8),
+        deliveredAt: null,
+        createdAt: new Date(Date.now() - 3600000 * 2),
+        updatedAt: new Date(Date.now() - 3600000 * 0.8),
+      },
+      {
+        id: 'assign-102',
+        orderId: 'ord-seed-102',
+        orderNumber: 'PN-2026-90488',
+        usedPartListingId: null,
+        deliveryPartnerId: null, // Broadcast unassigned job available for any partner
+        type: 'CUSTOMER_DELIVERY',
+        status: 'ASSIGNED',
+        pickupLocation: {
+          name: 'Apex Auto Care (Partner Shop)',
+          address: '88, 100 Feet Road, Indiranagar, Bengaluru - 560038',
+          lat: 12.9716,
+          lng: 77.6412,
+          contactPerson: 'Rajesh Verma',
+          phone: '+91 98450 12345',
+        },
+        dropLocation: {
+          name: 'Priya Nair',
+          address: 'Villa 14, Palm Meadows, Whitefield, Bengaluru - 560066',
+          lat: 12.9698,
+          lng: 77.7499,
+          contactPerson: 'Priya Nair',
+          phone: '+91 98765 12345',
+        },
+        items: [
+          { title: 'Amaron Pro DIN55 Automotive Battery', quantity: 1, sku: 'AMARON-PRO-DIN55', price: 4200 },
+        ],
+        paymentMethod: 'CASH_ON_DELIVERY',
+        paymentStatus: 'PENDING',
+        codAmountToCollect: 4850,
+        codAmountCollected: 0,
+        codStatus: 'PENDING',
+        deliveryFee: 180,
+        distanceKm: 12.2,
+        navigationInfo: {
+          currentDistance: '12.2 km away',
+          etaMinutes: 28,
+          routeSummary: 'Via HAL Old Airport Rd to Whitefield Main Rd',
+        },
+        notes: 'Fragile battery package, keep upright. Collect COD cash ₹4,850.',
+        assignedAt: new Date(Date.now() - 1800000),
+        acceptedAt: null,
+        pickedUpAt: null,
+        deliveredAt: null,
+        createdAt: new Date(Date.now() - 1800000),
+        updatedAt: new Date(Date.now() - 1800000),
+      },
+      {
+        id: 'assign-103',
+        orderId: null,
+        orderNumber: 'PN-UP-70192',
+        usedPartListingId: 'used_demo_5',
+        deliveryPartnerId: 'partner-1',
+        type: 'USED_PART_PICKUP',
+        status: 'ASSIGNED',
+        pickupLocation: {
+          name: 'Seller: Deepak Patel',
+          address: 'Whitefield, Bengaluru, Karnataka - 560066',
+          lat: 12.9698,
+          lng: 77.7499,
+          contactPerson: 'Deepak Patel',
+          phone: '+91 99112 33445',
+        },
+        dropLocation: {
+          name: 'Apex Auto Care (Hub Intake)',
+          address: '88, 100 Feet Road, Indiranagar, Bengaluru - 560038',
+          lat: 12.9716,
+          lng: 77.6412,
+          contactPerson: 'Rajesh Verma',
+          phone: '+91 98450 12345',
+        },
+        items: [
+          {
+            title: 'Rear Combination Tail Lamp Set (LED)',
+            quantity: 1,
+            expectedPrice: 2600,
+            estimatedValuation: 2300,
+            condition: 'LIKE_NEW',
+          },
+        ],
+        paymentMethod: null,
+        paymentStatus: null,
+        codAmountToCollect: 0,
+        codAmountCollected: 0,
+        codStatus: 'NOT_APPLICABLE',
+        deliveryFee: 150,
+        distanceKm: 11.5,
+        navigationInfo: {
+          currentDistance: '8.4 km away',
+          etaMinutes: 22,
+          routeSummary: 'Via Varthur Main Rd',
+        },
+        notes: 'Doorstep Used-Part Inspection required. Verify physical condition, mounting tabs, and LED circuit.',
+        assignedAt: new Date(Date.now() - 3600000 * 3),
+        acceptedAt: new Date(Date.now() - 3600000 * 2.5),
+        pickedUpAt: null,
+        deliveredAt: null,
+        createdAt: new Date(Date.now() - 3600000 * 3),
+        updatedAt: new Date(Date.now() - 3600000 * 2.5),
+      },
+      {
+        id: 'assign-104',
+        orderId: 'ord-seed-104',
+        orderNumber: 'PN-2026-90310',
+        usedPartListingId: null,
+        deliveryPartnerId: 'partner-1',
+        type: 'CUSTOMER_DELIVERY',
+        status: 'DELIVERED',
+        pickupLocation: {
+          name: 'Apex Auto Care',
+          address: '88, 100 Feet Road, Indiranagar',
+          lat: 12.9716,
+          lng: 77.6412,
+          contactPerson: 'Rajesh Verma',
+          phone: '+91 98450 12345',
+        },
+        dropLocation: {
+          name: 'Sunil Mehta',
+          address: '12th Main Road, Indiranagar, Bengaluru',
+          lat: 12.9720,
+          lng: 77.6420,
+          contactPerson: 'Sunil Mehta',
+          phone: '+91 99001 88221',
+        },
+        items: [
+          { title: 'Motul 7100 4T 10W-50 Fully Synthetic Engine Oil', quantity: 1, sku: 'MOTUL-7100-10W50', price: 1850 },
+        ],
+        paymentMethod: 'CASH_ON_DELIVERY',
+        paymentStatus: 'PAID',
+        codAmountToCollect: 1850,
+        codAmountCollected: 1850,
+        codStatus: 'COLLECTED', // Cash collected by partner, pending hub reconciliation
+        deliveryFee: 90,
+        distanceKm: 1.8,
+        navigationInfo: {
+          currentDistance: 'Delivered',
+          etaMinutes: 0,
+          routeSummary: 'Completed trip',
+        },
+        notes: 'Delivered successfully and collected cash ₹1,850.',
+        assignedAt: new Date(Date.now() - 86400000),
+        acceptedAt: new Date(Date.now() - 86400000 + 600000),
+        pickedUpAt: new Date(Date.now() - 86400000 + 1800000),
+        deliveredAt: new Date(Date.now() - 86400000 + 3600000),
+        createdAt: new Date(Date.now() - 86400000),
+        updatedAt: new Date(Date.now() - 86400000 + 3600000),
+      },
+    ];
+
+    this.codReconciliations = [
+      {
+        id: 'recon-1',
+        reconciliationNumber: 'COD-REC-892101',
+        deliveryPartnerId: 'partner-1',
+        totalAmount: 3400,
+        orderCount: 2,
+        status: 'RECONCILED',
+        depositMethod: 'CASH_AT_HUB',
+        depositReference: 'HUB-DEP-44912',
+        hubLocation: 'Indiranagar Central Logistics Hub',
+        receivedBy: 'Gopal Krishna (Finance Desk)',
+        notes: 'Previous cycle batch reconciliation cleared and receipt generated.',
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      },
+    ];
+  }
+
+  private seedSupportTicketsData() {
+    this.supportTickets = [
+      {
+        id: 'tkt-cust-101',
+        ticketNumber: 'TKT-2026-1001',
+        userId: 'demo-user-1',
+        userName: 'Aarav Sharma',
+        userEmail: 'demo@partsphere.in',
+        userRole: 'CUSTOMER',
+        category: 'ORDER_ISSUE',
+        subject: 'Fitment inquiry for Bosch spark plugs on Swift 2022',
+        priority: 'MEDIUM',
+        slaHours: 24,
+        slaDeadline: new Date(Date.now() + 24 * 3600000),
+        assignedAdminId: 'admin-user-1',
+        assignedAdminName: 'Super Admin',
+        status: 'OPEN',
+        resolutionNotes: null,
+        resolvedAt: null,
+        messages: [
+          {
+            id: 'msg-cust-1',
+            senderId: 'demo-user-1',
+            senderName: 'Aarav Sharma',
+            senderRole: 'CUSTOMER',
+            message: 'Hello, I ordered Bosch Super 4 Spark Plugs. Can the technician bring gapping tools during home installation?',
+            createdAt: new Date(Date.now() - 3600000 * 4),
+          },
+        ],
+        createdAt: new Date(Date.now() - 3600000 * 4),
+        updatedAt: new Date(Date.now() - 3600000 * 4),
+      },
+      {
+        id: 'tkt-shop-101',
+        ticketNumber: 'TKT-2026-1002',
+        userId: 'shop-owner-1',
+        userName: 'Rajesh Verma',
+        userEmail: 'apex.auto@partsphare.test',
+        userRole: 'SHOP_OWNER',
+        category: 'COMMISSION_PAYOUT',
+        subject: 'Weekly commission settlement reference request',
+        priority: 'HIGH',
+        slaHours: 6,
+        slaDeadline: new Date(Date.now() + 6 * 3600000),
+        assignedAdminId: 'admin-user-1',
+        assignedAdminName: 'Super Admin',
+        status: 'IN_PROGRESS',
+        resolutionNotes: null,
+        resolvedAt: null,
+        messages: [
+          {
+            id: 'msg-shop-1',
+            senderId: 'shop-owner-1',
+            senderName: 'Rajesh Verma',
+            senderRole: 'SHOP_OWNER',
+            message: 'Our completed DIFM batch from yesterday has 3 orders. When will the direct bank deposit be processed?',
+            createdAt: new Date(Date.now() - 3600000 * 3),
+          },
+          {
+            id: 'msg-shop-2',
+            senderId: 'admin-user-1',
+            senderName: 'Super Admin',
+            senderRole: 'ADMIN',
+            message: 'Hi Rajesh, the payout batch PO-APX-500588 has been queued for automated settlement tonight.',
+            createdAt: new Date(Date.now() - 3600000 * 1),
+          },
+        ],
+        createdAt: new Date(Date.now() - 3600000 * 3),
+        updatedAt: new Date(Date.now() - 3600000 * 1),
+      },
+      {
+        id: 'tkt-rider-101',
+        ticketNumber: 'TKT-2026-1003',
+        userId: 'rider-user-1',
+        userName: 'Vikram Singh',
+        userEmail: 'rider.vikram@partsphare.test',
+        userRole: 'DELIVERY_PARTNER',
+        category: 'DELIVERY_DELAY',
+        subject: 'Gated community security passcode verification',
+        priority: 'URGENT',
+        slaHours: 2,
+        slaDeadline: new Date(Date.now() + 2 * 3600000),
+        assignedAdminId: null,
+        assignedAdminName: null,
+        status: 'OPEN',
+        resolutionNotes: null,
+        resolvedAt: null,
+        messages: [
+          {
+            id: 'msg-rider-1',
+            senderId: 'rider-user-1',
+            senderName: 'Vikram Singh',
+            senderRole: 'DELIVERY_PARTNER',
+            message: 'Gate security at Palm Meadows requires approval code for battery delivery. Customer not answering intercom.',
+            createdAt: new Date(Date.now() - 3600000 * 0.5),
+          },
+        ],
+        createdAt: new Date(Date.now() - 3600000 * 0.5),
+        updatedAt: new Date(Date.now() - 3600000 * 0.5),
+      },
+      {
+        id: 'tkt-cust-102',
+        ticketNumber: 'TKT-2026-1004',
+        userId: 'demo-user-1',
+        userName: 'Priya Patel',
+        userEmail: 'priya.patel@example.com',
+        userRole: 'CUSTOMER',
+        category: 'USED_PART_VALUATION',
+        subject: 'Used Alternator pickup inspection confirmation',
+        priority: 'LOW',
+        slaHours: 48,
+        slaDeadline: new Date(Date.now() - 3600000 * 2),
+        assignedAdminId: 'admin-user-1',
+        assignedAdminName: 'Super Admin',
+        status: 'RESOLVED',
+        resolutionNotes: 'Technician verified item condition as Grade A. Payout ₹2,080 approved.',
+        resolvedAt: new Date(Date.now() - 3600000 * 12),
+        messages: [
+          {
+            id: 'msg-cust-2',
+            senderId: 'demo-user-1',
+            senderName: 'Priya Patel',
+            senderRole: 'CUSTOMER',
+            message: 'Listing used_demo_5 was inspected this morning. When will my UPI payout reflect?',
+            createdAt: new Date(Date.now() - 3600000 * 24),
+          },
+          {
+            id: 'msg-admin-2',
+            senderId: 'admin-user-1',
+            senderName: 'Super Admin',
+            senderRole: 'ADMIN',
+            message: 'Inspection Grade A has been verified and UPI transfer of ₹2,080 initiated.',
+            createdAt: new Date(Date.now() - 3600000 * 12),
+          },
+        ],
+        createdAt: new Date(Date.now() - 3600000 * 24),
+        updatedAt: new Date(Date.now() - 3600000 * 12),
+      },
+    ];
   }
 
   // --- USER ---
   public user = {
+    findMany: async ({ where, orderBy }: { where?: any; orderBy?: any } = {}) => {
+      let list = this.users.filter((u) => {
+        if (where?.role && u.role !== where.role) return false;
+        if (where?.status && u.status !== where.status) return false;
+        return true;
+      });
+      return list;
+    },
     findUnique: async ({ where, select }: { where: { email?: string; id?: string }; select?: any }) => {
       const u = this.users.find(
         (usr) => (where.email && usr.email.toLowerCase() === where.email.toLowerCase()) || (where.id && usr.id === where.id)
       );
       if (!u) return null;
       const countVehicles = this.customerVehicles.filter((v) => v.userId === u.id).length;
+      const linkedShop = this.shops.find((s) => s.ownerId === u.id) || (u.role === 'SHOP_OWNER' ? this.shops[0] : null);
+      const deliveryPartner = this.deliveryPartners.find((dp) => dp.userId === u.id) || (u.role === 'DELIVERY_PARTNER' ? this.deliveryPartners[0] : null);
+      const kyc = this.kycRecords.find((k) => k.userId === u.id) || null;
       return {
         ...u,
+        shop: linkedShop,
+        deliveryPartner,
+        kyc,
         _count: { orders: 0, customerVehicles: countVehicles },
       };
     },
@@ -859,11 +2118,20 @@ class InMemoryStore {
       );
     },
     findMany: async ({ where }: { where?: any } = {}) => {
-      return this.inventories.filter((inv) => {
+      let list = this.inventories.filter((inv) => {
         if (where?.productId && inv.productId !== where.productId) return false;
         if (where?.shopId && inv.shopId !== where.shopId) return false;
         if (where?.isAvailable !== undefined && inv.isAvailable !== where.isAvailable) return false;
         return true;
+      });
+      return list.map((inv) => {
+        const prod = initialProducts.find((p) => p.id === inv.productId);
+        const shop = this.shops.find((s) => s.id === inv.shopId);
+        return {
+          ...inv,
+          product: prod ? this.populateProduct(prod) : null,
+          shop: shop ? { id: shop.id, name: shop.name, city: shop.city } : null,
+        };
       });
     },
     update: async ({
@@ -881,9 +2149,13 @@ class InMemoryStore {
             inv.shopId === where.productId_shopId.shopId)
       );
       if (idx === -1) return null;
+      const qty = data.quantity !== undefined ? Number(data.quantity) : this.inventories[idx].quantity;
       this.inventories[idx] = {
         ...this.inventories[idx],
         ...data,
+        quantity: qty,
+        availabilityStatus: qty > 0 ? (qty <= (this.inventories[idx].lowStockThreshold || 5) ? 'LOW_STOCK' : 'IN_STOCK') : 'OUT_OF_STOCK',
+        isAvailable: qty > 0,
         updatedAt: new Date(),
       };
       return this.inventories[idx];
@@ -896,19 +2168,638 @@ class InMemoryStore {
       return (
         this.shops.find((s) => {
           if (where?.id && s.id !== where.id) return false;
+          if (where?.ownerId && s.ownerId !== where.ownerId) return false;
+          if (where?.slug && s.slug !== where.slug) return false;
+          if (where?.email && s.email?.toLowerCase() !== where.email?.toLowerCase()) return false;
           if (where?.isActive !== undefined && s.isActive !== where.isActive) return false;
           return true;
         }) || null
       );
     },
-    findUnique: async ({ where }: { where: { id: string } }) => {
-      return this.shops.find((s) => s.id === where.id) || null;
+    findUnique: async ({ where }: { where: { id?: string; slug?: string; ownerId?: string } }) => {
+      return (
+        this.shops.find(
+          (s) =>
+            (where.id && s.id === where.id) ||
+            (where.slug && s.slug === where.slug) ||
+            (where.ownerId && s.ownerId === where.ownerId)
+        ) || null
+      );
     },
-    findMany: async ({ where }: { where?: any } = {}) => {
-      return this.shops.filter((s) => {
+    findMany: async ({ where, orderBy }: { where?: any; orderBy?: any } = {}) => {
+      let list = this.shops.filter((s) => {
         if (where?.isActive !== undefined && s.isActive !== where.isActive) return false;
+        if (where?.isVerified !== undefined && s.isVerified !== where.isVerified) return false;
+        if (where?.city) {
+          const c = typeof where.city === 'object' && where.city.equals ? where.city.equals : where.city;
+          if (s.city.toLowerCase() !== c.toLowerCase()) return false;
+        }
         return true;
       });
+      if (orderBy?.rating === 'desc') {
+        list.sort((a, b) => b.rating - a.rating);
+      }
+      return list;
+    },
+    create: async ({ data }: { data: any }) => {
+      const id = 'shop-' + (this.shops.length + 1);
+      const newShop = {
+        id,
+        name: data.name,
+        slug: data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+        ownerId: data.ownerId,
+        ownerName: data.ownerName || '',
+        email: data.email || null,
+        phone: data.phone,
+        address: data.address || data.addressLine1,
+        addressLine1: data.addressLine1 || data.address,
+        city: data.city,
+        state: data.state || 'Karnataka',
+        pincode: data.pincode,
+        latitude: Number(data.latitude || 12.9716),
+        longitude: Number(data.longitude || 77.5946),
+        rating: 5.0,
+        totalRatings: 1,
+        isVerified: data.isVerified !== undefined ? data.isVerified : true,
+        verificationStatus: data.verificationStatus || 'VERIFIED',
+        commissionRate: Number(data.commissionRate || 12),
+        vehicleCategories: Array.isArray(data.vehicleCategories) ? data.vehicleCategories : ['CAR', 'BIKE', 'SCOOTER'],
+        servicesOffered: Array.isArray(data.servicesOffered) ? data.servicesOffered : ['General Service', 'Brake Fitment'],
+        supportedDIFMTypes: ['HOME_INSTALLATION', 'SHOP_INSTALLATION'],
+        operatingHours: data.operatingHours || '09:00 AM - 08:00 PM',
+        serviceAvailable: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.shops.push(newShop);
+      return newShop;
+    },
+    update: async ({ where, data }: { where: { id: string }; data: any }) => {
+      const idx = this.shops.findIndex((s) => s.id === where.id);
+      if (idx === -1) return null;
+      this.shops[idx] = { ...this.shops[idx], ...data, updatedAt: new Date() };
+      return this.shops[idx];
+    },
+  };
+
+  // --- SHOP JOB ---
+  public shopJob = {
+    findMany: async ({ where, orderBy }: { where?: any; orderBy?: any } = {}) => {
+      let list = this.shopJobs.filter((j) => {
+        if (where?.shopId && j.shopId !== where.shopId) return false;
+        if (where?.status && j.status !== where.status) return false;
+        if (where?.jobType && j.jobType !== where.jobType) return false;
+        return true;
+      });
+      if (orderBy?.scheduledDate === 'desc') {
+        list.sort((a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime());
+      } else {
+        list.sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
+      }
+      return list;
+    },
+    findUnique: async ({ where }: { where: { id: string } }) => {
+      return this.shopJobs.find((j) => j.id === where.id) || null;
+    },
+    findFirst: async ({ where }: { where: any }) => {
+      return (
+        this.shopJobs.find((j) => {
+          if (where?.id && j.id !== where.id) return false;
+          if (where?.shopId && j.shopId !== where.shopId) return false;
+          if (where?.orderId && j.orderId !== where.orderId) return false;
+          return true;
+        }) || null
+      );
+    },
+    create: async ({ data }: { data: any }) => {
+      const id = 'job-' + (this.shopJobs.length + 101);
+      const newJob = {
+        id,
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.shopJobs.unshift(newJob);
+      return newJob;
+    },
+    update: async ({ where, data }: { where: { id: string }; data: any }) => {
+      const idx = this.shopJobs.findIndex((j) => j.id === where.id);
+      if (idx === -1) return null;
+      const updated = { ...this.shopJobs[idx], ...data, updatedAt: new Date() };
+      this.shopJobs[idx] = updated;
+
+      // When job status changes, sync with commission ledger
+      if (data.status) {
+        const commIdx = this.commissionLedgers.findIndex(
+          (c) => c.jobId === updated.id || (updated.orderId && c.orderId === updated.orderId)
+        );
+        if (commIdx !== -1) {
+          const comm = this.commissionLedgers[commIdx];
+          comm.serviceStatus = data.status;
+          // STRICT RULE: Commission released ONLY when BOTH service is COMPLETED AND payment is PAID
+          if (data.status === 'COMPLETED' && comm.paymentStatus === 'PAID') {
+            comm.releaseStatus = 'RELEASED';
+            comm.payoutStatus = 'RELEASED';
+          } else if (data.status === 'COMPLETED' && comm.paymentStatus !== 'PAID') {
+            comm.releaseStatus = 'LOCKED_PENDING_PAYMENT';
+          } else if (data.status !== 'COMPLETED' && comm.paymentStatus === 'PAID') {
+            comm.releaseStatus = 'LOCKED_PENDING_COMPLETION';
+          }
+          comm.updatedAt = new Date();
+        }
+      }
+      return updated;
+    },
+    count: async ({ where }: { where?: any } = {}) => {
+      return this.shopJobs.filter((j) => {
+        if (where?.shopId && j.shopId !== where.shopId) return false;
+        if (where?.status && j.status !== where.status) return false;
+        return true;
+      }).length;
+    },
+  };
+
+  // --- COMMISSION LEDGER ---
+  public commissionLedger = {
+    findMany: async ({ where, orderBy }: { where?: any; orderBy?: any } = {}) => {
+      let list = this.commissionLedgers.filter((c) => {
+        if (where?.shopId && c.shopId !== where.shopId) return false;
+        if (where?.payoutStatus && c.payoutStatus !== where.payoutStatus) return false;
+        if (where?.releaseStatus && c.releaseStatus !== where.releaseStatus) return false;
+        return true;
+      });
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      return list;
+    },
+    findUnique: async ({ where }: { where: { id: string } }) => {
+      return this.commissionLedgers.find((c) => c.id === where.id) || null;
+    },
+    findFirst: async ({ where }: { where: any }) => {
+      return (
+        this.commissionLedgers.find((c) => {
+          if (where?.id && c.id !== where.id) return false;
+          if (where?.shopId && c.shopId !== where.shopId) return false;
+          if (where?.orderId && c.orderId !== where.orderId) return false;
+          return true;
+        }) || null
+      );
+    },
+    create: async ({ data }: { data: any }) => {
+      const id = 'comm-' + (this.commissionLedgers.length + 101);
+      const gross = Number(data.grossAmount || 0);
+      const rate = Number(data.commissionRate || 12);
+      const commissionAmount = Number(data.commissionAmount || Math.round(gross * (rate / 100)));
+      const shopPayout = Number(data.shopPayout || (gross - commissionAmount));
+      
+      const serviceStatus = data.serviceStatus || 'SCHEDULED';
+      const paymentStatus = data.paymentStatus || 'PENDING';
+      let releaseStatus = 'LOCKED_PENDING_COMPLETION';
+      if (serviceStatus === 'COMPLETED' && paymentStatus === 'PAID') {
+        releaseStatus = 'RELEASED';
+      } else if (serviceStatus === 'COMPLETED' && paymentStatus !== 'PAID') {
+        releaseStatus = 'LOCKED_PENDING_PAYMENT';
+      } else if (serviceStatus !== 'COMPLETED' && paymentStatus === 'PAID') {
+        releaseStatus = 'LOCKED_PENDING_COMPLETION';
+      }
+
+      const item = {
+        id,
+        shopId: data.shopId,
+        orderId: data.orderId || null,
+        orderNumber: data.orderNumber || null,
+        jobId: data.jobId || null,
+        serviceName: data.serviceName || 'DIFM Service',
+        grossAmount: gross,
+        commissionRate: rate,
+        commissionAmount,
+        shopPayout,
+        serviceStatus,
+        paymentStatus,
+        paymentMethod: data.paymentMethod || 'RAZORPAY',
+        releaseStatus: data.releaseStatus || releaseStatus,
+        payoutStatus: (data.releaseStatus || releaseStatus) === 'RELEASED' ? 'RELEASED' : (data.payoutStatus || 'PENDING'),
+        payoutRef: data.payoutRef || null,
+        paidAt: data.paidAt || null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.commissionLedgers.unshift(item);
+      return item;
+    },
+    update: async ({ where, data }: { where: { id: string }; data: any }) => {
+      const idx = this.commissionLedgers.findIndex((c) => c.id === where.id);
+      if (idx === -1) return null;
+      this.commissionLedgers[idx] = { ...this.commissionLedgers[idx], ...data, updatedAt: new Date() };
+      return this.commissionLedgers[idx];
+    },
+    count: async ({ where }: { where?: any } = {}) => {
+      return this.commissionLedgers.filter((c) => {
+        if (where?.shopId && c.shopId !== where.shopId) return false;
+        return true;
+      }).length;
+    },
+  };
+
+  // --- SHOP DELIVERY ---
+  public shopDelivery = {
+    findMany: async ({ where }: { where?: any } = {}) => {
+      return this.shopDeliveries
+        .filter((d) => !where?.shopId || d.shopId === where.shopId)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    },
+    findUnique: async ({ where }: { where: { id: string } }) => {
+      return this.shopDeliveries.find((d) => d.id === where.id) || null;
+    },
+    create: async ({ data }: { data: any }) => {
+      const id = 'del-' + (this.shopDeliveries.length + 101);
+      const item = { id, ...data, createdAt: new Date(), updatedAt: new Date() };
+      this.shopDeliveries.unshift(item);
+      return item;
+    },
+    update: async ({ where, data }: { where: { id: string }; data: any }) => {
+      const idx = this.shopDeliveries.findIndex((d) => d.id === where.id);
+      if (idx === -1) return null;
+      this.shopDeliveries[idx] = { ...this.shopDeliveries[idx], ...data, updatedAt: new Date() };
+      return this.shopDeliveries[idx];
+    },
+  };
+
+  // --- USED PART INTAKE ---
+  public usedPartIntake = {
+    findMany: async ({ where }: { where?: any } = {}) => {
+      return this.usedPartIntakes
+        .filter((i) => !where?.shopId || i.shopId === where.shopId)
+        .sort((a, b) => new Date(b.intakeDate).getTime() - new Date(a.intakeDate).getTime());
+    },
+    findUnique: async ({ where }: { where: { id: string } }) => {
+      return this.usedPartIntakes.find((i) => i.id === where.id) || null;
+    },
+    create: async ({ data }: { data: any }) => {
+      const id = 'intake-' + (this.usedPartIntakes.length + 101);
+      const item = { id, ...data, intakeDate: new Date(), createdAt: new Date(), updatedAt: new Date() };
+      this.usedPartIntakes.unshift(item);
+      return item;
+    },
+    update: async ({ where, data }: { where: { id: string }; data: any }) => {
+      const idx = this.usedPartIntakes.findIndex((i) => i.id === where.id);
+      if (idx === -1) return null;
+      this.usedPartIntakes[idx] = { ...this.usedPartIntakes[idx], ...data, updatedAt: new Date() };
+      return this.usedPartIntakes[idx];
+    },
+  };
+
+  // --- SHOP TICKET ---
+  public shopTicket = {
+    findMany: async ({ where }: { where?: any } = {}) => {
+      return this.shopTickets
+        .filter((t) => !where?.shopId || t.shopId === where.shopId)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    },
+    findUnique: async ({ where }: { where: { id: string } }) => {
+      return this.shopTickets.find((t) => t.id === where.id) || null;
+    },
+    create: async ({ data }: { data: any }) => {
+      const num = 100 + this.shopTickets.length + 1;
+      const item = {
+        id: 'tkt-shop-' + num,
+        ticketNumber: `TKT-SHP-${num}`,
+        status: 'OPEN',
+        messages: [],
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.shopTickets.unshift(item);
+      return item;
+    },
+    update: async ({ where, data }: { where: { id: string }; data: any }) => {
+      const idx = this.shopTickets.findIndex((t) => t.id === where.id);
+      if (idx === -1) return null;
+      this.shopTickets[idx] = { ...this.shopTickets[idx], ...data, updatedAt: new Date() };
+      return this.shopTickets[idx];
+    },
+  };
+
+  // --- DELIVERY PARTNERS ---
+  public deliveryPartner = {
+    findUnique: async ({ where, include }: { where: { id?: string; userId?: string }; include?: any }) => {
+      const p = this.deliveryPartners.find(
+        (dp) => (where.id && dp.id === where.id) || (where.userId && dp.userId === where.userId)
+      );
+      if (!p) return null;
+      const user = include?.user ? this.users.find((u) => u.id === p.userId) : null;
+      const kyc = this.kycRecords.find((k) => k.userId === p.userId) || null;
+      return {
+        ...p,
+        user: user ? { firstName: user.firstName, lastName: user.lastName, email: user.email, phone: user.phone } : null,
+        kyc,
+      };
+    },
+    findFirst: async ({ where, include }: { where?: any; include?: any } = {}) => {
+      const p = this.deliveryPartners.find((dp) => {
+        if (where?.id && dp.id !== where.id) return false;
+        if (where?.userId && dp.userId !== where.userId) return false;
+        if (where?.isOnline !== undefined && dp.isOnline !== where.isOnline) return false;
+        return true;
+      });
+      if (!p) return null;
+      const user = include?.user ? this.users.find((u) => u.id === p.userId) : null;
+      return {
+        ...p,
+        user: user ? { firstName: user.firstName, lastName: user.lastName, email: user.email, phone: user.phone } : null,
+      };
+    },
+    findMany: async ({ where }: { where?: any } = {}) => {
+      return this.deliveryPartners.filter((dp) => {
+        if (where?.isOnline !== undefined && dp.isOnline !== where.isOnline) return false;
+        return true;
+      });
+    },
+    create: async ({ data }: { data: any }) => {
+      const id = 'partner-' + (this.deliveryPartners.length + 1);
+      const newPartner = {
+        id,
+        userId: data.userId,
+        vehicleType: data.vehicleType || 'Bike',
+        vehicleNum: data.vehicleNum || null,
+        licenseNumber: data.licenseNumber || null,
+        isOnline: data.isOnline !== undefined ? data.isOnline : false,
+        isActivated: data.isActivated !== undefined ? data.isActivated : false,
+        verificationStatus: data.verificationStatus || 'PENDING',
+        currentLat: data.currentLat || 12.9716,
+        currentLng: data.currentLng || 77.5946,
+        rating: 5.0,
+        totalDeliveries: 0,
+        cashInHand: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.deliveryPartners.push(newPartner);
+      return newPartner;
+    },
+    update: async ({ where, data }: { where: { id?: string; userId?: string }; data: any }) => {
+      const idx = this.deliveryPartners.findIndex(
+        (dp) => (where.id && dp.id === where.id) || (where.userId && dp.userId === where.userId)
+      );
+      if (idx === -1) return null;
+      this.deliveryPartners[idx] = { ...this.deliveryPartners[idx], ...data, updatedAt: new Date() };
+      return this.deliveryPartners[idx];
+    },
+    count: async () => this.deliveryPartners.length,
+  };
+
+  // --- KYC & DOCUMENTS ---
+  public kYC = {
+    findUnique: async ({ where, include }: { where: { userId?: string; id?: string }; include?: any }) => {
+      const k = this.kycRecords.find(
+        (rec) => (where.userId && rec.userId === where.userId) || (where.id && rec.id === where.id)
+      );
+      if (!k) return null;
+      const documents = this.kycDocuments.filter((d) => d.kycId === k.id);
+      return { ...k, documents };
+    },
+    findFirst: async ({ where, include }: { where: any; include?: any }) => {
+      const k = this.kycRecords.find(
+        (rec) => (!where.userId || rec.userId === where.userId) && (!where.id || rec.id === where.id)
+      );
+      if (!k) return null;
+      const documents = this.kycDocuments.filter((d) => d.kycId === k.id);
+      return { ...k, documents };
+    },
+    upsert: async ({ where, create, update }: { where: { userId: string }; create: any; update: any }) => {
+      let k = this.kycRecords.find((rec) => rec.userId === where.userId);
+      if (k) {
+        Object.assign(k, update, { updatedAt: new Date() });
+        return { ...k, documents: this.kycDocuments.filter((d) => d.kycId === k.id) };
+      }
+      const id = 'kyc-' + Math.random().toString(36).substring(2, 9);
+      const newRec = {
+        id,
+        userId: where.userId,
+        status: create.status || 'NOT_SUBMITTED',
+        panNumber: create.panNumber || null,
+        aadharNumber: create.aadharNumber || null,
+        rejectionReason: null,
+        reviewedAt: null,
+        reviewedBy: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.kycRecords.push(newRec);
+      return { ...newRec, documents: [] };
+    },
+    create: async ({ data }: { data: any }) => {
+      const id = 'kyc-' + Math.random().toString(36).substring(2, 9);
+      const newRec = {
+        id,
+        userId: data.userId,
+        status: data.status || 'NOT_SUBMITTED',
+        panNumber: data.panNumber || null,
+        aadharNumber: data.aadharNumber || null,
+        rejectionReason: data.rejectionReason || null,
+        reviewedAt: null,
+        reviewedBy: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.kycRecords.push(newRec);
+      return { ...newRec, documents: [] };
+    },
+    update: async ({ where, data }: { where: { userId?: string; id?: string }; data: any }) => {
+      const idx = this.kycRecords.findIndex(
+        (rec) => (where.userId && rec.userId === where.userId) || (where.id && rec.id === where.id)
+      );
+      if (idx === -1) return null;
+      this.kycRecords[idx] = { ...this.kycRecords[idx], ...data, updatedAt: new Date() };
+      return {
+        ...this.kycRecords[idx],
+        documents: this.kycDocuments.filter((d) => d.kycId === this.kycRecords[idx].id),
+      };
+    },
+  };
+  public kyc = this.kYC;
+
+  public kYCDocument = {
+    findMany: async ({ where }: { where?: { kycId?: string } } = {}) => {
+      return this.kycDocuments.filter((d) => !where?.kycId || d.kycId === where.kycId);
+    },
+    findUnique: async ({ where }: { where: { id: string } }) => {
+      return this.kycDocuments.find((d) => d.id === where.id) || null;
+    },
+    create: async ({ data }: { data: any }) => {
+      const doc = {
+        id: 'kdoc-' + Math.random().toString(36).substring(2, 9),
+        kycId: data.kycId,
+        documentType: data.documentType,
+        objectKey: data.objectKey || `kyc/${data.kycId}/${data.documentType.toLowerCase()}.pdf`,
+        fileUrl: data.fileUrl || `https://storage.partsphare.test/kyc/${data.documentType.toLowerCase()}`,
+        mimeType: data.mimeType || 'application/pdf',
+        verificationStatus: data.verificationStatus || 'PENDING',
+        rejectionReason: data.rejectionReason || null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.kycDocuments.push(doc);
+      return doc;
+    },
+    update: async ({ where, data }: { where: { id: string }; data: any }) => {
+      const idx = this.kycDocuments.findIndex((d) => d.id === where.id);
+      if (idx === -1) return null;
+      this.kycDocuments[idx] = { ...this.kycDocuments[idx], ...data, updatedAt: new Date() };
+      return this.kycDocuments[idx];
+    },
+    delete: async ({ where }: { where: { id: string } }) => {
+      const idx = this.kycDocuments.findIndex((d) => d.id === where.id);
+      if (idx === -1) return null;
+      return this.kycDocuments.splice(idx, 1)[0];
+    },
+  };
+
+  // --- DELIVERY ASSIGNMENTS ---
+  public deliveryAssignment = {
+    findMany: async ({ where, orderBy, include }: { where?: any; orderBy?: any; include?: any } = {}) => {
+      let list = this.deliveryAssignments.filter((a) => {
+        if (where?.deliveryPartnerId !== undefined) {
+          if (where.deliveryPartnerId === null) {
+            if (a.deliveryPartnerId !== null) return false;
+          } else {
+            if (a.deliveryPartnerId !== where.deliveryPartnerId) return false;
+          }
+        }
+        if (where?.status) {
+          if (typeof where.status === 'string') {
+            if (a.status !== where.status) return false;
+          } else if (where.status.in && Array.isArray(where.status.in)) {
+            if (!where.status.in.includes(a.status)) return false;
+          }
+        }
+        if (where?.orderId && a.orderId !== where.orderId) return false;
+        return true;
+      });
+
+      if (orderBy?.assignedAt === 'desc' || orderBy?.createdAt === 'desc') {
+        list.sort((a, b) => new Date(b.assignedAt || b.createdAt).getTime() - new Date(a.assignedAt || a.createdAt).getTime());
+      }
+
+      return list.map((a) => {
+        const order = include?.order && a.orderId ? this.orders.find((o) => o.id === a.orderId) : null;
+        const partner = include?.deliveryPartner && a.deliveryPartnerId ? this.deliveryPartners.find((p) => p.id === a.deliveryPartnerId) : null;
+        return {
+          ...a,
+          order: order ? this.populateOrder(order) : a.order || null,
+          deliveryPartner: partner || null,
+        };
+      });
+    },
+    findUnique: async ({ where, include }: { where: { id: string }; include?: any }) => {
+      const a = this.deliveryAssignments.find((item) => item.id === where.id);
+      if (!a) return null;
+      const order = include?.order && a.orderId ? this.orders.find((o) => o.id === a.orderId) : null;
+      const partner = include?.deliveryPartner && a.deliveryPartnerId ? this.deliveryPartners.find((p) => p.id === a.deliveryPartnerId) : null;
+      return {
+        ...a,
+        order: order ? this.populateOrder(order) : a.order || null,
+        deliveryPartner: partner || null,
+      };
+    },
+    findFirst: async ({ where, include }: { where: any; include?: any }) => {
+      const a = this.deliveryAssignments.find((item) => {
+        if (where?.id && item.id !== where.id) return false;
+        if (where?.orderId && item.orderId !== where.orderId) return false;
+        if (where?.deliveryPartnerId && item.deliveryPartnerId !== where.deliveryPartnerId) return false;
+        if (where?.status && item.status !== where.status) return false;
+        return true;
+      });
+      if (!a) return null;
+      return a;
+    },
+    create: async ({ data }: { data: any }) => {
+      const id = 'assign-' + (this.deliveryAssignments.length + 101);
+      const newAssign = {
+        id,
+        orderId: data.orderId || null,
+        orderNumber: data.orderNumber || null,
+        usedPartListingId: data.usedPartListingId || null,
+        deliveryPartnerId: data.deliveryPartnerId || null,
+        type: data.type || (data.usedPartListingId ? 'USED_PART_PICKUP' : 'CUSTOMER_DELIVERY'),
+        status: data.status || 'ASSIGNED',
+        pickupLocation: data.pickupLocation || { name: 'PartSphere Hub', address: 'Indiranagar, Bengaluru' },
+        dropLocation: data.dropLocation || { name: 'Customer Destination', address: 'Bengaluru' },
+        items: data.items || [],
+        paymentMethod: data.paymentMethod || 'RAZORPAY',
+        paymentStatus: data.paymentStatus || 'PAID',
+        codAmountToCollect: Number(data.codAmountToCollect || 0),
+        codAmountCollected: Number(data.codAmountCollected || 0),
+        codStatus: data.codStatus || (data.paymentMethod === 'CASH_ON_DELIVERY' ? 'PENDING' : 'NOT_APPLICABLE'),
+        deliveryFee: Number(data.deliveryFee || 100),
+        distanceKm: Number(data.distanceKm || 5.0),
+        navigationInfo: data.navigationInfo || { currentDistance: '5.0 km', etaMinutes: 15, routeSummary: 'Fastest route' },
+        notes: data.notes || '',
+        assignedAt: new Date(),
+        acceptedAt: data.acceptedAt || null,
+        pickedUpAt: data.pickedUpAt || null,
+        deliveredAt: data.deliveredAt || null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.deliveryAssignments.unshift(newAssign);
+      return newAssign;
+    },
+    update: async ({ where, data }: { where: { id: string }; data: any }) => {
+      const idx = this.deliveryAssignments.findIndex((a) => a.id === where.id);
+      if (idx === -1) return null;
+      this.deliveryAssignments[idx] = { ...this.deliveryAssignments[idx], ...data, updatedAt: new Date() };
+      return this.deliveryAssignments[idx];
+    },
+    count: async ({ where }: { where?: any } = {}) => {
+      return this.deliveryAssignments.filter((a) => {
+        if (where?.deliveryPartnerId && a.deliveryPartnerId !== where.deliveryPartnerId) return false;
+        if (where?.status && a.status !== where.status) return false;
+        return true;
+      }).length;
+    },
+  };
+
+  // --- COD RECONCILIATIONS ---
+  public cODReconciliation = {
+    findMany: async ({ where, orderBy }: { where?: any; orderBy?: any } = {}) => {
+      let list = this.codReconciliations.filter((r) => {
+        if (where?.deliveryPartnerId && r.deliveryPartnerId !== where.deliveryPartnerId) return false;
+        if (where?.status && r.status !== where.status) return false;
+        return true;
+      });
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      return list;
+    },
+    findUnique: async ({ where }: { where: { id: string } }) => {
+      return this.codReconciliations.find((r) => r.id === where.id) || null;
+    },
+    create: async ({ data }: { data: any }) => {
+      const id = 'recon-' + (this.codReconciliations.length + 101);
+      const newRecon = {
+        id,
+        reconciliationNumber: `COD-REC-${Date.now().toString().slice(-6)}`,
+        deliveryPartnerId: data.deliveryPartnerId,
+        totalAmount: Number(data.totalAmount || 0),
+        orderCount: Number(data.orderCount || 1),
+        status: data.status || 'RECONCILED',
+        depositMethod: data.depositMethod || 'CASH_AT_HUB',
+        depositReference: data.depositReference || `HUB-DEP-${Date.now().toString().slice(-5)}`,
+        hubLocation: data.hubLocation || 'Indiranagar Central Logistics Hub',
+        receivedBy: data.receivedBy || 'Finance Desk Officer',
+        notes: data.notes || 'Full cash reconciliation verified.',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.codReconciliations.unshift(newRecon);
+      return newRecon;
+    },
+    update: async ({ where, data }: { where: { id: string }; data: any }) => {
+      const idx = this.codReconciliations.findIndex((r) => r.id === where.id);
+      if (idx === -1) return null;
+      this.codReconciliations[idx] = { ...this.codReconciliations[idx], ...data, updatedAt: new Date() };
+      return this.codReconciliations[idx];
     },
   };
 
@@ -1210,7 +3101,7 @@ class InMemoryStore {
 
       // Unpack nested difmRequest
       if (data.difmRequest?.create) {
-        this.difmRequests.push({
+        const difmRecord = {
           id: crypto.randomUUID(),
           orderId,
           shopId: data.difmRequest.create.shopId || null,
@@ -1223,15 +3114,156 @@ class InMemoryStore {
           notes: data.difmRequest.create.notes || null,
           createdAt: new Date(),
           updatedAt: new Date(),
+        };
+        this.difmRequests.push(difmRecord);
+
+        // Auto-create connected Shop Job and Commission Ledger
+        const assignedShop = this.shops.find((s) => s.id === (difmRecord.shopId || 'shop-1')) || this.shops[0];
+        const cust = this.users.find((u) => u.id === newOrder.userId);
+        const addr = this.addresses.find((a) => a.id === newOrder.addressId);
+        const fee = difmRecord.installationFee + difmRecord.homeVisitSurcharge;
+        const rate = assignedShop?.commissionRate || 12;
+        const commCut = Math.round(fee * (rate / 100));
+        const shopNet = fee - commCut;
+
+        const jobId = 'job-' + Math.random().toString(36).substring(2, 9);
+        const newJob = {
+          id: jobId,
+          shopId: assignedShop.id,
+          orderId,
+          orderNumber: newOrder.orderNumber,
+          difmRequestId: difmRecord.id,
+          jobType: difmRecord.type === 'HOME_INSTALLATION' ? 'DIFM_HOME_INSTALLATION' : 'DIFM_SHOP_VISIT',
+          status: 'SCHEDULED',
+          customerName: cust ? `${cust.firstName} ${cust.lastName}` : (addr?.fullName || 'Customer'),
+          customerPhone: cust?.phone || addr?.phone || '+91 98765 00002',
+          customerEmail: cust?.email || 'customer@partsphere.in',
+          vehicleInfo: 'Customer Vehicle',
+          vehicleCategory: 'CAR',
+          vehicleNumber: 'KA-01-XX-0000',
+          serviceName: 'DIFM Professional Part Installation',
+          serviceFee: difmRecord.installationFee,
+          homeVisitSurcharge: difmRecord.homeVisitSurcharge,
+          totalServiceAmount: fee,
+          locationType: difmRecord.type === 'HOME_INSTALLATION' ? 'DOORSTEP' : 'SHOP',
+          serviceAddress: difmRecord.type === 'HOME_INSTALLATION' && addr ? `${addr.line1}, ${addr.city} - ${addr.pincode}` : assignedShop.address,
+          scheduledDate: difmRecord.scheduledDate || difmRecord.preferredDate || new Date(Date.now() + 86400000),
+          scheduledSlot: '11:00 AM - 01:00 PM',
+          notes: difmRecord.notes || 'Order placed via PartSphere checkout.',
+          mechanicAssigned: 'Assigned Shop Technician',
+          startedAt: null,
+          completedAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        this.shopJobs.unshift(newJob);
+
+        const isPaid = newOrder.paymentStatus === 'PAID' || newOrder.paymentStatus === 'CAPTURED';
+        this.commissionLedgers.unshift({
+          id: 'comm-' + Math.random().toString(36).substring(2, 9),
+          shopId: assignedShop.id,
+          orderId,
+          orderNumber: newOrder.orderNumber,
+          jobId: newJob.id,
+          serviceName: newJob.serviceName,
+          grossAmount: fee,
+          commissionRate: rate,
+          commissionAmount: commCut,
+          shopPayout: shopNet,
+          serviceStatus: 'SCHEDULED',
+          paymentStatus: isPaid ? 'PAID' : 'PENDING',
+          paymentMethod: newOrder.paymentMethod || 'RAZORPAY',
+          releaseStatus: 'LOCKED_PENDING_COMPLETION',
+          payoutStatus: 'PENDING',
+          payoutRef: null,
+          paidAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         });
       }
 
+      // Auto-broadcast unassigned delivery assignment for fleet
+      const isCod = newOrder.paymentMethod === 'CASH_ON_DELIVERY';
+      const addr = this.addresses.find((a) => a.id === newOrder.addressId);
+      const assignedShop = this.shops.find((s) => s.id === 'shop-1') || this.shops[0];
+      const assignId = 'assign-' + Math.random().toString(36).substring(2, 9);
+      this.deliveryAssignments.unshift({
+        id: assignId,
+        orderId,
+        orderNumber: newOrder.orderNumber,
+        usedPartListingId: null,
+        deliveryPartnerId: null, // Broadcast unassigned job for any active delivery partner
+        type: 'CUSTOMER_DELIVERY',
+        status: 'ASSIGNED',
+        pickupLocation: {
+          name: assignedShop.name,
+          address: assignedShop.address,
+          lat: assignedShop.latitude,
+          lng: assignedShop.longitude,
+          contactPerson: assignedShop.ownerName || 'Dispatch Desk',
+          phone: assignedShop.phone,
+        },
+        dropLocation: {
+          name: addr?.fullName || 'Customer',
+          address: addr ? `${addr.line1}, ${addr.city} - ${addr.pincode}` : 'Customer Address',
+          lat: addr?.latitude || 12.9260,
+          lng: addr?.longitude || 77.6762,
+          contactPerson: addr?.fullName || 'Customer',
+          phone: addr?.phone || '+91 98765 00002',
+        },
+        items: (data.items?.create || []).map((it: any) => ({
+          title: 'Automotive Component',
+          quantity: it.quantity || 1,
+          sku: 'PN-SKU',
+          price: it.unitPrice,
+        })),
+        paymentMethod: newOrder.paymentMethod || 'RAZORPAY',
+        paymentStatus: newOrder.paymentStatus || 'PENDING',
+        codAmountToCollect: isCod ? Number(newOrder.total) : 0,
+        codAmountCollected: 0,
+        codStatus: isCod ? 'PENDING' : 'NOT_APPLICABLE',
+        deliveryFee: Number(newOrder.deliveryFee || 99),
+        distanceKm: 6.2,
+        navigationInfo: {
+          currentDistance: '6.2 km away',
+          etaMinutes: 18,
+          routeSummary: 'Via arterial corridor to drop pin',
+        },
+        notes: 'Handle package with care.',
+        assignedAt: new Date(),
+        acceptedAt: null,
+        pickedUpAt: null,
+        deliveredAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
       return this.populateOrder(newOrder);
     },
-    update: async ({ where, data }: { where: { id: string }; data: any }) => {
-      const idx = this.orders.findIndex((o) => o.id === where.id);
+    update: async ({ where, data }: { where: { id?: string; orderNumber?: string }; data: any }) => {
+      const idx = this.orders.findIndex(
+        (o) => (where.id && o.id === where.id) || (where.orderNumber && o.orderNumber === where.orderNumber)
+      );
       if (idx === -1) return null;
       this.orders[idx] = { ...this.orders[idx], ...data, updatedAt: new Date() };
+
+      // Sync commission ledger if payment cleared
+      if (data.paymentStatus === 'PAID' || data.paymentStatus === 'CAPTURED') {
+        const orderId = this.orders[idx].id;
+        for (const comm of this.commissionLedgers) {
+          if (comm.orderId === orderId) {
+            comm.paymentStatus = 'PAID';
+            if (comm.serviceStatus === 'COMPLETED') {
+              comm.releaseStatus = 'RELEASED';
+              comm.payoutStatus = 'RELEASED';
+            } else {
+              comm.releaseStatus = 'LOCKED_PENDING_COMPLETION';
+            }
+            comm.updatedAt = new Date();
+          }
+        }
+      }
+
       return this.populateOrder(this.orders[idx]);
     },
     count: async ({ where }: { where?: any } = {}) => {
@@ -1314,17 +3346,72 @@ class InMemoryStore {
   };
 
   public payment = {
-    findUnique: async ({ where }: { where: { id?: string; orderId?: string } }) => {
+    findUnique: async ({ where }: { where: { id?: string; orderId?: string; razorpayOrderId?: string } }) => {
       return (
         this.payments.find(
-          (p) => (where.id && p.id === where.id) || (where.orderId && p.orderId === where.orderId)
+          (p) =>
+            (where.id && p.id === where.id) ||
+            (where.orderId && p.orderId === where.orderId) ||
+            (where.razorpayOrderId && p.razorpayOrderId === where.razorpayOrderId)
+        ) || null
+      );
+    },
+    findFirst: async ({ where }: { where: any }) => {
+      return (
+        this.payments.find(
+          (p) =>
+            (!where.id || p.id === where.id) &&
+            (!where.orderId || p.orderId === where.orderId) &&
+            (!where.razorpayOrderId || p.razorpayOrderId === where.razorpayOrderId) &&
+            (!where.status || p.status === where.status)
         ) || null
       );
     },
     create: async ({ data }: { data: any }) => {
-      const p = { id: crypto.randomUUID(), ...data, createdAt: new Date() };
+      const p = {
+        id: crypto.randomUUID(),
+        currency: 'INR',
+        status: data.status || 'PENDING',
+        ...data,
+        amount: Number(data.amount),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
       this.payments.push(p);
       return p;
+    },
+    update: async ({ where, data }: { where: { id?: string; orderId?: string; razorpayOrderId?: string }; data: any }) => {
+      const idx = this.payments.findIndex(
+        (p) =>
+          (where.id && p.id === where.id) ||
+          (where.orderId && p.orderId === where.orderId) ||
+          (where.razorpayOrderId && p.razorpayOrderId === where.razorpayOrderId)
+      );
+      if (idx === -1) return null;
+      this.payments[idx] = {
+        ...this.payments[idx],
+        ...data,
+        ...(data.amount !== undefined ? { amount: Number(data.amount) } : {}),
+        updatedAt: new Date(),
+      };
+
+      if (data.status === 'CAPTURED' || data.status === 'PAID') {
+        const orderId = this.payments[idx].orderId;
+        for (const comm of this.commissionLedgers) {
+          if (comm.orderId === orderId) {
+            comm.paymentStatus = 'PAID';
+            if (comm.serviceStatus === 'COMPLETED') {
+              comm.releaseStatus = 'RELEASED';
+              comm.payoutStatus = 'RELEASED';
+            } else {
+              comm.releaseStatus = 'LOCKED_PENDING_COMPLETION';
+            }
+            comm.updatedAt = new Date();
+          }
+        }
+      }
+
+      return this.payments[idx];
     },
   };
 
@@ -1699,6 +3786,75 @@ class InMemoryStore {
       const items = await this.product.findMany({ where, skip: 0, take: 9999 });
       return items.length;
     },
+
+    create: async ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || 'prod-' + Math.random().toString(36).substring(2, 9);
+      const slug = data.slug || String(data.name || 'product').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const newProd = {
+        id,
+        name: data.name,
+        slug,
+        description: data.description || '',
+        sku: data.sku || ('SKU-' + Date.now()),
+        partNumber: data.partNumber || null,
+        categoryId: data.categoryId || 'cat-engine',
+        brandId: data.brandId || 'brand-bosch',
+        brand: data.brand || 'PartSphere Genuine',
+        condition: data.condition || 'GENUINE_NEW',
+        status: data.status || 'ACTIVE',
+        basePrice: Number(data.basePrice || 999),
+        mrp: Number(data.mrp || (Number(data.basePrice || 999) * 1.2)),
+        warranty: data.warranty || '1 Year Manufacturer Warranty',
+        rating: 5.0,
+        weight: Number(data.weight || 1),
+        dimensions: data.dimensions || '10x10x10 cm',
+        tags: Array.isArray(data.tags) ? data.tags : ['genuine', 'oem'],
+        requiresDIFM: Boolean(data.requiresDIFM),
+        installationDifficulty: data.installationDifficulty || 'MODERATE',
+        baseServiceFee: Number(data.baseServiceFee || 299),
+        estimatedInstallTimeMinutes: Number(data.estimatedInstallTimeMinutes || 30),
+        images: Array.isArray(data.images) ? data.images : [
+          { id: 'img-' + Date.now(), url: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=600', isPrimary: true }
+        ],
+        compatibleVariantIds: Array.isArray(data.compatibleVariantIds) ? data.compatibleVariantIds : [],
+        specs: [],
+        inventories: [],
+        reviews: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      initialProducts.unshift(newProd as any);
+
+      // Create connected inventory record for this product
+      this.inventories.unshift({
+        id: 'inv-' + Date.now(),
+        productId: newProd.id,
+        shopId: 'shop-1',
+        quantity: Number(data.stockQuantity || 25),
+        reservedQty: 0,
+        sellingPrice: newProd.basePrice,
+        isAvailable: true,
+        availabilityStatus: 'IN_STOCK',
+        lowStockThreshold: 5,
+        updatedAt: new Date(),
+      });
+
+      return this.populateProduct(newProd);
+    },
+
+    update: async ({ where, data }: { where: { id: string }; data: any }) => {
+      const idx = initialProducts.findIndex((p) => p.id === where.id);
+      if (idx === -1) return null;
+      initialProducts[idx] = { ...initialProducts[idx], ...data, updatedAt: new Date() };
+      return this.populateProduct(initialProducts[idx]);
+    },
+
+    delete: async ({ where }: { where: { id: string } }) => {
+      const idx = initialProducts.findIndex((p) => p.id === where.id);
+      if (idx === -1) return null;
+      const [removed] = initialProducts.splice(idx, 1);
+      return removed;
+    },
   };
 
   public productCompatibility = {
@@ -1729,6 +3885,504 @@ class InMemoryStore {
           variant: variant ? { ...variant, model: model ? { ...model, make: make || null } : null } : null,
         };
       });
+    },
+  };
+
+  // --- SUBSCRIPTIONS & ENTITLEMENTS ---
+  public populateSubscription(sub: any) {
+    if (!sub) return null;
+    const rawPlan = this.subscriptionPlans.find((p) => p.id === sub.planId) || null;
+    const plan = rawPlan
+      ? {
+          ...rawPlan,
+          entitlements: this.subscriptionEntitlements.filter((e) => e.planId === sub.planId),
+        }
+      : null;
+    const rawEntitlements = this.subscriptionEntitlements.filter((e) => e.planId === sub.planId);
+    const usages = sub.entitlementUsages || {};
+
+    const entitlements = rawEntitlements.map((e) => {
+      const usedCount =
+        typeof usages === 'object' && !Array.isArray(usages)
+          ? (usages[e.featureCode] || 0)
+          : Array.isArray(usages)
+          ? usages.filter((u: any) => u.featureCode === e.featureCode).length
+          : 0;
+      const isUnlimited = Boolean(e.isUnlimited || e.limitValue === null || e.quotaLimit === null);
+      const limit = e.limitValue !== undefined ? e.limitValue : e.quotaLimit;
+      const remainingCount = isUnlimited ? null : Math.max(0, (limit || 0) - usedCount);
+      return {
+        ...e,
+        name: e.featureName || e.name,
+        quotaLimit: limit,
+        limitValue: limit,
+        usedCount,
+        remainingCount,
+        isUnlimited,
+      };
+    });
+
+    let vehicle = null;
+    if (sub.vehicleId) {
+      const rawVeh = this.customerVehicles.find((v) => v.id === sub.vehicleId);
+      if (rawVeh) {
+        vehicle = this.populateVehicle(rawVeh);
+      }
+    }
+
+    const payments = this.subscriptionPayments.filter((p) => p.subscriptionId === sub.id);
+
+    return {
+      ...sub,
+      plan,
+      entitlements,
+      vehicle,
+      payments,
+    };
+  }
+
+  public subscriptionPlan = {
+    findMany: async ({ where, include, orderBy }: { where?: any; include?: any; orderBy?: any } = {}) => {
+      let list = [...this.subscriptionPlans];
+      if (where?.isActive !== undefined) {
+        list = list.filter((p) => p.isActive === where.isActive);
+      }
+      if (orderBy?.price === 'asc') {
+        list.sort((a, b) => Number(a.price || a.monthlyPrice) - Number(b.price || b.monthlyPrice));
+      }
+      return list.map((p) => ({
+        ...p,
+        entitlements: this.subscriptionEntitlements.filter((e) => e.planId === p.id),
+      }));
+    },
+
+    findFirst: async ({ where, include }: { where: any; include?: any }) => {
+      let found = this.subscriptionPlans.find((p) => {
+        if (where.id && p.id === where.id) return true;
+        if (where.slug && p.slug === where.slug) return true;
+        if (where.OR && Array.isArray(where.OR)) {
+          return where.OR.some((cond: any) => (cond.id && p.id === cond.id) || (cond.slug && p.slug === cond.slug));
+        }
+        return false;
+      });
+
+      if (!found) return null;
+      return {
+        ...found,
+        entitlements: this.subscriptionEntitlements.filter((e) => e.planId === found.id),
+      };
+    },
+
+    findUnique: async ({ where, include }: { where: { id?: string; slug?: string }; include?: any }) => {
+      const found = this.subscriptionPlans.find(
+        (p) => (where.id && p.id === where.id) || (where.slug && p.slug === where.slug)
+      );
+      if (!found) return null;
+      return {
+        ...found,
+        entitlements: this.subscriptionEntitlements.filter((e) => e.planId === found.id),
+      };
+    },
+
+    update: async ({ where, data }: { where: { id: string }; data: any }) => {
+      const idx = this.subscriptionPlans.findIndex((p) => p.id === where.id);
+      if (idx === -1) return null;
+      this.subscriptionPlans[idx] = { ...this.subscriptionPlans[idx], ...data, updatedAt: new Date() };
+      return this.subscriptionPlans[idx];
+    },
+  };
+
+  public subscriptionEntitlement = {
+    findMany: async ({ where }: { where?: { planId?: string } } = {}) => {
+      let list = [...this.subscriptionEntitlements];
+      if (where?.planId) {
+        list = list.filter((e) => e.planId === where.planId);
+      }
+      return list;
+    },
+  };
+
+  public customerSubscription = {
+    findFirst: async ({ where, include, orderBy }: { where: any; include?: any; orderBy?: any }) => {
+      let list = [...this.customerSubscriptions];
+
+      if (where.id) list = list.filter((s) => s.id === where.id);
+      if (where.userId) list = list.filter((s) => s.userId === where.userId);
+      if (where.status) {
+        if (typeof where.status === 'string') {
+          list = list.filter((s) => s.status === where.status);
+        } else if (where.status.in && Array.isArray(where.status.in)) {
+          list = list.filter((s) => where.status.in.includes(s.status));
+        }
+      }
+
+      if (orderBy?.createdAt === 'desc') {
+        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+
+      const match = list[0];
+      return match ? this.populateSubscription(match) : null;
+    },
+
+    findUnique: async ({ where, include }: { where: { id: string }; include?: any }) => {
+      const match = this.customerSubscriptions.find((s) => s.id === where.id);
+      return match ? this.populateSubscription(match) : null;
+    },
+
+    findMany: async ({ where, include, orderBy }: { where?: any; include?: any; orderBy?: any } = {}) => {
+      let list = [...this.customerSubscriptions];
+
+      if (where?.userId) list = list.filter((s) => s.userId === where.userId);
+      if (where?.status) {
+        if (typeof where.status === 'string') {
+          list = list.filter((s) => s.status === where.status);
+        } else if (where.status.in && Array.isArray(where.status.in)) {
+          list = list.filter((s) => where.status.in.includes(s.status));
+        }
+      }
+
+      if (orderBy?.createdAt === 'desc') {
+        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+
+      return list.map((s) => this.populateSubscription(s));
+    },
+
+    create: async ({ data, include }: { data: any; include?: any }) => {
+      const id = 'sub_' + Math.random().toString(36).substring(2, 11);
+      const newSub = {
+        id,
+        userId: data.userId,
+        planId: data.planId,
+        billingCycle: data.billingCycle || 'MONTHLY',
+        status: data.status || 'ACTIVE',
+        startDate: data.startDate ? new Date(data.startDate) : new Date(),
+        endDate: data.endDate ? new Date(data.endDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        renewalDate: data.renewalDate ? new Date(data.renewalDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        autoRenew: data.autoRenew !== undefined ? data.autoRenew : true,
+        pricePaid: Number(data.pricePaid || 0),
+        vehicleId: data.vehicleId || null,
+        vehicleReg: data.vehicleReg || null,
+        cancellationReason: data.cancellationReason || null,
+        cancelledAt: data.cancelledAt ? new Date(data.cancelledAt) : null,
+        entitlementUsages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      this.customerSubscriptions.push(newSub);
+      return this.populateSubscription(newSub);
+    },
+
+    update: async ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const idx = this.customerSubscriptions.findIndex((s) => s.id === where.id);
+      if (idx === -1) return null;
+
+      const current = this.customerSubscriptions[idx];
+      const updated = {
+        ...current,
+        ...data,
+        updatedAt: new Date(),
+      };
+
+      this.customerSubscriptions[idx] = updated;
+      return this.populateSubscription(updated);
+    },
+
+    delete: async ({ where }: { where: { id: string } }) => {
+      const idx = this.customerSubscriptions.findIndex((s) => s.id === where.id);
+      if (idx === -1) return null;
+      const [removed] = this.customerSubscriptions.splice(idx, 1);
+      return removed;
+    },
+  };
+
+  public subscriptionPayment = {
+    create: async ({ data }: { data: any }) => {
+      const id = 'sub_pay_' + Math.random().toString(36).substring(2, 11);
+      const newPayment = {
+        id,
+        subscriptionId: data.subscriptionId,
+        userId: data.userId,
+        amount: Number(data.amount || 0),
+        method: data.method || data.paymentMethod || 'RAZORPAY',
+        paymentMethod: data.paymentMethod || data.method || 'RAZORPAY',
+        status: data.status || data.paymentStatus || 'PAID',
+        paymentStatus: data.paymentStatus || data.status || 'PAID',
+        gatewayPaymentId: data.gatewayPaymentId || null,
+        gatewayOrderId: data.gatewayOrderId || null,
+        createdAt: new Date(),
+      };
+      this.subscriptionPayments.push(newPayment);
+      return newPayment;
+    },
+
+    findMany: async ({ where }: { where?: { subscriptionId?: string; userId?: string } } = {}) => {
+      let list = [...this.subscriptionPayments];
+      if (where?.subscriptionId) list = list.filter((p) => p.subscriptionId === where.subscriptionId);
+      if (where?.userId) list = list.filter((p) => p.userId === where.userId);
+      return list;
+    },
+
+    findFirst: async ({ where }: { where: any }) => {
+      return this.subscriptionPayments.find((p) => {
+        if (where.subscriptionId && p.subscriptionId !== where.subscriptionId) return false;
+        if (where.gatewayOrderId && p.gatewayOrderId !== where.gatewayOrderId) return false;
+        return true;
+      }) || null;
+    },
+
+    update: async ({ where, data }: { where: { id?: string; gatewayOrderId?: string }; data: any }) => {
+      const idx = this.subscriptionPayments.findIndex((p) =>
+        (where.id && p.id === where.id) || (where.gatewayOrderId && p.gatewayOrderId === where.gatewayOrderId)
+      );
+      if (idx === -1) return null;
+      this.subscriptionPayments[idx] = { ...this.subscriptionPayments[idx], ...data };
+      return this.subscriptionPayments[idx];
+    },
+  };
+
+  // --- USED PART MARKETPLACE ---
+  public usedPartListing = {
+    findMany: async ({ where, include, orderBy, skip, take }: { where?: any; include?: any; orderBy?: any; skip?: number; take?: number } = {}) => {
+      let list = [...this.usedPartListings];
+
+      if (where?.sellerId) list = list.filter((item) => item.sellerId === where.sellerId);
+      if (where?.status) {
+        if (typeof where.status === 'string') {
+          list = list.filter((item) => item.status === where.status);
+        } else if (where.status.in && Array.isArray(where.status.in)) {
+          list = list.filter((item) => where.status.in.includes(item.status));
+        }
+      }
+      if (where?.isSold !== undefined) list = list.filter((item) => item.isSold === where.isSold);
+      if (where?.category) list = list.filter((item) => item.category === where.category);
+
+      if (orderBy?.createdAt === 'desc') {
+        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      } else if (orderBy?.expectedPrice === 'asc' || orderBy?.askingPrice === 'asc') {
+        list.sort((a, b) => Number(a.expectedPrice || a.askingPrice) - Number(b.expectedPrice || b.askingPrice));
+      }
+
+      const offset = skip || 0;
+      const limit = take !== undefined ? take : list.length;
+      list = list.slice(offset, offset + limit);
+
+      return list.map((item) => {
+        const seller = include?.seller ? this.users.find((u) => u.id === item.sellerId) : null;
+        return {
+          ...item,
+          askingPrice: item.expectedPrice || item.askingPrice,
+          seller: seller ? { firstName: seller.firstName, lastName: seller.lastName, email: seller.email, phone: seller.phone } : item.seller || null,
+        };
+      });
+    },
+
+    findFirst: async ({ where, include }: { where: any; include?: any }) => {
+      const match = this.usedPartListings.find((item) => {
+        if (where.id && item.id !== where.id) return false;
+        if (where.sellerId && item.sellerId !== where.sellerId) return false;
+        if (where.status && item.status !== where.status) return false;
+        return true;
+      });
+      if (!match) return null;
+      const seller = include?.seller ? this.users.find((u) => u.id === match.sellerId) : null;
+      return {
+        ...match,
+        askingPrice: match.expectedPrice || match.askingPrice,
+        seller: seller ? { firstName: seller.firstName, lastName: seller.lastName, email: seller.email, phone: seller.phone } : match.seller || null,
+      };
+    },
+
+    findUnique: async ({ where, include }: { where: { id: string }; include?: any }) => {
+      const match = this.usedPartListings.find((item) => item.id === where.id);
+      if (!match) return null;
+      const seller = include?.seller ? this.users.find((u) => u.id === match.sellerId) : null;
+      return {
+        ...match,
+        askingPrice: match.expectedPrice || match.askingPrice,
+        seller: seller ? { firstName: seller.firstName, lastName: seller.lastName, email: seller.email, phone: seller.phone } : match.seller || null,
+      };
+    },
+
+    create: async ({ data, include }: { data: any; include?: any }) => {
+      const id = 'used_' + Math.random().toString(36).substring(2, 11);
+      const expectedPrice = Number(data.expectedPrice || data.askingPrice || 0);
+      const condition = data.condition || 'GOOD';
+      
+      // Calculate automated initial estimated valuation range (70-85% based on condition)
+      let valuationMultiplier = 0.75;
+      if (condition === 'LIKE_NEW' || condition === 'EXCELLENT') valuationMultiplier = 0.85;
+      else if (condition === 'GOOD' || condition === 'VERY_GOOD') valuationMultiplier = 0.78;
+      else valuationMultiplier = 0.65;
+
+      const estimatedValuation = data.estimatedValuation ? Number(data.estimatedValuation) : Math.round(expectedPrice * valuationMultiplier);
+
+      const newListing = {
+        id,
+        sellerId: data.sellerId,
+        title: data.title,
+        partNumber: data.partNumber || null,
+        vehicleModel: data.vehicleModel || 'Universal Fit',
+        vehicleId: data.vehicleId || null,
+        category: data.category || 'PARTS',
+        condition,
+        conditionGrade: data.conditionGrade || null,
+        description: data.description || '',
+        purchaseAge: data.purchaseAge || null,
+        expectedPrice,
+        askingPrice: expectedPrice,
+        estimatedValuation,
+        finalValuation: data.finalValuation ? Number(data.finalValuation) : null,
+        payoutStatus: data.payoutStatus || 'PENDING',
+        payoutAmount: data.payoutAmount ? Number(data.payoutAmount) : 0,
+        payoutMethod: data.payoutMethod || 'UPI',
+        payoutTransactionRef: data.payoutTransactionRef || null,
+        images: Array.isArray(data.images) ? data.images : [],
+        location: data.location || 'Pan-India',
+        pickupAddress: data.pickupAddress || null,
+        status: data.status || 'SUBMITTED',
+        verificationStatus: data.verificationStatus || 'SUBMITTED',
+        verificationNotes: data.verificationNotes || 'Listing submitted for PartSphere technician pickup and verification.',
+        rejectionReason: data.rejectionReason || null,
+        isSold: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      this.usedPartListings.unshift(newListing);
+      return newListing;
+    },
+
+    update: async ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const idx = this.usedPartListings.findIndex((item) => item.id === where.id);
+      if (idx === -1) return null;
+
+      const current = this.usedPartListings[idx];
+      const updated = {
+        ...current,
+        ...data,
+        updatedAt: new Date(),
+      };
+
+      this.usedPartListings[idx] = updated;
+      return updated;
+    },
+
+    delete: async ({ where }: { where: { id: string } }) => {
+      const idx = this.usedPartListings.findIndex((item) => item.id === where.id);
+      if (idx === -1) return null;
+      const [removed] = this.usedPartListings.splice(idx, 1);
+      return removed;
+    },
+
+    count: async ({ where }: { where?: any } = {}) => {
+      let list = [...this.usedPartListings];
+      if (where?.sellerId) list = list.filter((item) => item.sellerId === where.sellerId);
+      if (where?.status) list = list.filter((item) => item.status === where.status);
+      return list.length;
+    },
+  };
+
+  public usedPartVerification = {
+    findFirst: async ({ where }: { where: { listingId: string } }) => null,
+    findUnique: async ({ where }: { where: { listingId: string } }) => null,
+    create: async ({ data }: { data: any }) => ({ id: 'verif_' + Date.now(), ...data, createdAt: new Date() }),
+  };
+
+  public usedPartPayout = {
+    findFirst: async ({ where }: { where: { listingId?: string; sellerId?: string } }) => null,
+    findUnique: async ({ where }: { where: { listingId: string } }) => null,
+    create: async ({ data }: { data: any }) => ({ id: 'payout_' + Date.now(), ...data, createdAt: new Date() }),
+  };
+
+  public supportTicket = {
+    findMany: async ({ where, orderBy }: { where?: any; orderBy?: any } = {}) => {
+      let list = [...this.supportTickets];
+      if (where?.userId) list = list.filter((t) => t.userId === where.userId);
+      if (where?.userRole) list = list.filter((t) => t.userRole === where.userRole);
+      if (where?.status) list = list.filter((t) => t.status === where.status);
+      if (where?.priority) list = list.filter((t) => t.priority === where.priority);
+      if (where?.assignedAdminId) list = list.filter((t) => t.assignedAdminId === where.assignedAdminId);
+      list.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      return list;
+    },
+
+    findUnique: async ({ where }: { where: { id: string } }) => {
+      return this.supportTickets.find((t) => t.id === where.id) || null;
+    },
+
+    findFirst: async ({ where }: { where: any }) => {
+      return (
+        this.supportTickets.find((t) => {
+          if (where.id && t.id !== where.id) return false;
+          if (where.ticketNumber && t.ticketNumber !== where.ticketNumber) return false;
+          return true;
+        }) || null
+      );
+    },
+
+    create: async ({ data }: { data: any }) => {
+      const id = 'tkt-' + Math.random().toString(36).substring(2, 9);
+      const ticketNumber = 'TKT-2026-' + Math.floor(1000 + Math.random() * 9000);
+      const priority = data.priority || 'MEDIUM';
+      const slaMap: Record<string, number> = { URGENT: 2, HIGH: 6, MEDIUM: 24, LOW: 48 };
+      const slaHours = slaMap[priority] || 24;
+      const slaDeadline = new Date(Date.now() + slaHours * 3600000);
+
+      const initialMessage = data.messages?.create?.body || data.message || data.subject;
+      const messages = initialMessage
+        ? [
+            {
+              id: 'msg-' + Date.now(),
+              senderId: data.userId,
+              senderName: data.userName || 'User',
+              senderRole: data.userRole || 'CUSTOMER',
+              message: initialMessage,
+              createdAt: new Date(),
+            },
+          ]
+        : [];
+
+      const newTicket = {
+        id,
+        ticketNumber,
+        userId: data.userId,
+        userName: data.userName || 'User',
+        userEmail: data.userEmail || '',
+        userRole: data.userRole || 'CUSTOMER',
+        category: data.category || 'GENERAL',
+        subject: data.subject,
+        priority,
+        slaHours,
+        slaDeadline,
+        assignedAdminId: data.assignedAdminId || null,
+        assignedAdminName: data.assignedAdminName || null,
+        status: data.status || 'OPEN',
+        resolutionNotes: null,
+        resolvedAt: null,
+        messages,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.supportTickets.unshift(newTicket);
+      return newTicket;
+    },
+
+    update: async ({ where, data }: { where: { id: string }; data: any }) => {
+      const idx = this.supportTickets.findIndex((t) => t.id === where.id);
+      if (idx === -1) return null;
+      const current = this.supportTickets[idx];
+      const updated = {
+        ...current,
+        ...data,
+        updatedAt: new Date(),
+      };
+      if (data.status === 'RESOLVED' && !current.resolvedAt) {
+        updated.resolvedAt = new Date();
+      }
+      this.supportTickets[idx] = updated;
+      return updated;
     },
   };
 

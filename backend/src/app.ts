@@ -16,10 +16,13 @@ import vehiclesRoutes from './modules/vehicles/vehicles.routes';
 import catalogRoutes from './modules/catalog/catalog.routes';
 import cartRoutes from './modules/cart/cart.routes';
 import ordersRoutes from './modules/orders/orders.routes';
+import paymentsRoutes from './modules/payments/payments.routes';
 import subscriptionsRoutes from './modules/subscriptions/subscriptions.routes';
 import shopsRoutes from './modules/shops/shops.routes';
 import usedPartsRoutes from './modules/usedparts/usedparts.routes';
 import supportRoutes from './modules/support/support.routes';
+import deliveryRoutes from './modules/delivery/delivery.routes';
+import adminRoutes from './modules/admin/admin.routes';
 
 const app = express();
 
@@ -83,10 +86,13 @@ app.use('/api/vehicles', vehiclesRoutes);
 app.use('/api/catalog', catalogRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', ordersRoutes);
+app.use('/api/payments', paymentsRoutes);
 app.use('/api/subscriptions', subscriptionsRoutes);
 app.use('/api/shops', shopsRoutes);
 app.use('/api/usedparts', usedPartsRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/delivery', deliveryRoutes);
+app.use('/api/admin', adminRoutes);
 
 // ============================================================
 // Error Handling

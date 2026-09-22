@@ -281,17 +281,24 @@ export const createOrderDraft = async (
   const orderNumber = generateOrderNumber();
 
   const newOrder = await prisma.$transaction(async (tx: any) => {
+    const isOnlinePayment = data.paymentMethod === PaymentMethod.RAZORPAY;
+    const initialOrderStatus = isOnlinePayment ? OrderStatus.PENDING : OrderStatus.CONFIRMED;
+    const initialPaymentStatus = PaymentStatus.PENDING;
+    const razorpayOrderId = isOnlinePayment
+      ? `order_rzp_sandbox_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
+      : null;
+    const trackingMsg = isOnlinePayment
+      ? 'Order created. Awaiting Razorpay Sandbox payment verification.'
+      : 'Order placed successfully with Cash on Delivery (Payment pending on delivery/fitment).';
+
     const createdOrder = await tx.order.create({
       data: {
         orderNumber,
         userId,
         addressId: data.addressId,
-        status: OrderStatus.CONFIRMED,
+        status: initialOrderStatus,
         paymentMethod: data.paymentMethod || PaymentMethod.CASH_ON_DELIVERY,
-        paymentStatus:
-          data.paymentMethod === PaymentMethod.CASH_ON_DELIVERY
-            ? PaymentStatus.PENDING
-            : PaymentStatus.CAPTURED,
+        paymentStatus: initialPaymentStatus,
         subtotal: pricing.subtotal,
         deliveryFee: pricing.standardDeliveryFee,
         discount: pricing.discount,
@@ -314,17 +321,14 @@ export const createOrderDraft = async (
           create: {
             method: data.paymentMethod || PaymentMethod.CASH_ON_DELIVERY,
             amount: pricing.finalPrice,
-            status:
-              data.paymentMethod === PaymentMethod.CASH_ON_DELIVERY
-                ? PaymentStatus.PENDING
-                : PaymentStatus.CAPTURED,
-            razorpayOrderId: `rzp_order_${Date.now()}`,
+            status: initialPaymentStatus,
+            razorpayOrderId,
           },
         },
         tracking: {
           create: {
-            status: OrderStatus.CONFIRMED,
-            message: 'Order placed successfully with PartNexa fitment guarantee.',
+            status: initialOrderStatus,
+            message: trackingMsg,
           },
         },
         ...(pricing.resolvedDIFMType !== DIFMType.NO_INSTALLATION
@@ -355,3 +359,11 @@ export const createOrderDraft = async (
 
   return getOrderById(userId, newOrder.id);
 };
+
+export const getOrderTracking = async (orderId: string) => {
+  return prisma.orderTracking.findMany({
+    where: { orderId },
+    orderBy: { createdAt: 'asc' },
+  });
+};
+

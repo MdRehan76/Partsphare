@@ -8,6 +8,7 @@ router.use(authenticate);
 
 router.get('/', ordersController.listOrders);
 router.post('/checkout-quote', ordersController.getCheckoutQuote);
+router.get('/:id/tracking', ordersController.getOrderTracking);
 router.get('/:id', ordersController.getOrder);
 router.post('/', ordersController.createOrder);
 
