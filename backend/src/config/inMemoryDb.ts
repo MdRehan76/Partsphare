@@ -5,75 +5,449 @@ import bcrypt from 'bcryptjs';
 // 1. VEHICLE CATALOG
 // ============================================================================
 export const initialMakes = [
-  { id: 'make-maruti', name: 'Maruti Suzuki', type: 'CAR', logoUrl: null, createdAt: new Date() },
-  { id: 'make-hyundai', name: 'Hyundai', type: 'CAR', logoUrl: null, createdAt: new Date() },
-  { id: 'make-tata', name: 'Tata', type: 'CAR', logoUrl: null, createdAt: new Date() },
-  { id: 'make-honda-car', name: 'Honda', type: 'CAR', logoUrl: null, createdAt: new Date() },
-  { id: 'make-hero', name: 'Hero', type: 'BIKE', logoUrl: null, createdAt: new Date() },
-  { id: 'make-bajaj', name: 'Bajaj', type: 'BIKE', logoUrl: null, createdAt: new Date() },
-  { id: 'make-re', name: 'Royal Enfield', type: 'BIKE', logoUrl: null, createdAt: new Date() },
-  { id: 'make-tvs', name: 'TVS', type: 'SCOOTER', logoUrl: null, createdAt: new Date() },
-  { id: 'make-honda-2w', name: 'Honda 2-Wheelers', type: 'SCOOTER', logoUrl: null, createdAt: new Date() },
+  // 4-WHEELERS (20 Major Manufacturers)
+  { id: 'make-maruti', name: 'Maruti Suzuki', type: 'CAR', logoUrl: '/brands/maruti.svg', createdAt: new Date() },
+  { id: 'make-hyundai', name: 'Hyundai', type: 'CAR', logoUrl: '/brands/hyundai.svg', createdAt: new Date() },
+  { id: 'make-tata', name: 'Tata', type: 'CAR', logoUrl: '/brands/tata.svg', createdAt: new Date() },
+  { id: 'make-honda-car', name: 'Honda', type: 'CAR', logoUrl: '/brands/honda.svg', createdAt: new Date() },
+  { id: 'make-toyota', name: 'Toyota', type: 'CAR', logoUrl: '/brands/toyota.svg', createdAt: new Date() },
+  { id: 'make-kia', name: 'Kia', type: 'CAR', logoUrl: '/brands/kia.svg', createdAt: new Date() },
+  { id: 'make-mahindra', name: 'Mahindra', type: 'CAR', logoUrl: '/brands/mahindra.svg', createdAt: new Date() },
+  { id: 'make-volkswagen', name: 'Volkswagen', type: 'CAR', logoUrl: '/brands/volkswagen.svg', createdAt: new Date() },
+  { id: 'make-skoda', name: 'Skoda', type: 'CAR', logoUrl: '/brands/skoda.svg', createdAt: new Date() },
+  { id: 'make-renault', name: 'Renault', type: 'CAR', logoUrl: '/brands/renault.svg', createdAt: new Date() },
+  { id: 'make-nissan', name: 'Nissan', type: 'CAR', logoUrl: '/brands/nissan.svg', createdAt: new Date() },
+  { id: 'make-mg', name: 'MG Motor', type: 'CAR', logoUrl: '/brands/mg.svg', createdAt: new Date() },
+  { id: 'make-jeep', name: 'Jeep', type: 'CAR', logoUrl: '/brands/jeep.svg', createdAt: new Date() },
+  { id: 'make-ford', name: 'Ford', type: 'CAR', logoUrl: '/brands/ford.svg', createdAt: new Date() },
+  { id: 'make-bmw', name: 'BMW', type: 'CAR', logoUrl: '/brands/bmw.svg', createdAt: new Date() },
+  { id: 'make-mercedes', name: 'Mercedes-Benz', type: 'CAR', logoUrl: '/brands/mercedes.svg', createdAt: new Date() },
+  { id: 'make-audi', name: 'Audi', type: 'CAR', logoUrl: '/brands/audi.svg', createdAt: new Date() },
+  { id: 'make-isuzu', name: 'Isuzu', type: 'CAR', logoUrl: '/brands/isuzu.svg', createdAt: new Date() },
+  { id: 'make-citroen', name: 'Citroen', type: 'CAR', logoUrl: '/brands/citroen.svg', createdAt: new Date() },
+  { id: 'make-volvo', name: 'Volvo', type: 'CAR', logoUrl: '/brands/volvo.svg', createdAt: new Date() },
+
+  // 2-WHEELERS (Major Manufacturers)
+  { id: 'make-hero', name: 'Hero', type: 'BIKE', logoUrl: '/brands/hero.svg', createdAt: new Date() },
+  { id: 'make-bajaj', name: 'Bajaj', type: 'BIKE', logoUrl: '/brands/bajaj.svg', createdAt: new Date() },
+  { id: 'make-re', name: 'Royal Enfield', type: 'BIKE', logoUrl: '/brands/royalenfield.svg', createdAt: new Date() },
+  { id: 'make-yamaha', name: 'Yamaha', type: 'BIKE', logoUrl: '/brands/yamaha.svg', createdAt: new Date() },
+  { id: 'make-ktm', name: 'KTM', type: 'BIKE', logoUrl: '/brands/ktm.svg', createdAt: new Date() },
+  { id: 'make-honda-bike', name: 'Honda Motorcycles', type: 'BIKE', logoUrl: '/brands/honda-bike.svg', createdAt: new Date() },
+  { id: 'make-tvs', name: 'TVS', type: 'SCOOTER', logoUrl: '/brands/tvs.svg', createdAt: new Date() },
+  { id: 'make-suzuki-sc', name: 'Suzuki', type: 'SCOOTER', logoUrl: '/brands/suzuki.svg', createdAt: new Date() },
+  { id: 'make-ola', name: 'Ola Electric', type: 'SCOOTER', logoUrl: '/brands/ola.svg', createdAt: new Date() },
 ];
 
 export const initialModels = [
-  // Maruti
+  // 1. Maruti Suzuki
   { id: 'model-swift', makeId: 'make-maruti', name: 'Swift', type: 'CAR', imageUrl: null },
   { id: 'model-baleno', makeId: 'make-maruti', name: 'Baleno', type: 'CAR', imageUrl: null },
   { id: 'model-brezza', makeId: 'make-maruti', name: 'Brezza', type: 'CAR', imageUrl: null },
-  // Hyundai
-  { id: 'model-creta', makeId: 'make-hyundai', name: 'Creta', type: 'CAR', imageUrl: null },
+  { id: 'model-dzire', makeId: 'make-maruti', name: 'Dzire', type: 'CAR', imageUrl: null },
+  { id: 'model-fronx', makeId: 'make-maruti', name: 'Fronx', type: 'CAR', imageUrl: null },
+  { id: 'model-grand-vitara', makeId: 'make-maruti', name: 'Grand Vitara', type: 'CAR', imageUrl: null },
+  { id: 'model-ertiga', makeId: 'make-maruti', name: 'Ertiga', type: 'CAR', imageUrl: null },
+  { id: 'model-s-presso', makeId: 'make-maruti', name: 'S-Presso', type: 'CAR', imageUrl: null },
+
+  // 2. Hyundai
   { id: 'model-i20', makeId: 'make-hyundai', name: 'i20', type: 'CAR', imageUrl: null },
-  // Tata
+  { id: 'model-creta', makeId: 'make-hyundai', name: 'Creta', type: 'CAR', imageUrl: null },
+  { id: 'model-venue', makeId: 'make-hyundai', name: 'Venue', type: 'CAR', imageUrl: null },
+  { id: 'model-verna', makeId: 'make-hyundai', name: 'Verna', type: 'CAR', imageUrl: null },
+  { id: 'model-exter', makeId: 'make-hyundai', name: 'Exter', type: 'CAR', imageUrl: null },
+  { id: 'model-tucson', makeId: 'make-hyundai', name: 'Tucson', type: 'CAR', imageUrl: null },
+  { id: 'model-aura', makeId: 'make-hyundai', name: 'Aura', type: 'CAR', imageUrl: null },
+
+  // 3. Tata
   { id: 'model-nexon', makeId: 'make-tata', name: 'Nexon', type: 'CAR', imageUrl: null },
   { id: 'model-punch', makeId: 'make-tata', name: 'Punch', type: 'CAR', imageUrl: null },
-  // Honda Cars
+  { id: 'model-altroz', makeId: 'make-tata', name: 'Altroz', type: 'CAR', imageUrl: null },
+  { id: 'model-tiago', makeId: 'make-tata', name: 'Tiago', type: 'CAR', imageUrl: null },
+  { id: 'model-harrier', makeId: 'make-tata', name: 'Harrier', type: 'CAR', imageUrl: null },
+  { id: 'model-safari', makeId: 'make-tata', name: 'Safari', type: 'CAR', imageUrl: null },
+  { id: 'model-tigor', makeId: 'make-tata', name: 'Tigor', type: 'CAR', imageUrl: null },
+
+  // 4. Honda
   { id: 'model-city', makeId: 'make-honda-car', name: 'City', type: 'CAR', imageUrl: null },
+  { id: 'model-amaze', makeId: 'make-honda-car', name: 'Amaze', type: 'CAR', imageUrl: null },
+  { id: 'model-elevate', makeId: 'make-honda-car', name: 'Elevate', type: 'CAR', imageUrl: null },
+  { id: 'model-wrv', makeId: 'make-honda-car', name: 'WR-V', type: 'CAR', imageUrl: null },
+
+  // 5. Toyota
+  { id: 'model-innova-crysta', makeId: 'make-toyota', name: 'Innova Crysta', type: 'CAR', imageUrl: null },
+  { id: 'model-fortuner', makeId: 'make-toyota', name: 'Fortuner', type: 'CAR', imageUrl: null },
+  { id: 'model-hyryder', makeId: 'make-toyota', name: 'Urban Cruiser Hyryder', type: 'CAR', imageUrl: null },
+  { id: 'model-glanza', makeId: 'make-toyota', name: 'Glanza', type: 'CAR', imageUrl: null },
+  { id: 'model-hilux', makeId: 'make-toyota', name: 'Hilux', type: 'CAR', imageUrl: null },
+
+  // 6. Kia
+  { id: 'model-seltos', makeId: 'make-kia', name: 'Seltos', type: 'CAR', imageUrl: null },
+  { id: 'model-sonet', makeId: 'make-kia', name: 'Sonet', type: 'CAR', imageUrl: null },
+  { id: 'model-carens', makeId: 'make-kia', name: 'Carens', type: 'CAR', imageUrl: null },
+  { id: 'model-ev6', makeId: 'make-kia', name: 'EV6', type: 'CAR', imageUrl: null },
+
+  // 7. Mahindra
+  { id: 'model-scorpio-n', makeId: 'make-mahindra', name: 'Scorpio-N', type: 'CAR', imageUrl: null },
+  { id: 'model-xuv700', makeId: 'make-mahindra', name: 'XUV700', type: 'CAR', imageUrl: null },
+  { id: 'model-xuv300', makeId: 'make-mahindra', name: 'XUV300 / 3XO', type: 'CAR', imageUrl: null },
+  { id: 'model-thar', makeId: 'make-mahindra', name: 'Thar', type: 'CAR', imageUrl: null },
+  { id: 'model-bolero', makeId: 'make-mahindra', name: 'Bolero Neo', type: 'CAR', imageUrl: null },
+
+  // 8. Volkswagen
+  { id: 'model-taigun', makeId: 'make-volkswagen', name: 'Taigun', type: 'CAR', imageUrl: null },
+  { id: 'model-virtus', makeId: 'make-volkswagen', name: 'Virtus', type: 'CAR', imageUrl: null },
+  { id: 'model-tiguan', makeId: 'make-volkswagen', name: 'Tiguan', type: 'CAR', imageUrl: null },
+  { id: 'model-polo', makeId: 'make-volkswagen', name: 'Polo', type: 'CAR', imageUrl: null },
+
+  // 9. Skoda
+  { id: 'model-kushaq', makeId: 'make-skoda', name: 'Kushaq', type: 'CAR', imageUrl: null },
+  { id: 'model-slavia', makeId: 'make-skoda', name: 'Slavia', type: 'CAR', imageUrl: null },
+  { id: 'model-kodiaq', makeId: 'make-skoda', name: 'Kodiaq', type: 'CAR', imageUrl: null },
+  { id: 'model-octavia', makeId: 'make-skoda', name: 'Octavia', type: 'CAR', imageUrl: null },
+
+  // 10. Renault
+  { id: 'model-kiger', makeId: 'make-renault', name: 'Kiger', type: 'CAR', imageUrl: null },
+  { id: 'model-kwid', makeId: 'make-renault', name: 'Kwid', type: 'CAR', imageUrl: null },
+  { id: 'model-triber', makeId: 'make-renault', name: 'Triber', type: 'CAR', imageUrl: null },
+  { id: 'model-duster', makeId: 'make-renault', name: 'Duster', type: 'CAR', imageUrl: null },
+
+  // 11. Nissan
+  { id: 'model-magnite', makeId: 'make-nissan', name: 'Magnite', type: 'CAR', imageUrl: null },
+  { id: 'model-kicks', makeId: 'make-nissan', name: 'Kicks', type: 'CAR', imageUrl: null },
+  { id: 'model-xtrail', makeId: 'make-nissan', name: 'X-Trail', type: 'CAR', imageUrl: null },
+
+  // 12. MG Motor
+  { id: 'model-hector', makeId: 'make-mg', name: 'Hector', type: 'CAR', imageUrl: null },
+  { id: 'model-astor', makeId: 'make-mg', name: 'Astor', type: 'CAR', imageUrl: null },
+  { id: 'model-gloster', makeId: 'make-mg', name: 'Gloster', type: 'CAR', imageUrl: null },
+  { id: 'model-comet', makeId: 'make-mg', name: 'Comet EV', type: 'CAR', imageUrl: null },
+  { id: 'model-zsev', makeId: 'make-mg', name: 'ZS EV', type: 'CAR', imageUrl: null },
+
+  // 13. Jeep
+  { id: 'model-compass', makeId: 'make-jeep', name: 'Compass', type: 'CAR', imageUrl: null },
+  { id: 'model-meridian', makeId: 'make-jeep', name: 'Meridian', type: 'CAR', imageUrl: null },
+  { id: 'model-wrangler', makeId: 'make-jeep', name: 'Wrangler', type: 'CAR', imageUrl: null },
+  { id: 'model-grand-cherokee', makeId: 'make-jeep', name: 'Grand Cherokee', type: 'CAR', imageUrl: null },
+
+  // 14. Ford
+  { id: 'model-ecosport', makeId: 'make-ford', name: 'EcoSport', type: 'CAR', imageUrl: null },
+  { id: 'model-endeavour', makeId: 'make-ford', name: 'Endeavour', type: 'CAR', imageUrl: null },
+  { id: 'model-figo', makeId: 'make-ford', name: 'Figo', type: 'CAR', imageUrl: null },
+
+  // 15. BMW
+  { id: 'model-bmw-3series', makeId: 'make-bmw', name: '3 Series', type: 'CAR', imageUrl: null },
+  { id: 'model-bmw-5series', makeId: 'make-bmw', name: '5 Series', type: 'CAR', imageUrl: null },
+  { id: 'model-bmw-x1', makeId: 'make-bmw', name: 'X1', type: 'CAR', imageUrl: null },
+  { id: 'model-bmw-x3', makeId: 'make-bmw', name: 'X3', type: 'CAR', imageUrl: null },
+  { id: 'model-bmw-x5', makeId: 'make-bmw', name: 'X5', type: 'CAR', imageUrl: null },
+
+  // 16. Mercedes-Benz
+  { id: 'model-merc-c-class', makeId: 'make-mercedes', name: 'C-Class', type: 'CAR', imageUrl: null },
+  { id: 'model-merc-e-class', makeId: 'make-mercedes', name: 'E-Class', type: 'CAR', imageUrl: null },
+  { id: 'model-merc-gla', makeId: 'make-mercedes', name: 'GLA', type: 'CAR', imageUrl: null },
+  { id: 'model-merc-glc', makeId: 'make-mercedes', name: 'GLC', type: 'CAR', imageUrl: null },
+  { id: 'model-merc-gle', makeId: 'make-mercedes', name: 'GLE', type: 'CAR', imageUrl: null },
+
+  // 17. Audi
+  { id: 'model-audi-a4', makeId: 'make-audi', name: 'A4', type: 'CAR', imageUrl: null },
+  { id: 'model-audi-a6', makeId: 'make-audi', name: 'A6', type: 'CAR', imageUrl: null },
+  { id: 'model-audi-q3', makeId: 'make-audi', name: 'Q3', type: 'CAR', imageUrl: null },
+  { id: 'model-audi-q5', makeId: 'make-audi', name: 'Q5', type: 'CAR', imageUrl: null },
+  { id: 'model-audi-q7', makeId: 'make-audi', name: 'Q7', type: 'CAR', imageUrl: null },
+
+  // 18. Isuzu
+  { id: 'model-isuzu-vcross', makeId: 'make-isuzu', name: 'D-Max V-Cross', type: 'CAR', imageUrl: null },
+  { id: 'model-isuzu-mux', makeId: 'make-isuzu', name: 'MU-X', type: 'CAR', imageUrl: null },
+  { id: 'model-isuzu-hilander', makeId: 'make-isuzu', name: 'Hi-Lander', type: 'CAR', imageUrl: null },
+
+  // 19. Citroen
+  { id: 'model-citroen-c3', makeId: 'make-citroen', name: 'C3', type: 'CAR', imageUrl: null },
+  { id: 'model-citroen-c3-aircross', makeId: 'make-citroen', name: 'C3 Aircross', type: 'CAR', imageUrl: null },
+  { id: 'model-citroen-basalt', makeId: 'make-citroen', name: 'Basalt', type: 'CAR', imageUrl: null },
+  { id: 'model-citroen-c5', makeId: 'make-citroen', name: 'C5 Aircross', type: 'CAR', imageUrl: null },
+
+  // 20. Volvo
+  { id: 'model-volvo-xc40', makeId: 'make-volvo', name: 'XC40', type: 'CAR', imageUrl: null },
+  { id: 'model-volvo-xc60', makeId: 'make-volvo', name: 'XC60', type: 'CAR', imageUrl: null },
+  { id: 'model-volvo-xc90', makeId: 'make-volvo', name: 'XC90', type: 'CAR', imageUrl: null },
+
+  // --- 2-WHEELERS ---
   // Hero
   { id: 'model-splendor', makeId: 'make-hero', name: 'Splendor Plus', type: 'BIKE', imageUrl: null },
   { id: 'model-hf-deluxe', makeId: 'make-hero', name: 'HF Deluxe', type: 'BIKE', imageUrl: null },
+  { id: 'model-passion-pro', makeId: 'make-hero', name: 'Passion Pro', type: 'BIKE', imageUrl: null },
+  { id: 'model-xpulse', makeId: 'make-hero', name: 'Xpulse 200 4V', type: 'BIKE', imageUrl: null },
+
   // Bajaj
   { id: 'model-pulsar', makeId: 'make-bajaj', name: 'Pulsar 150', type: 'BIKE', imageUrl: null },
   { id: 'model-pulsar-ns', makeId: 'make-bajaj', name: 'Pulsar NS200', type: 'BIKE', imageUrl: null },
+  { id: 'model-pulsar-n250', makeId: 'make-bajaj', name: 'Pulsar N250', type: 'BIKE', imageUrl: null },
+  { id: 'model-dominar', makeId: 'make-bajaj', name: 'Dominar 400', type: 'BIKE', imageUrl: null },
+  { id: 'model-avenger', makeId: 'make-bajaj', name: 'Avenger Street 160', type: 'BIKE', imageUrl: null },
+
   // Royal Enfield
   { id: 'model-classic-350', makeId: 'make-re', name: 'Classic 350', type: 'BIKE', imageUrl: null },
   { id: 'model-hunter-350', makeId: 'make-re', name: 'Hunter 350', type: 'BIKE', imageUrl: null },
+  { id: 'model-meteor-350', makeId: 'make-re', name: 'Meteor 350', type: 'BIKE', imageUrl: null },
+  { id: 'model-bullet-350', makeId: 'make-re', name: 'Bullet 350', type: 'BIKE', imageUrl: null },
+  { id: 'model-himalayan', makeId: 'make-re', name: 'Himalayan 450', type: 'BIKE', imageUrl: null },
+
+  // Yamaha
+  { id: 'model-r15', makeId: 'make-yamaha', name: 'YZF R15 V4', type: 'BIKE', imageUrl: null },
+  { id: 'model-mt15', makeId: 'make-yamaha', name: 'MT-15 V2', type: 'BIKE', imageUrl: null },
+  { id: 'model-fzs', makeId: 'make-yamaha', name: 'FZS-FI V4', type: 'BIKE', imageUrl: null },
+  { id: 'model-fascino', makeId: 'make-yamaha', name: 'Fascino 125', type: 'SCOOTER', imageUrl: null },
+  { id: 'model-ray-zr', makeId: 'make-yamaha', name: 'Ray-ZR 125', type: 'SCOOTER', imageUrl: null },
+
+  // KTM
+  { id: 'model-duke-200', makeId: 'make-ktm', name: 'Duke 200', type: 'BIKE', imageUrl: null },
+  { id: 'model-duke-390', makeId: 'make-ktm', name: 'Duke 390', type: 'BIKE', imageUrl: null },
+  { id: 'model-rc390', makeId: 'make-ktm', name: 'RC 390', type: 'BIKE', imageUrl: null },
+
+  // Honda Motorcycles & Scooters
+  { id: 'model-cb300r', makeId: 'make-honda-bike', name: 'CB300R', type: 'BIKE', imageUrl: null },
+  { id: 'model-unicorn', makeId: 'make-honda-bike', name: 'Unicorn', type: 'BIKE', imageUrl: null },
+  { id: 'model-shine', makeId: 'make-honda-bike', name: 'Shine 125', type: 'BIKE', imageUrl: null },
+  { id: 'model-activa', makeId: 'make-honda-bike', name: 'Activa 6G', type: 'SCOOTER', imageUrl: null },
+  { id: 'model-dio', makeId: 'make-honda-bike', name: 'Dio 125', type: 'SCOOTER', imageUrl: null },
+
   // TVS
   { id: 'model-jupiter', makeId: 'make-tvs', name: 'Jupiter 110', type: 'SCOOTER', imageUrl: null },
   { id: 'model-ntorq', makeId: 'make-tvs', name: 'Ntorq 125', type: 'SCOOTER', imageUrl: null },
-  // Honda 2W
-  { id: 'model-activa', makeId: 'make-honda-2w', name: 'Activa 6G', type: 'SCOOTER', imageUrl: null },
-  { id: 'model-dio', makeId: 'make-honda-2w', name: 'Dio 125', type: 'SCOOTER', imageUrl: null },
+  { id: 'model-iqube', makeId: 'make-tvs', name: 'iQube Electric', type: 'SCOOTER', imageUrl: null },
+  { id: 'model-raider', makeId: 'make-tvs', name: 'Raider 125', type: 'BIKE', imageUrl: null },
+  { id: 'model-apache', makeId: 'make-tvs', name: 'Apache RTR 160 4V', type: 'BIKE', imageUrl: null },
+
+  // Suzuki
+  { id: 'model-access', makeId: 'make-suzuki-sc', name: 'Access 125', type: 'SCOOTER', imageUrl: null },
+  { id: 'model-burgman', makeId: 'make-suzuki-sc', name: 'Burgman Street 125', type: 'SCOOTER', imageUrl: null },
+  { id: 'model-gixxer', makeId: 'make-suzuki-sc', name: 'Gixxer SF 250', type: 'BIKE', imageUrl: null },
+
+  // Ola Electric
+  { id: 'model-ola-s1', makeId: 'make-ola', name: 'S1 Pro', type: 'SCOOTER', imageUrl: null },
+  { id: 'model-ola-s1x', makeId: 'make-ola', name: 'S1 X', type: 'SCOOTER', imageUrl: null },
 ];
 
 export const initialVariants = [
-  // Swift
+  // --- 1. Maruti Suzuki ---
   { id: 'var-swift-vxi', modelId: 'model-swift', name: 'VXi', year: 2022, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1197 },
   { id: 'var-swift-zxi', modelId: 'model-swift', name: 'ZXi', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1197 },
   { id: 'var-swift-zxi-plus', modelId: 'model-swift', name: 'ZXi Plus AMT', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1197 },
-  // Baleno
   { id: 'var-baleno-delta', modelId: 'model-baleno', name: 'Delta', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1197 },
-  // Creta
+  { id: 'var-baleno-alpha', modelId: 'model-baleno', name: 'Alpha CVT', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1197 },
+  { id: 'var-brezza-vxi', modelId: 'model-brezza', name: 'VXi', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1462 },
+  { id: 'var-brezza-zxi', modelId: 'model-brezza', name: 'ZXi AT', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1462 },
+  { id: 'var-dzire-vxi', modelId: 'model-dzire', name: 'VXi CNG', year: 2023, fuelType: 'CNG', transmission: 'MANUAL', engineCC: 1197 },
+  { id: 'var-dzire-zxi', modelId: 'model-dzire', name: 'ZXi AMT', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1197 },
+  { id: 'var-fronx-delta', modelId: 'model-fronx', name: 'Delta Plus 1.2 MT', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1197 },
+  { id: 'var-fronx-alpha', modelId: 'model-fronx', name: 'Alpha 1.0 Turbo AT', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 998 },
+  { id: 'var-gv-zeta', modelId: 'model-grand-vitara', name: 'Zeta Mild-Hybrid MT', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1462 },
+  { id: 'var-gv-alpha-hybrid', modelId: 'model-grand-vitara', name: 'Alpha Plus Strong Hybrid e-CVT', year: 2024, fuelType: 'HYBRID', transmission: 'AUTOMATIC', engineCC: 1490 },
+  { id: 'var-ertiga-vxi', modelId: 'model-ertiga', name: 'VXi CNG', year: 2023, fuelType: 'CNG', transmission: 'MANUAL', engineCC: 1462 },
+  { id: 'var-ertiga-zxi', modelId: 'model-ertiga', name: 'ZXi Plus AT', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1462 },
+  { id: 'var-spresso-vxi', modelId: 'model-s-presso', name: 'VXi Plus', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 998 },
+
+  // --- 2. Hyundai ---
+  { id: 'var-i20-magna', modelId: 'model-i20', name: 'Magna 1.2 MT', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1197 },
+  { id: 'var-i20-asta', modelId: 'model-i20', name: 'Asta (O) IVT', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1197 },
   { id: 'var-creta-sx', modelId: 'model-creta', name: 'SX Executive', year: 2022, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1497 },
-  { id: 'var-creta-sx-o', modelId: 'model-creta', name: 'SX (O) Turbo', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1353 },
-  // Nexon
-  { id: 'var-nexon-creative', modelId: 'model-nexon', name: 'Creative Plus', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1199 },
-  // City
-  { id: 'var-city-v', modelId: 'model-city', name: 'V 5th Gen', year: 2022, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1498 },
-  // Splendor
-  { id: 'var-splendor-drum', modelId: 'model-splendor', name: 'Drum Self-Cast', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 97 },
+  { id: 'var-creta-sx-o', modelId: 'model-creta', name: 'SX (O) Turbo DCT', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1482 },
+  { id: 'var-creta-n-line', modelId: 'model-creta', name: 'N Line N8 DCT', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1482 },
+  { id: 'var-venue-s', modelId: 'model-venue', name: 'S Turbo iMT', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 998 },
+  { id: 'var-venue-sx', modelId: 'model-venue', name: 'SX (O) Turbo DCT', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 998 },
+  { id: 'var-verna-s', modelId: 'model-verna', name: 'S 1.5 MT', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1497 },
+  { id: 'var-verna-sx-turbo', modelId: 'model-verna', name: 'SX (O) 1.5 Turbo DCT', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1482 },
+  { id: 'var-exter-sx', modelId: 'model-exter', name: 'SX 1.2 MT', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1197 },
+  { id: 'var-exter-sx-cng', modelId: 'model-exter', name: 'SX 1.2 Hy-CNG Dual Cylinder', year: 2024, fuelType: 'CNG', transmission: 'MANUAL', engineCC: 1197 },
+  { id: 'var-tucson-signature', modelId: 'model-tucson', name: 'Signature 2.0 4WD Diesel AT', year: 2023, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1997 },
+  { id: 'var-aura-sx', modelId: 'model-aura', name: 'SX 1.2 CNG', year: 2023, fuelType: 'CNG', transmission: 'MANUAL', engineCC: 1197 },
+
+  // --- 3. Tata ---
+  { id: 'var-nexon-creative', modelId: 'model-nexon', name: 'Creative Plus 1.2 MT', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1199 },
+  { id: 'var-nexon-fearless', modelId: 'model-nexon', name: 'Fearless Plus DCA', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1199 },
+  { id: 'var-nexon-ev-empowered', modelId: 'model-nexon', name: 'EV Empowered Plus LR', year: 2024, fuelType: 'ELECTRIC', transmission: 'AUTOMATIC', engineCC: 0 },
+  { id: 'var-punch-accomplished', modelId: 'model-punch', name: 'Accomplished Dazzle MT', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1199 },
+  { id: 'var-punch-creative-cng', modelId: 'model-punch', name: 'Creative i-CNG', year: 2024, fuelType: 'CNG', transmission: 'MANUAL', engineCC: 1199 },
+  { id: 'var-altroz-xz', modelId: 'model-altroz', name: 'XZ Plus i-Turbo MT', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1199 },
+  { id: 'var-altroz-racer', modelId: 'model-altroz', name: 'Racer R3 1.2 Turbo', year: 2024, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1199 },
+  { id: 'var-tiago-xz', modelId: 'model-tiago', name: 'XZ Plus i-CNG', year: 2023, fuelType: 'CNG', transmission: 'MANUAL', engineCC: 1199 },
+  { id: 'var-tiago-ev-xz', modelId: 'model-tiago', name: 'EV XZ Plus Tech LUX', year: 2024, fuelType: 'ELECTRIC', transmission: 'AUTOMATIC', engineCC: 0 },
+  { id: 'var-harrier-xz', modelId: 'model-harrier', name: 'XZ Plus Dark Edition', year: 2023, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1956 },
+  { id: 'var-harrier-fearless', modelId: 'model-harrier', name: 'Fearless Plus Dark AT', year: 2024, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1956 },
+  { id: 'var-safari-accomplished', modelId: 'model-safari', name: 'Accomplished Plus 6-Str AT', year: 2024, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1956 },
+
+  // --- 4. Honda ---
+  { id: 'var-city-v', modelId: 'model-city', name: 'V 5th Gen MT', year: 2022, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1498 },
+  { id: 'var-city-zx', modelId: 'model-city', name: 'ZX e:HEV Strong Hybrid', year: 2024, fuelType: 'HYBRID', transmission: 'AUTOMATIC', engineCC: 1498 },
+  { id: 'var-amaze-vx', modelId: 'model-amaze', name: 'VX CVT', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1199 },
+  { id: 'var-amaze-s', modelId: 'model-amaze', name: 'S MT', year: 2024, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1199 },
+  { id: 'var-elevate-zx', modelId: 'model-elevate', name: 'ZX CVT ADAS', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1498 },
+  { id: 'var-elevate-v', modelId: 'model-elevate', name: 'V MT', year: 2024, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1498 },
+
+  // --- 5. Toyota ---
+  { id: 'var-innova-crysta-gx', modelId: 'model-innova-crysta', name: 'GX 7-Str Diesel MT', year: 2023, fuelType: 'DIESEL', transmission: 'MANUAL', engineCC: 2393 },
+  { id: 'var-innova-crysta-zx', modelId: 'model-innova-crysta', name: 'ZX 7-Str Diesel MT', year: 2024, fuelType: 'DIESEL', transmission: 'MANUAL', engineCC: 2393 },
+  { id: 'var-fortuner-4x4', modelId: 'model-fortuner', name: '4x4 Diesel MT', year: 2023, fuelType: 'DIESEL', transmission: 'MANUAL', engineCC: 2755 },
+  { id: 'var-fortuner-legender', modelId: 'model-fortuner', name: 'Legender 4x4 Diesel AT', year: 2024, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 2755 },
+  { id: 'var-hyryder-s-hybrid', modelId: 'model-hyryder', name: 'S Grand Strong Hybrid e-CVT', year: 2024, fuelType: 'HYBRID', transmission: 'AUTOMATIC', engineCC: 1490 },
+  { id: 'var-glanza-g', modelId: 'model-glanza', name: 'G AMT', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1197 },
+  { id: 'var-hilux-high', modelId: 'model-hilux', name: 'High 4x4 Diesel AT', year: 2023, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 2755 },
+
+  // --- 6. Kia ---
+  { id: 'var-seltos-htx', modelId: 'model-seltos', name: 'HTX 1.5 Turbo DCT', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1482 },
+  { id: 'var-seltos-gtx', modelId: 'model-seltos', name: 'GTX Plus 1.5 Diesel AT', year: 2024, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1493 },
+  { id: 'var-sonet-htx', modelId: 'model-sonet', name: 'HTX 1.5 Diesel MT', year: 2023, fuelType: 'DIESEL', transmission: 'MANUAL', engineCC: 1493 },
+  { id: 'var-carens-luxury', modelId: 'model-carens', name: 'Luxury Plus 1.5 Diesel AT', year: 2024, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1493 },
+  { id: 'var-ev6-gt-line', modelId: 'model-ev6', name: 'GT-Line AWD Electric', year: 2023, fuelType: 'ELECTRIC', transmission: 'AUTOMATIC', engineCC: 0 },
+
+  // --- 7. Mahindra ---
+  { id: 'var-scorpio-n-z8', modelId: 'model-scorpio-n', name: 'Z8 L 4x4 Diesel AT', year: 2023, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 2198 },
+  { id: 'var-scorpio-n-z4', modelId: 'model-scorpio-n', name: 'Z4 Diesel MT', year: 2023, fuelType: 'DIESEL', transmission: 'MANUAL', engineCC: 2198 },
+  { id: 'var-xuv700-ax7', modelId: 'model-xuv700', name: 'AX7 L AWD Diesel AT', year: 2023, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 2198 },
+  { id: 'var-xuv300-w8', modelId: 'model-xuv300', name: 'W8 Option Turbo MT', year: 2022, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1197 },
+  { id: 'var-thar-4x4', modelId: 'model-thar', name: 'LX Hard Top 4x4 Diesel MT', year: 2023, fuelType: 'DIESEL', transmission: 'MANUAL', engineCC: 2184 },
+  { id: 'var-bolero-n10', modelId: 'model-bolero', name: 'N10 Option Diesel MT', year: 2023, fuelType: 'DIESEL', transmission: 'MANUAL', engineCC: 1493 },
+
+  // --- 8. Volkswagen ---
+  { id: 'var-taigun-topline', modelId: 'model-taigun', name: 'Topline 1.0 TSI AT', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 999 },
+  { id: 'var-taigun-gt-plus', modelId: 'model-taigun', name: 'GT Plus 1.5 TSI DSG', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1498 },
+  { id: 'var-virtus-highline', modelId: 'model-virtus', name: 'Highline 1.0 TSI AT', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 999 },
+  { id: 'var-virtus-gt-edge', modelId: 'model-virtus', name: 'GT Edge 1.5 TSI DSG', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1498 },
+  { id: 'var-tiguan-elegance', modelId: 'model-tiguan', name: 'Elegance 2.0 TSI 4MOTION DSG', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1984 },
+  { id: 'var-polo-gt-tsi', modelId: 'model-polo', name: 'GT 1.0 TSI AT', year: 2021, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 999 },
+
+  // --- 9. Skoda ---
+  { id: 'var-kushaq-style', modelId: 'model-kushaq', name: 'Style 1.5 TSI AT', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1498 },
+  { id: 'var-kushaq-monte-carlo', modelId: 'model-kushaq', name: 'Monte Carlo 1.5 TSI DSG', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1498 },
+  { id: 'var-slavia-style', modelId: 'model-slavia', name: 'Style 1.5 TSI DSG', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1498 },
+  { id: 'var-kodiaq-l-and-k', modelId: 'model-kodiaq', name: 'L&K 2.0 TSI 4x4 DSG', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1984 },
+
+  // --- 10. Renault ---
+  { id: 'var-kiger-rxt', modelId: 'model-kiger', name: 'RXT Turbo CVT', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 999 },
+  { id: 'var-kwid-rxt', modelId: 'model-kwid', name: 'RXT AMT', year: 2022, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 999 },
+  { id: 'var-triber-rzx', modelId: 'model-triber', name: 'RZX EASY-R AMT', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 999 },
+
+  // --- 11. Nissan ---
+  { id: 'var-magnite-tekna', modelId: 'model-magnite', name: 'Tekna Plus Turbo CVT', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 999 },
+  { id: 'var-magnite-geza', modelId: 'model-magnite', name: 'GEZA Edition 1.0 MT', year: 2024, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 999 },
+  { id: 'var-xtrail-hybrid', modelId: 'model-xtrail', name: 'e-POWER Hybrid 4WD', year: 2024, fuelType: 'HYBRID', transmission: 'AUTOMATIC', engineCC: 1498 },
+
+  // --- 12. MG Motor ---
+  { id: 'var-hector-smart', modelId: 'model-hector', name: 'Smart Pro 2.0 Diesel MT', year: 2023, fuelType: 'DIESEL', transmission: 'MANUAL', engineCC: 1956 },
+  { id: 'var-hector-sharp-pro', modelId: 'model-hector', name: 'Sharp Pro 1.5 Turbo CVT', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1451 },
+  { id: 'var-astor-super', modelId: 'model-astor', name: 'Super CVT', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1349 },
+  { id: 'var-comet-plush', modelId: 'model-comet', name: 'Plush Fast-Charging EV', year: 2024, fuelType: 'ELECTRIC', transmission: 'AUTOMATIC', engineCC: 0 },
+  { id: 'var-zsev-exclusive', modelId: 'model-zsev', name: 'Exclusive Plus EV', year: 2024, fuelType: 'ELECTRIC', transmission: 'AUTOMATIC', engineCC: 0 },
+
+  // --- 13. Jeep ---
+  { id: 'var-compass-limited', modelId: 'model-compass', name: 'Limited 2.0 Diesel 4x4 AT', year: 2023, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1956 },
+  { id: 'var-compass-model-s', modelId: 'model-compass', name: 'Model S (O) 4x4 Diesel AT', year: 2024, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1956 },
+  { id: 'var-meridian-limited-plus', modelId: 'model-meridian', name: 'Limited Plus 4x4 AT', year: 2023, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1956 },
+  { id: 'var-wrangler-rubicon', modelId: 'model-wrangler', name: 'Rubicon 4x4 2.0 Turbo AT', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1995 },
+
+  // --- 14. Ford ---
+  { id: 'var-ecosport-titanium', modelId: 'model-ecosport', name: 'Titanium 1.5 Petrol MT', year: 2021, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1497 },
+  { id: 'var-endeavour-titanium-plus', modelId: 'model-endeavour', name: 'Titanium Plus 4x4 2.0 AT', year: 2021, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1996 },
+  { id: 'var-figo-titanium', modelId: 'model-figo', name: 'Titanium Blu 1.2 MT', year: 2021, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1194 },
+
+  // --- 15. BMW ---
+  { id: 'var-bmw-330li-m', modelId: 'model-bmw-3series', name: '330Li M Sport Gran Limousine', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1998 },
+  { id: 'var-bmw-m340i', modelId: 'model-bmw-3series', name: 'M340i xDrive 3.0 Turbo', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 2998 },
+  { id: 'var-bmw-520d-luxury', modelId: 'model-bmw-5series', name: '520d Luxury Line', year: 2023, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1995 },
+  { id: 'var-bmw-x1-sdrive18d', modelId: 'model-bmw-x1', name: 'sDrive18d M Sport', year: 2023, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1995 },
+  { id: 'var-bmw-x1-sdrive18i', modelId: 'model-bmw-x1', name: 'sDrive18i xLine', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1499 },
+  { id: 'var-bmw-x3-xdrive20d', modelId: 'model-bmw-x3', name: 'xDrive20d M Sport', year: 2023, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1995 },
+  { id: 'var-bmw-x5-xdrive30d', modelId: 'model-bmw-x5', name: 'xDrive30d xLine', year: 2024, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 2993 },
+
+  // --- 16. Mercedes-Benz ---
+  { id: 'var-merc-c200-petrol', modelId: 'model-merc-c-class', name: 'C 200 Avantgarde Mild Hybrid', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1496 },
+  { id: 'var-merc-c220d-diesel', modelId: 'model-merc-c-class', name: 'C 220d 4MATIC', year: 2024, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1993 },
+  { id: 'var-merc-e200-exclusive', modelId: 'model-merc-e-class', name: 'E 200 Exclusive LWB', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1991 },
+  { id: 'var-merc-gla200', modelId: 'model-merc-gla', name: 'GLA 200 Progressive Line', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1332 },
+  { id: 'var-merc-glc300', modelId: 'model-merc-glc', name: 'GLC 300 4MATIC Coupe', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1999 },
+  { id: 'var-merc-gle300d', modelId: 'model-merc-gle', name: 'GLE 300d 4MATIC LWB', year: 2024, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1993 },
+
+  // --- 17. Audi ---
+  { id: 'var-audi-a4-technology', modelId: 'model-audi-a4', name: '40 TFSI Technology', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1984 },
+  { id: 'var-audi-a4-premium', modelId: 'model-audi-a4', name: '40 TFSI Premium Plus', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1984 },
+  { id: 'var-audi-a6-technology', modelId: 'model-audi-a6', name: '45 TFSI Technology Matrix', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1984 },
+  { id: 'var-audi-q3-premium-plus', modelId: 'model-audi-q3', name: '40 TFSI quattro Premium Plus', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1984 },
+  { id: 'var-audi-q5-technology', modelId: 'model-audi-q5', name: '45 TFSI quattro Technology', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1984 },
+  { id: 'var-audi-q7-technology', modelId: 'model-audi-q7', name: '55 TFSI quattro Technology', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 2995 },
+
+  // --- 18. Isuzu ---
+  { id: 'var-isuzu-vcross-z-prestige', modelId: 'model-isuzu-vcross', name: 'Z-Prestige 4x4 AT', year: 2023, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1898 },
+  { id: 'var-isuzu-vcross-4x4-mt', modelId: 'model-isuzu-vcross', name: 'Z 4x4 MT', year: 2024, fuelType: 'DIESEL', transmission: 'MANUAL', engineCC: 1898 },
+  { id: 'var-isuzu-mux-4x4', modelId: 'model-isuzu-mux', name: '4x4 3.0 Diesel AT', year: 2023, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 2999 },
+  { id: 'var-isuzu-hilander-4x2', modelId: 'model-isuzu-hilander', name: '4x2 Crew Cab MT', year: 2023, fuelType: 'DIESEL', transmission: 'MANUAL', engineCC: 1898 },
+
+  // --- 19. Citroen ---
+  { id: 'var-citroen-c3-shine-turbo', modelId: 'model-citroen-c3', name: 'Shine 1.2 PureTech Turbo MT', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1199 },
+  { id: 'var-citroen-c3-feel', modelId: 'model-citroen-c3', name: 'Feel 1.2 MT', year: 2024, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 1198 },
+  { id: 'var-citroen-c3-aircross-max', modelId: 'model-citroen-c3-aircross', name: 'Max 7-Str 1.2 Turbo AT', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1199 },
+  { id: 'var-citroen-basalt-max-turbo', modelId: 'model-citroen-basalt', name: 'Max 1.2 Turbo AT Coupe', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1199 },
+  { id: 'var-citroen-c5-shine', modelId: 'model-citroen-c5', name: 'Shine 2.0 HDi Diesel AT', year: 2023, fuelType: 'DIESEL', transmission: 'AUTOMATIC', engineCC: 1997 },
+
+  // --- 20. Volvo ---
+  { id: 'var-volvo-xc40-b4-ultimate', modelId: 'model-volvo-xc40', name: 'B4 Ultimate Mild Hybrid AT', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1969 },
+  { id: 'var-volvo-xc40-recharge', modelId: 'model-volvo-xc40', name: 'Recharge Twin Motor EV', year: 2024, fuelType: 'ELECTRIC', transmission: 'AUTOMATIC', engineCC: 0 },
+  { id: 'var-volvo-xc60-b5-ultimate', modelId: 'model-volvo-xc60', name: 'B5 Ultimate AWD AT', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1969 },
+  { id: 'var-volvo-xc90-b6-ultimate', modelId: 'model-volvo-xc90', name: 'B6 Ultimate 7-Str AWD AT', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 1969 },
+
+  // --- 2-WHEELERS ---
+  // Hero
+  { id: 'var-splendor-drum', modelId: 'model-splendor', name: 'Drum Self-Cast BS6', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 97 },
   { id: 'var-splendor-xtec', modelId: 'model-splendor', name: 'XTEC Bluetooth', year: 2024, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 97 },
-  // Pulsar 150
+  { id: 'var-passion-pro-xtec', modelId: 'model-passion-pro', name: 'XTEC Disc', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 113 },
+  { id: 'var-xpulse-4v', modelId: 'model-xpulse', name: 'Pro 4V Rally Edition', year: 2024, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 199 },
+
+  // Bajaj
   { id: 'var-pulsar-twin', modelId: 'model-pulsar', name: 'Twin Disc BS6', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 149 },
   { id: 'var-pulsar-single', modelId: 'model-pulsar', name: 'Single Disc', year: 2022, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 149 },
-  // Classic 350
+  { id: 'var-ns200-standard', modelId: 'model-pulsar-ns', name: 'Dual-Channel ABS', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 199 },
+  { id: 'var-n250-standard', modelId: 'model-pulsar-n250', name: 'Dual-Channel ABS', year: 2024, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 249 },
+  { id: 'var-dominar-standard', modelId: 'model-dominar', name: 'Touring Edition 400', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 373 },
+
+  // Royal Enfield
   { id: 'var-classic-halcyon', modelId: 'model-classic-350', name: 'Halcyon Series Dual-ABS', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 349 },
-  { id: 'var-classic-dark', modelId: 'model-classic-350', name: 'Dark Stealth Black', year: 2024, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 349 },
-  // Activa 6G
+  { id: 'var-classic-dark', modelId: 'model-classic-350', name: 'Dark Stealth Black Dual-ABS', year: 2024, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 349 },
+  { id: 'var-hunter-dapper', modelId: 'model-hunter-350', name: 'Dapper Ash Retro', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 349 },
+  { id: 'var-meteor-fireball', modelId: 'model-meteor-350', name: 'Fireball Yellow', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 349 },
+  { id: 'var-himalayan-standard', modelId: 'model-himalayan', name: 'Hanle Black Tubeless', year: 2024, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 452 },
+
+  // Yamaha
+  { id: 'var-r15-v4', modelId: 'model-r15', name: 'V4 Racing Blue Quickshifter', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 155 },
+  { id: 'var-mt15-v2', modelId: 'model-mt15', name: 'V2 Ice Fluo Vermillion', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 155 },
+  { id: 'var-fzs-v4', modelId: 'model-fzs', name: 'V4 Deluxe Traction Control', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 149 },
+  { id: 'var-fascino-std', modelId: 'model-fascino', name: 'Disc Hybrid Fi', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 125 },
+  { id: 'var-ray-zr-std', modelId: 'model-ray-zr', name: 'Street Rally 125 Fi Hybrid', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 125 },
+
+  // KTM
+  { id: 'var-duke200-standard', modelId: 'model-duke-200', name: 'Electronic Orange', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 199 },
+  { id: 'var-duke390-standard', modelId: 'model-duke-390', name: 'Gen 3 Quickshifter Plus', year: 2024, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 398 },
+
+  // Honda Motorcycles & Scooters
+  { id: 'var-unicorn-standard', modelId: 'model-unicorn', name: 'Standard Alloy CBS', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 162 },
+  { id: 'var-shine-standard', modelId: 'model-shine', name: 'Celebration Edition CBS', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 124 },
   { id: 'var-activa-std', modelId: 'model-activa', name: 'Standard BS6', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 109 },
-  { id: 'var-activa-deluxe', modelId: 'model-activa', name: 'Deluxe LED', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 109 },
-  // Jupiter
-  { id: 'var-jupiter-zx', modelId: 'model-jupiter', name: 'ZX SmartXonnect', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 113 },
+  { id: 'var-activa-deluxe', modelId: 'model-activa', name: 'Deluxe Smart Key H-Smart', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 109 },
+  { id: 'var-dio-125-std', modelId: 'model-dio', name: 'H-Smart 125', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 124 },
+
+  // TVS
+  { id: 'var-jupiter-zx', modelId: 'model-jupiter', name: 'ZX SmartXonnect Disc', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 113 },
+  { id: 'var-ntorq-race', modelId: 'model-ntorq', name: 'Race XP Stealth Edition', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 124 },
+  { id: 'var-iqube-std', modelId: 'model-iqube', name: 'Standard 3.4 kWh', year: 2024, fuelType: 'ELECTRIC', transmission: 'AUTOMATIC', engineCC: 0 },
+  { id: 'var-apache-160-4v', modelId: 'model-apache', name: 'RTR 160 4V Special Edition', year: 2024, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 159 },
+
+  // Suzuki
+  { id: 'var-access-std', modelId: 'model-access', name: 'Ride Connect Bluetooth Edition', year: 2023, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 124 },
+  { id: 'var-burgman-std', modelId: 'model-burgman', name: 'EX Executive Luxury Maxi', year: 2024, fuelType: 'PETROL', transmission: 'AUTOMATIC', engineCC: 124 },
+  { id: 'var-gixxer-sf', modelId: 'model-gixxer', name: 'SF 250 Dual Channel ABS', year: 2023, fuelType: 'PETROL', transmission: 'MANUAL', engineCC: 249 },
+
+  // Ola Electric
+  { id: 'var-ola-s1-pro', modelId: 'model-ola-s1', name: 'S1 Pro Gen 2 (4 kWh)', year: 2024, fuelType: 'ELECTRIC', transmission: 'AUTOMATIC', engineCC: 0 },
+  { id: 'var-ola-s1x-2kw', modelId: 'model-ola-s1x', name: 'S1 X (3 kWh)', year: 2024, fuelType: 'ELECTRIC', transmission: 'AUTOMATIC', engineCC: 0 },
 ];
 
 // ============================================================================
@@ -366,7 +740,7 @@ export const initialProducts = [
     estimatedInstallTimeMinutes: 20,
     createdAt: new Date('2024-02-10'),
     images: [
-      { id: 'img-4-1', url: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=600', isPrimary: true, altText: 'Exide Matrix Red Battery', sortOrder: 0 },
+      { id: 'img-4-1', url: 'https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?w=600', isPrimary: true, altText: 'Exide Matrix Red Battery', sortOrder: 0 },
     ],
     specs: [
       { key: 'Capacity', value: '35', unit: 'Ah' },
@@ -448,7 +822,7 @@ export const initialProducts = [
     estimatedInstallTimeMinutes: 15,
     createdAt: new Date('2024-02-22'),
     images: [
-      { id: 'img-6-1', url: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=600', isPrimary: true, altText: 'Uno Minda Oil Filter', sortOrder: 0 },
+      { id: 'img-6-1', url: 'https://images.unsplash.com/photo-1600793575654-910699b5e4d4?w=600', isPrimary: true, altText: 'Uno Minda Oil Filter', sortOrder: 0 },
     ],
     specs: [
       { key: 'Filter Type', value: 'Spin-on Synthetic Filter', unit: '' },
@@ -486,7 +860,7 @@ export const initialProducts = [
     estimatedInstallTimeMinutes: 60,
     createdAt: new Date('2024-03-01'),
     images: [
-      { id: 'img-7-1', url: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=600', isPrimary: true, altText: 'Refurbished Starter Motor', sortOrder: 0 },
+      { id: 'img-7-1', url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600', isPrimary: true, altText: 'Refurbished Starter Motor', sortOrder: 0 },
     ],
     specs: [
       { key: 'Condition Grade', value: 'A+ (Factory Remanufactured)', unit: '' },
@@ -524,7 +898,7 @@ export const initialProducts = [
     estimatedInstallTimeMinutes: 60,
     createdAt: new Date('2024-03-05'),
     images: [
-      { id: 'img-8-1', url: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=600', isPrimary: true, altText: 'Used Verified Fuel Pump Assembly', sortOrder: 0 },
+      { id: 'img-8-1', url: 'https://images.unsplash.com/photo-1508974239320-0a029497e820?w=600', isPrimary: true, altText: 'Used Verified Fuel Pump Assembly', sortOrder: 0 },
     ],
     specs: [
       { key: 'Working Pressure', value: '3.5', unit: 'Bar' },
@@ -561,7 +935,7 @@ export const initialProducts = [
     estimatedInstallTimeMinutes: 20,
     createdAt: new Date('2024-03-10'),
     images: [
-      { id: 'img-9-1', url: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=600', isPrimary: true, altText: 'Amaron Pro Rider Battery', sortOrder: 0 },
+      { id: 'img-9-1', url: 'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=600', isPrimary: true, altText: 'Amaron Pro Rider Battery', sortOrder: 0 },
     ],
     specs: [
       { key: 'Capacity', value: '4', unit: 'Ah' },
@@ -938,6 +1312,7 @@ class InMemoryStore {
     this.seedDefaultAddresses();
     this.seedShopPortalData();
     this.seedDeliveryPartnerData();
+    this.seedOrdersData();
     this.seedSupportTicketsData();
   }
 
@@ -998,14 +1373,34 @@ class InMemoryStore {
   }
 
   private seedDefaultUser() {
-    const passwordHash = bcrypt.hashSync('Demo@1234', 10);
+    const passwordHash = bcrypt.hashSync('Password@123', 10);
+    const demo1234Hash = bcrypt.hashSync('Demo@1234', 10);
+    const shop1234Hash = bcrypt.hashSync('Shop@1234', 10);
+    const rider1234Hash = bcrypt.hashSync('Rider@1234', 10);
+    const admin1234Hash = bcrypt.hashSync('Admin@1234', 10);
+    const admin12345Hash = bcrypt.hashSync('Admin@12345', 10);
+
+    // 1. Customer Accounts (Official seed: demo@partsphere.in / Demo@1234)
     this.users.push({
       id: 'demo-user-1',
       firstName: 'Aarav',
       lastName: 'Sharma',
       email: 'demo@partsphere.in',
+      password: demo1234Hash,
+      phone: '+919876500002',
+      avatar: null,
+      role: 'CUSTOMER',
+      status: 'ACTIVE',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    this.users.push({
+      id: 'demo-user-aarav',
+      firstName: 'Aarav',
+      lastName: 'Sharma',
+      email: 'aarav@partsphare.com',
       password: passwordHash,
-      phone: '9876500002',
+      phone: '9876500001',
       avatar: null,
       role: 'CUSTOMER',
       status: 'ACTIVE',
@@ -1013,13 +1408,26 @@ class InMemoryStore {
       updatedAt: new Date(),
     });
 
-    const shopOwnerPassword = bcrypt.hashSync('Password@123', 10);
+    // 2. Shop Owner Accounts (Official seed: apex.shop@partsphere.in / Shop@1234)
+    this.users.push({
+      id: 'shop-owner-official',
+      firstName: 'Ramesh',
+      lastName: 'Gowda',
+      email: 'apex.shop@partsphere.in',
+      password: shop1234Hash,
+      phone: '+919876500003',
+      avatar: null,
+      role: 'SHOP_OWNER',
+      status: 'ACTIVE',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
     this.users.push({
       id: 'shop-owner-1',
       firstName: 'Rajesh',
       lastName: 'Verma',
       email: 'apex.auto@partsphare.test',
-      password: shopOwnerPassword,
+      password: passwordHash,
       phone: '+91 98450 12345',
       avatar: null,
       role: 'SHOP_OWNER',
@@ -1027,14 +1435,40 @@ class InMemoryStore {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+    this.users.push({
+      id: 'shop-owner-apex',
+      firstName: 'Rajesh',
+      lastName: 'Verma',
+      email: 'apex@autocare.com',
+      password: passwordHash,
+      phone: '+91 98450 12346',
+      avatar: null,
+      role: 'SHOP_OWNER',
+      status: 'ACTIVE',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
 
-    const riderPassword = bcrypt.hashSync('Password@123', 10);
+    // 3. Delivery Partner Accounts (Official seed: rider.rajesh@partsphere.in / Rider@1234)
+    this.users.push({
+      id: 'rider-user-official',
+      firstName: 'Rajesh',
+      lastName: 'Kumar',
+      email: 'rider.rajesh@partsphere.in',
+      password: rider1234Hash,
+      phone: '+919876500006',
+      avatar: null,
+      role: 'DELIVERY_PARTNER',
+      status: 'ACTIVE',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
     this.users.push({
       id: 'rider-user-1',
       firstName: 'Vikram',
       lastName: 'Singh',
       email: 'rider.vikram@partsphare.test',
-      password: riderPassword,
+      password: passwordHash,
       phone: '+91 98451 99882',
       avatar: null,
       role: 'DELIVERY_PARTNER',
@@ -1042,14 +1476,40 @@ class InMemoryStore {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+    this.users.push({
+      id: 'rider-user-vikram',
+      firstName: 'Vikram',
+      lastName: 'Singh',
+      email: 'vikram@delivery.com',
+      password: passwordHash,
+      phone: '+91 98451 99883',
+      avatar: null,
+      role: 'DELIVERY_PARTNER',
+      status: 'ACTIVE',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
 
-    const adminPassword = bcrypt.hashSync('Password@123', 10);
+    // 4. Admin Accounts (Official seed: admin@partsphere.in / Admin@1234)
+    this.users.push({
+      id: 'admin-user-official',
+      firstName: 'Platform',
+      lastName: 'Admin',
+      email: 'admin@partsphere.in',
+      password: admin1234Hash,
+      phone: '+919876500001',
+      avatar: null,
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
     this.users.push({
       id: 'admin-user-1',
       firstName: 'Super',
       lastName: 'Admin',
       email: 'admin@partsphare.test',
-      password: adminPassword,
+      password: passwordHash,
       phone: '+91 99999 00000',
       avatar: null,
       role: 'ADMIN',
@@ -1057,17 +1517,15 @@ class InMemoryStore {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-
-    const adminAltPassword = bcrypt.hashSync('Admin@1234', 10);
     this.users.push({
-      id: 'admin-user-2',
-      firstName: 'Platform',
+      id: 'admin-user-main',
+      firstName: 'Super',
       lastName: 'Admin',
-      email: 'admin@partsphere.in',
-      password: adminAltPassword,
-      phone: '+91 99999 11111',
+      email: 'admin@partsphare.com',
+      password: admin12345Hash,
+      phone: '+91 99999 00001',
       avatar: null,
-      role: 'ADMIN',
+      role: 'SUPER_ADMIN',
       status: 'ACTIVE',
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -1729,6 +2187,181 @@ class InMemoryStore {
     ];
   }
 
+  private seedOrdersData() {
+    this.orders = [
+      {
+        id: 'ord-seed-101',
+        orderNumber: 'PN-2026-90412',
+        userId: 'demo-user-1',
+        addressId: 'addr-demo-home',
+        status: 'IN_TRANSIT',
+        paymentMethod: 'RAZORPAY',
+        paymentStatus: 'PAID',
+        subtotal: 950,
+        deliveryFee: 120,
+        discount: 0,
+        installationFee: 350,
+        homeVisitSurcharge: 0,
+        total: 1420,
+        couponCode: null,
+        notes: 'Express order. Customer requested gate call on arrival.',
+        difmType: 'SHOP_VISIT',
+        createdAt: new Date(Date.now() - 3600000 * 2),
+        updatedAt: new Date(Date.now() - 3600000 * 0.8),
+      },
+      {
+        id: 'ord-seed-102',
+        orderNumber: 'PN-2026-90488',
+        userId: 'demo-user-1',
+        addressId: 'addr-demo-work',
+        status: 'PROCESSING',
+        paymentMethod: 'CASH_ON_DELIVERY',
+        paymentStatus: 'PENDING',
+        subtotal: 4200,
+        deliveryFee: 180,
+        discount: 0,
+        installationFee: 500,
+        homeVisitSurcharge: 150,
+        total: 5030,
+        couponCode: null,
+        notes: 'Fragile battery package, keep upright. Collect COD cash ₹5,030.',
+        difmType: 'HOME_INSTALLATION',
+        createdAt: new Date(Date.now() - 3600000 * 8),
+        updatedAt: new Date(Date.now() - 3600000 * 1),
+      },
+      {
+        id: 'ord-seed-103',
+        orderNumber: 'PN-2026-90350',
+        userId: 'demo-user-1',
+        addressId: 'addr-demo-home',
+        status: 'DELIVERED',
+        paymentMethod: 'RAZORPAY',
+        paymentStatus: 'PAID',
+        subtotal: 1850,
+        deliveryFee: 0,
+        discount: 0,
+        installationFee: 750,
+        homeVisitSurcharge: 0,
+        total: 2600,
+        couponCode: null,
+        notes: 'DIFM Brake pad replacement completed.',
+        difmType: 'SHOP_VISIT',
+        createdAt: new Date(Date.now() - 86400000 * 2),
+        updatedAt: new Date(Date.now() - 86400000),
+      },
+      {
+        id: 'ord-seed-104',
+        orderNumber: 'PN-2026-90310',
+        userId: 'demo-user-1',
+        addressId: 'addr-demo-work',
+        status: 'DELIVERED',
+        paymentMethod: 'CASH_ON_DELIVERY',
+        paymentStatus: 'PAID',
+        subtotal: 1850,
+        deliveryFee: 90,
+        discount: 0,
+        installationFee: 0,
+        homeVisitSurcharge: 0,
+        total: 1940,
+        couponCode: null,
+        notes: 'Delivered successfully.',
+        difmType: 'NO_INSTALLATION',
+        createdAt: new Date(Date.now() - 86400000),
+        updatedAt: new Date(Date.now() - 86400000 + 3600000),
+      },
+    ];
+
+    // Seed corresponding orderItems
+    this.orderItems.push(
+      {
+        id: 'item-101',
+        orderId: 'ord-seed-101',
+        productId: 'prod-001',
+        shopId: 'shop-1',
+        quantity: 1,
+        unitPrice: 950,
+        totalPrice: 950,
+        createdAt: new Date(Date.now() - 3600000 * 2),
+      },
+      {
+        id: 'item-102',
+        orderId: 'ord-seed-102',
+        productId: 'prod-002',
+        shopId: 'shop-1',
+        quantity: 1,
+        unitPrice: 4200,
+        totalPrice: 4200,
+        createdAt: new Date(Date.now() - 3600000 * 8),
+      },
+      {
+        id: 'item-103',
+        orderId: 'ord-seed-103',
+        productId: 'prod-003',
+        shopId: 'shop-1',
+        quantity: 1,
+        unitPrice: 1850,
+        totalPrice: 1850,
+        createdAt: new Date(Date.now() - 86400000 * 2),
+      },
+      {
+        id: 'item-104',
+        orderId: 'ord-seed-104',
+        productId: 'prod-004',
+        shopId: 'shop-1',
+        quantity: 1,
+        unitPrice: 1850,
+        totalPrice: 1850,
+        createdAt: new Date(Date.now() - 86400000),
+      }
+    );
+
+    // Seed corresponding DIFM requests
+    this.difmRequests.push(
+      {
+        id: 'difm-seed-101',
+        orderId: 'ord-seed-101',
+        shopId: 'shop-1',
+        type: 'SHOP_VISIT',
+        status: 'SCHEDULED',
+        installationFee: 350,
+        homeVisitSurcharge: 0,
+        preferredDate: new Date(),
+        scheduledDate: new Date(),
+        notes: 'Bosch spark plug installation appointment.',
+        createdAt: new Date(Date.now() - 3600000 * 5),
+        updatedAt: new Date(Date.now() - 3600000 * 5),
+      },
+      {
+        id: 'difm-seed-102',
+        orderId: 'ord-seed-102',
+        shopId: 'shop-1',
+        type: 'HOME_INSTALLATION',
+        status: 'IN_PROGRESS',
+        installationFee: 500,
+        homeVisitSurcharge: 150,
+        preferredDate: new Date(),
+        scheduledDate: new Date(),
+        notes: 'Doorstep battery installation.',
+        createdAt: new Date(Date.now() - 3600000 * 8),
+        updatedAt: new Date(Date.now() - 3600000 * 1),
+      },
+      {
+        id: 'difm-seed-103',
+        orderId: 'ord-seed-103',
+        shopId: 'shop-1',
+        type: 'SHOP_VISIT',
+        status: 'COMPLETED',
+        installationFee: 750,
+        homeVisitSurcharge: 0,
+        preferredDate: new Date(Date.now() - 86400000),
+        scheduledDate: new Date(Date.now() - 86400000),
+        notes: 'Front brake replacement completed.',
+        createdAt: new Date(Date.now() - 86400000 * 2),
+        updatedAt: new Date(Date.now() - 86400000),
+      }
+    );
+  }
+
   private seedSupportTicketsData() {
     this.supportTickets = [
       {
@@ -1897,6 +2530,17 @@ class InMemoryStore {
         _count: { orders: 0, customerVehicles: countVehicles },
       };
     },
+    findFirst: async ({ where, select }: { where?: any; select?: any } = {}) => {
+      const u = this.users.find((usr) => {
+        if (where?.id && usr.id !== where.id) return false;
+        if (where?.email && usr.email.toLowerCase() !== where.email.toLowerCase()) return false;
+        if (where?.role && usr.role !== where.role) return false;
+        if (where?.status && usr.status !== where.status) return false;
+        return true;
+      });
+      if (!u) return null;
+      return u;
+    },
     create: async ({ data }: { data: any }) => {
       const newUser = {
         id: crypto.randomUUID(),
@@ -1933,10 +2577,16 @@ class InMemoryStore {
         const s = this.shops.find((shp) => shp.id === item.shopId) || initialShops[0];
         const inv = this.inventories.find(
           (i) => i.productId === item.productId && i.shopId === item.shopId
-        );
+        ) || this.inventories.find((i) => i.productId === item.productId);
+
+        const fallbackPrice = inv?.sellingPrice ? Number(inv.sellingPrice) : (p?.basePrice ? Number(p.basePrice) : (p?.mrp ? Number(p.mrp) : 0));
+        const resolvedPrice = (item.priceSnapshot !== undefined && item.priceSnapshot !== null && !isNaN(Number(item.priceSnapshot)) && Number(item.priceSnapshot) > 0)
+          ? Number(item.priceSnapshot)
+          : fallbackPrice;
+
         return {
           ...item,
-          priceSnapshot: Number(item.priceSnapshot),
+          priceSnapshot: resolvedPrice,
           maxStock: inv ? inv.quantity : 0,
           isAvailable: inv ? inv.isAvailable && inv.quantity > 0 : false,
           product,
@@ -2040,13 +2690,22 @@ class InMemoryStore {
       return list.map((it) => ({ ...it, priceSnapshot: Number(it.priceSnapshot) }));
     },
     create: async ({ data }: { data: any }) => {
+      const inv = this.inventories.find(
+        (i) => i.productId === data.productId && i.shopId === data.shopId
+      ) || this.inventories.find((i) => i.productId === data.productId);
+      const p = initialProducts.find((prod) => prod.id === data.productId);
+      const fallbackPrice = inv?.sellingPrice ? Number(inv.sellingPrice) : (p?.basePrice ? Number(p.basePrice) : 0);
+      const resolvedPrice = (data.priceSnapshot !== undefined && data.priceSnapshot !== null && !isNaN(Number(data.priceSnapshot)) && Number(data.priceSnapshot) > 0)
+        ? Number(data.priceSnapshot)
+        : fallbackPrice;
+
       const newItem = {
         id: crypto.randomUUID(),
         cartId: data.cartId,
         productId: data.productId,
         shopId: data.shopId,
-        quantity: data.quantity || 1,
-        priceSnapshot: Number(data.priceSnapshot),
+        quantity: Math.max(1, Number(data.quantity) || 1),
+        priceSnapshot: resolvedPrice,
         addedAt: new Date(),
       };
       this.cartItems.push(newItem);
@@ -2134,6 +2793,25 @@ class InMemoryStore {
         };
       });
     },
+    create: async ({ data }: { data: any }) => {
+      const id = data.id || 'inv-' + Math.random().toString(36).substring(2, 9);
+      const qty = Math.max(0, Number(data.quantity ?? 0));
+      const newInv = {
+        id,
+        productId: data.productId,
+        shopId: data.shopId || 'shop-1',
+        quantity: qty,
+        reservedQty: 0,
+        sellingPrice: Number(data.sellingPrice || 999),
+        isAvailable: qty > 0,
+        availabilityStatus:
+          qty > 0 ? (qty <= (data.lowStockThreshold || 5) ? 'LOW_STOCK' : 'IN_STOCK') : 'OUT_OF_STOCK',
+        lowStockThreshold: data.lowStockThreshold || 5,
+        updatedAt: new Date(),
+      };
+      this.inventories.unshift(newInv);
+      return newInv;
+    },
     update: async ({
       where,
       data,
@@ -2149,12 +2827,20 @@ class InMemoryStore {
             inv.shopId === where.productId_shopId.shopId)
       );
       if (idx === -1) return null;
-      const qty = data.quantity !== undefined ? Number(data.quantity) : this.inventories[idx].quantity;
+      let qty = this.inventories[idx].quantity;
+      if (data.quantity !== undefined) {
+        qty = Math.max(0, Number(data.quantity));
+      } else if (data.decrement !== undefined) {
+        qty = Math.max(0, qty - Number(data.decrement));
+      } else if (data.increment !== undefined) {
+        qty = qty + Number(data.increment);
+      }
       this.inventories[idx] = {
         ...this.inventories[idx],
         ...data,
         quantity: qty,
-        availabilityStatus: qty > 0 ? (qty <= (this.inventories[idx].lowStockThreshold || 5) ? 'LOW_STOCK' : 'IN_STOCK') : 'OUT_OF_STOCK',
+        availabilityStatus:
+          qty > 0 ? (qty <= (this.inventories[idx].lowStockThreshold || 5) ? 'LOW_STOCK' : 'IN_STOCK') : 'OUT_OF_STOCK',
         isAvailable: qty > 0,
         updatedAt: new Date(),
       };
@@ -2289,8 +2975,35 @@ class InMemoryStore {
       const updated = { ...this.shopJobs[idx], ...data, updatedAt: new Date() };
       this.shopJobs[idx] = updated;
 
-      // When job status changes, sync with commission ledger
+      // When job status changes, sync with commission ledger and DIFM request
       if (data.status) {
+        if (updated.difmRequestId || updated.orderId) {
+          const difmIdx = this.difmRequests.findIndex(
+            (d) =>
+              (updated.difmRequestId && d.id === updated.difmRequestId) ||
+              (updated.orderId && d.orderId === updated.orderId)
+          );
+          if (difmIdx !== -1) {
+            this.difmRequests[difmIdx].status =
+              data.status === 'COMPLETED'
+                ? 'COMPLETED'
+                : data.status === 'CANCELLED'
+                ? 'CANCELLED'
+                : 'ACCEPTED';
+            this.difmRequests[difmIdx].updatedAt = new Date();
+          }
+        }
+
+        if (updated.orderId && data.status === 'COMPLETED') {
+          this.orderTrackings.push({
+            id: crypto.randomUUID(),
+            orderId: updated.orderId,
+            status: 'DIFM_COMPLETED',
+            message: 'DIFM installation completed by certified workshop technician.',
+            createdAt: new Date(),
+          });
+        }
+
         const commIdx = this.commissionLedgers.findIndex(
           (c) => c.jobId === updated.id || (updated.orderId && c.orderId === updated.orderId)
         );
@@ -2319,6 +3032,8 @@ class InMemoryStore {
       }).length;
     },
   };
+
+  public mechanicJob = this.shopJob;
 
   // --- COMMISSION LEDGER ---
   public commissionLedger = {
@@ -2489,7 +3204,8 @@ class InMemoryStore {
       );
       if (!p) return null;
       const user = include?.user ? this.users.find((u) => u.id === p.userId) : null;
-      const kyc = this.kycRecords.find((k) => k.userId === p.userId) || null;
+      const rawKyc = this.kycRecords.find((k) => k.userId === p.userId) || null;
+      const kyc = rawKyc ? { ...rawKyc, documents: this.kycDocuments.filter((d) => d.kycId === rawKyc.id) } : null;
       return {
         ...p,
         user: user ? { firstName: user.firstName, lastName: user.lastName, email: user.email, phone: user.phone } : null,
@@ -2501,20 +3217,45 @@ class InMemoryStore {
         if (where?.id && dp.id !== where.id) return false;
         if (where?.userId && dp.userId !== where.userId) return false;
         if (where?.isOnline !== undefined && dp.isOnline !== where.isOnline) return false;
+        if (where?.OR && Array.isArray(where.OR)) {
+          const match = where.OR.some((cond: any) => {
+            if (cond.id && dp.id === cond.id) return true;
+            if (cond.userId && dp.userId === cond.userId) return true;
+            return false;
+          });
+          if (!match) return false;
+        }
         return true;
       });
       if (!p) return null;
       const user = include?.user ? this.users.find((u) => u.id === p.userId) : null;
+      const rawKyc = this.kycRecords.find((k) => k.userId === p.userId) || null;
+      const kyc = rawKyc ? { ...rawKyc, documents: this.kycDocuments.filter((d) => d.kycId === rawKyc.id) } : null;
       return {
         ...p,
         user: user ? { firstName: user.firstName, lastName: user.lastName, email: user.email, phone: user.phone } : null,
+        kyc,
       };
     },
-    findMany: async ({ where }: { where?: any } = {}) => {
-      return this.deliveryPartners.filter((dp) => {
-        if (where?.isOnline !== undefined && dp.isOnline !== where.isOnline) return false;
-        return true;
-      });
+    findMany: async ({ where, include }: { where?: any; include?: any } = {}) => {
+      return this.deliveryPartners
+        .filter((dp) => {
+          if (where?.isOnline !== undefined && dp.isOnline !== where.isOnline) return false;
+          if (where?.verificationStatus !== undefined && dp.verificationStatus !== where.verificationStatus) return false;
+          if (where?.vehicleType !== undefined && dp.vehicleType !== where.vehicleType) return false;
+          return true;
+        })
+        .map((dp) => {
+          const user = include?.user ? this.users.find((u) => u.id === dp.userId) : null;
+          const rawKyc = this.kycRecords.find((k) => k.userId === dp.userId) || null;
+          const kyc = rawKyc ? { ...rawKyc, documents: this.kycDocuments.filter((d) => d.kycId === rawKyc.id) } : null;
+          return {
+            ...dp,
+            user: user ? { firstName: user.firstName, lastName: user.lastName, email: user.email, phone: user.phone } : null,
+            kyc,
+            assignments: [],
+          };
+        });
     },
     create: async ({ data }: { data: any }) => {
       const id = 'partner-' + (this.deliveryPartners.length + 1);
@@ -2750,7 +3491,40 @@ class InMemoryStore {
       const idx = this.deliveryAssignments.findIndex((a) => a.id === where.id);
       if (idx === -1) return null;
       this.deliveryAssignments[idx] = { ...this.deliveryAssignments[idx], ...data, updatedAt: new Date() };
-      return this.deliveryAssignments[idx];
+      const updatedAssignment = this.deliveryAssignments[idx];
+
+      // Real-time synchronization to linked Order and Customer Tracking
+      if (updatedAssignment.orderId && data.status) {
+        const orderIdx = this.orders.findIndex((o) => o.id === updatedAssignment.orderId);
+        if (orderIdx !== -1) {
+          if (data.status === 'PICKED_UP' || data.status === 'IN_TRANSIT') {
+            this.orders[orderIdx].status = 'SHIPPED';
+            this.orders[orderIdx].updatedAt = new Date();
+            this.orderTrackings.push({
+              id: crypto.randomUUID(),
+              orderId: updatedAssignment.orderId,
+              status: 'OUT_FOR_DELIVERY',
+              message: 'Package picked up by delivery partner and is out for doorstep delivery.',
+              createdAt: new Date(),
+            });
+          } else if (data.status === 'DELIVERED') {
+            this.orders[orderIdx].status = 'DELIVERED';
+            if (this.orders[orderIdx].paymentMethod === 'CASH_ON_DELIVERY') {
+              this.orders[orderIdx].paymentStatus = 'PAID';
+            }
+            this.orders[orderIdx].updatedAt = new Date();
+            this.orderTrackings.push({
+              id: crypto.randomUUID(),
+              orderId: updatedAssignment.orderId,
+              status: 'DELIVERED',
+              message: 'Package successfully delivered to customer doorstep by delivery partner.',
+              createdAt: new Date(),
+            });
+          }
+        }
+      }
+
+      return updatedAssignment;
     },
     count: async ({ where }: { where?: any } = {}) => {
       return this.deliveryAssignments.filter((a) => {
@@ -3011,26 +3785,116 @@ class InMemoryStore {
 
   public order = {
     findMany: async ({ where, orderBy, include }: { where?: any; orderBy?: any; include?: any } = {}) => {
-      let list = this.orders.filter((o) => !where?.userId || o.userId === where.userId);
+      let list = this.orders.filter((o) => {
+        if (where?.userId && o.userId !== where.userId) return false;
+        if (where?.status && o.status !== where.status) return false;
+        if (where?.paymentStatus && o.paymentStatus !== where.paymentStatus) return false;
+        if (where?.difmType && o.difmType !== where.difmType) return false;
+        return true;
+      });
       list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      return list.map((o) => this.populateOrder(o));
+      return list.map((o) => {
+        const base = this.populateOrder(o);
+        const user = this.users.find((u) => u.id === o.userId) || null;
+        const difm = this.difmRequests.find((d) => d.orderId === o.id) || null;
+        const job = this.shopJobs.find((j) => j.orderId === o.id) || null;
+        const delivery = this.deliveryAssignments.find((a) => a.orderId === o.id) || null;
+
+        return {
+          ...base,
+          user: include?.user ? (user ? { ...user, fullName: `${user.firstName} ${user.lastName}`.trim() } : null) : undefined,
+          difmRequest: difm ? { ...difm, shop: this.shops.find((s) => s.id === difm.shopId) || null } : null,
+          mechanicJob: job ? { ...job, shop: this.shops.find((s) => s.id === job.shopId) || null } : null,
+          deliveryAssignment: delivery
+            ? {
+                ...delivery,
+                deliveryPartner: this.deliveryPartners.find((dp) => dp.id === delivery.deliveryPartnerId)
+                  ? {
+                      ...this.deliveryPartners.find((dp) => dp.id === delivery.deliveryPartnerId),
+                      user: this.users.find((u) => u.id === this.deliveryPartners.find((dp) => dp.id === delivery.deliveryPartnerId)?.userId),
+                    }
+                  : null,
+              }
+            : null,
+        };
+      });
     },
     findFirst: async ({ where, include }: { where: any; include?: any }) => {
-      const order = this.orders.find(
-        (o) =>
-          (!where.id || o.id === where.id) &&
-          (!where.userId || o.userId === where.userId) &&
-          (!where.orderNumber || o.orderNumber === where.orderNumber)
-      );
-      return order ? this.populateOrder(order) : null;
+      const order = this.orders.find((o) => {
+        if (where.userId && o.userId !== where.userId) return false;
+        if (where.id && o.id !== where.id) return false;
+        if (where.orderNumber && o.orderNumber !== where.orderNumber) return false;
+        if (where.OR && Array.isArray(where.OR)) {
+          const matchOr = where.OR.some(
+            (cond: any) =>
+              (cond.id && o.id === cond.id) || (cond.orderNumber && o.orderNumber === cond.orderNumber)
+          );
+          if (!matchOr) return false;
+        }
+        return true;
+      });
+      if (!order) return null;
+      const base = this.populateOrder(order);
+      const user = this.users.find((u) => u.id === order.userId) || null;
+      const difm = this.difmRequests.find((d) => d.orderId === order.id) || null;
+      const job = this.shopJobs.find((j) => j.orderId === order.id) || null;
+      const delivery = this.deliveryAssignments.find((a) => a.orderId === order.id) || null;
+
+      return {
+        ...base,
+        user: include?.user ? (user ? { ...user, fullName: `${user.firstName} ${user.lastName}`.trim() } : null) : undefined,
+        difmRequest: difm ? { ...difm, shop: this.shops.find((s) => s.id === difm.shopId) || null } : null,
+        mechanicJob: job ? { ...job, shop: this.shops.find((s) => s.id === job.shopId) || null } : null,
+        deliveryAssignment: delivery
+          ? {
+              ...delivery,
+              deliveryPartner: this.deliveryPartners.find((dp) => dp.id === delivery.deliveryPartnerId)
+                ? {
+                    ...this.deliveryPartners.find((dp) => dp.id === delivery.deliveryPartnerId),
+                    user: this.users.find((u) => u.id === this.deliveryPartners.find((dp) => dp.id === delivery.deliveryPartnerId)?.userId),
+                  }
+                : null,
+            }
+          : null,
+      };
     },
     findUnique: async ({ where, include }: { where: any; include?: any }) => {
-      const order = this.orders.find(
-        (o) =>
-          (!where.id || o.id === where.id) &&
-          (!where.orderNumber || o.orderNumber === where.orderNumber)
-      );
-      return order ? this.populateOrder(order) : null;
+      const order = this.orders.find((o) => {
+        if (where.id && o.id !== where.id) return false;
+        if (where.orderNumber && o.orderNumber !== where.orderNumber) return false;
+        if (where.OR && Array.isArray(where.OR)) {
+          const matchOr = where.OR.some(
+            (cond: any) =>
+              (cond.id && o.id === cond.id) || (cond.orderNumber && o.orderNumber === cond.orderNumber)
+          );
+          if (!matchOr) return false;
+        }
+        return true;
+      });
+      if (!order) return null;
+      const base = this.populateOrder(order);
+      const user = this.users.find((u) => u.id === order.userId) || null;
+      const difm = this.difmRequests.find((d) => d.orderId === order.id) || null;
+      const job = this.shopJobs.find((j) => j.orderId === order.id) || null;
+      const delivery = this.deliveryAssignments.find((a) => a.orderId === order.id) || null;
+
+      return {
+        ...base,
+        user: include?.user ? (user ? { ...user, fullName: `${user.firstName} ${user.lastName}`.trim() } : null) : undefined,
+        difmRequest: difm ? { ...difm, shop: this.shops.find((s) => s.id === difm.shopId) || null } : null,
+        mechanicJob: job ? { ...job, shop: this.shops.find((s) => s.id === job.shopId) || null } : null,
+        deliveryAssignment: delivery
+          ? {
+              ...delivery,
+              deliveryPartner: this.deliveryPartners.find((dp) => dp.id === delivery.deliveryPartnerId)
+                ? {
+                    ...this.deliveryPartners.find((dp) => dp.id === delivery.deliveryPartnerId),
+                    user: this.users.find((u) => u.id === this.deliveryPartners.find((dp) => dp.id === delivery.deliveryPartnerId)?.userId),
+                  }
+                : null,
+            }
+          : null,
+      };
     },
     create: async ({ data, include }: { data: any; include?: any }) => {
       const orderId = crypto.randomUUID();
@@ -3067,7 +3931,6 @@ class InMemoryStore {
             quantity: it.quantity,
             unitPrice: Number(it.unitPrice),
             totalPrice: Number(it.totalPrice),
-            createdAt: new Date(),
           });
         }
       }
@@ -3607,6 +4470,20 @@ class InMemoryStore {
         _count: { products: initialProducts.filter((p) => p.categoryId === c.id).length },
       };
     },
+    create: async ({ data }: { data: any }) => {
+      const newCat = {
+        id: data.id || 'cat-' + Math.random().toString(36).substring(2, 9),
+        name: data.name,
+        slug: data.slug || String(data.name).toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        description: data.description || '',
+        imageUrl: data.imageUrl || null,
+        parentId: data.parentId || null,
+        isActive: data.isActive !== undefined ? data.isActive : true,
+        sortOrder: data.sortOrder || initialCategories.length + 1,
+      };
+      initialCategories.push(newCat as any);
+      return newCat;
+    },
   };
 
   // --- BRANDS ---
@@ -3623,6 +4500,18 @@ class InMemoryStore {
     },
     findUnique: async ({ where }: { where: { id?: string; slug?: string } }) => {
       return initialBrands.find((b) => (where.id && b.id === where.id) || (where.slug && b.slug === where.slug)) || null;
+    },
+    create: async ({ data }: { data: any }) => {
+      const newBrand = {
+        id: data.id || 'brand-' + Math.random().toString(36).substring(2, 9),
+        name: data.name,
+        slug: data.slug || String(data.name).toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        logoUrl: data.logoUrl || null,
+        originCountry: data.originCountry || 'India',
+        isOem: Boolean(data.isOem),
+      };
+      initialBrands.push(newBrand as any);
+      return newBrand;
     },
   };
 
@@ -3662,7 +4551,7 @@ class InMemoryStore {
       category,
       brandRel,
       compatibilities,
-      inventories: productInventories.length > 0 ? productInventories : p.inventories,
+      inventories: productInventories,
       _count: {
         reviews: p.reviews?.length || 0,
         compatibilities: compatibilities.length,
@@ -3766,6 +4655,11 @@ class InMemoryStore {
       }
 
       return list.slice(skip, skip + take);
+    },
+
+    findFirst: async ({ where, include, orderBy }: { where?: any; include?: any; orderBy?: any } = {}) => {
+      const results = await this.product.findMany({ where, skip: 0, take: 1, orderBy, include });
+      return results[0] || null;
     },
 
     findUnique: async ({
@@ -4048,6 +4942,19 @@ class InMemoryStore {
       return list.map((s) => this.populateSubscription(s));
     },
 
+    count: async ({ where }: { where?: any } = {}) => {
+      let list = [...this.customerSubscriptions];
+      if (where?.userId) list = list.filter((s) => s.userId === where.userId);
+      if (where?.status) {
+        if (typeof where.status === 'string') {
+          list = list.filter((s) => s.status === where.status);
+        } else if (where.status.in && Array.isArray(where.status.in)) {
+          list = list.filter((s) => where.status.in.includes(s.status));
+        }
+      }
+      return list.length;
+    },
+
     create: async ({ data, include }: { data: any; include?: any }) => {
       const id = 'sub_' + Math.random().toString(36).substring(2, 11);
       const newSub = {
@@ -4063,6 +4970,10 @@ class InMemoryStore {
         pricePaid: Number(data.pricePaid || 0),
         vehicleId: data.vehicleId || null,
         vehicleReg: data.vehicleReg || null,
+        paymentMethod: data.paymentMethod || 'RAZORPAY',
+        razorpayOrderId: data.razorpayOrderId || null,
+        razorpayPaymentId: data.razorpayPaymentId || null,
+        razorpaySignature: data.razorpaySignature || null,
         cancellationReason: data.cancellationReason || null,
         cancelledAt: data.cancelledAt ? new Date(data.cancelledAt) : null,
         entitlementUsages: [],
@@ -4383,6 +5294,105 @@ class InMemoryStore {
       }
       this.supportTickets[idx] = updated;
       return updated;
+    },
+
+    count: async ({ where }: { where?: any } = {}) => {
+      let list = [...this.supportTickets];
+      if (where?.status) list = list.filter((t) => t.status === where.status);
+      return list.length;
+    },
+  };
+
+  public ticketMessage = {
+    create: async ({ data }: { data: any }) => {
+      const ticket = this.supportTickets.find((t) => t.id === data.ticketId);
+      const newMsg = {
+        id: 'msg-' + Date.now(),
+        ticketId: data.ticketId,
+        senderId: data.senderId,
+        senderName: data.senderName,
+        senderRole: data.senderRole || 'ADMIN',
+        message: data.message,
+        createdAt: new Date(),
+      };
+      if (ticket) {
+        ticket.messages = ticket.messages || [];
+        ticket.messages.push(newMsg);
+        ticket.updatedAt = new Date();
+      }
+      return newMsg;
+    },
+  };
+
+  public commissionConfig = {
+    findFirst: async ({ orderBy }: { orderBy?: any } = {}) => {
+      return {
+        id: 'comm-cfg-default',
+        defaultRate: this.platformConfigs.commissions?.defaultRate || 12.0,
+        minRate: 10.0,
+        maxRate: 15.0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    },
+    create: async ({ data }: { data: any }) => {
+      this.platformConfigs.commissions.defaultRate = Number(data.defaultRate);
+      return {
+        id: 'comm-cfg-' + Date.now(),
+        defaultRate: Number(data.defaultRate),
+        minRate: 10.0,
+        maxRate: 15.0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    },
+  };
+
+  public notifications: any[] = [];
+
+  public notification = {
+    create: async ({ data }: { data: any }) => {
+      const newNotif = {
+        id: 'notif-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+        userId: data.userId,
+        channel: data.channel || 'IN_APP',
+        status: data.status || 'DELIVERED',
+        title: data.title,
+        body: data.body,
+        data: data.data || null,
+        isRead: Boolean(data.isRead),
+        readAt: data.readAt || null,
+        createdAt: new Date(),
+      };
+      this.notifications.push(newNotif);
+      return newNotif;
+    },
+    findMany: async ({ where, orderBy, take }: { where?: any; orderBy?: any; take?: number } = {}) => {
+      let list = [...this.notifications];
+      if (where?.userId) list = list.filter((n) => n.userId === where.userId);
+      if (where?.isRead !== undefined) list = list.filter((n) => n.isRead === where.isRead);
+      if (take) list = list.slice(0, take);
+      return list;
+    },
+    count: async ({ where }: { where?: any } = {}) => {
+      let list = [...this.notifications];
+      if (where?.userId) list = list.filter((n) => n.userId === where.userId);
+      if (where?.isRead !== undefined) list = list.filter((n) => n.isRead === where.isRead);
+      return list.length;
+    },
+    update: async ({ where, data }: { where: { id: string }; data: any }) => {
+      const idx = this.notifications.findIndex((n) => n.id === where.id);
+      if (idx !== -1) {
+        this.notifications[idx] = { ...this.notifications[idx], ...data, updatedAt: new Date() };
+        return this.notifications[idx];
+      }
+      return null;
+    },
+    deleteMany: async ({ where }: { where?: any } = {}) => {
+      if (where?.userId) {
+        this.notifications = this.notifications.filter((n) => n.userId !== where.userId);
+      }
+      return { count: 1 };
     },
   };
 

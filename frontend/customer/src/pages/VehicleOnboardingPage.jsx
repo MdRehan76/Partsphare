@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useVehicles } from '../contexts/VehicleContext';
 import { vehiclesService } from '../services';
 import { Button, Input } from '../components/ui';
+import { BrandLogo } from '../components/vehicle/BrandLogos';
 import toast from 'react-hot-toast';
 import './VehicleOnboardingPage.css';
 
@@ -21,6 +22,8 @@ const VehicleOnboardingPage = () => {
   const [selectedMake, setSelectedMake] = useState(null);
   const [selectedModel, setSelectedModel] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
+  const [brandSearch, setBrandSearch] = useState('');
+  const [modelSearch, setModelSearch] = useState('');
   const [nickname, setNickname] = useState('');
   const [regNumber, setRegNumber] = useState('');
   const [loading, setLoading] = useState(false);
@@ -186,6 +189,18 @@ const VehicleOnboardingPage = () => {
                 Select Brand / Make ({vehicleType === '4_WHEELER' ? 'Car' : '2-Wheeler'})
               </h2>
 
+              {/* Search Bar for Makes */}
+              <div style={{ marginBottom: 16 }}>
+                <input
+                  type="text"
+                  placeholder="Search brand (e.g. Maruti, Hyundai, Tata, BMW, Mercedes)..."
+                  className="form-input"
+                  value={brandSearch}
+                  onChange={(e) => setBrandSearch(e.target.value)}
+                  id="onboarding-brand-search"
+                />
+              </div>
+
               {loading ? (
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <span className="spinner spinner-lg" />
@@ -193,21 +208,27 @@ const VehicleOnboardingPage = () => {
                 </div>
               ) : (
                 <div className="selection-grid-modern">
-                  {makes.map((m) => (
-                    <div
-                      key={m.id}
-                      className={`select-box-item ${
-                        selectedMake?.id === m.id ? 'selected' : ''
-                      }`}
-                      onClick={() => handleSelectMake(m)}
-                      id={`make-item-${m.id}`}
-                    >
-                      <div className="select-box-title">{m.name}</div>
-                      <div className="select-box-sub">
-                        {m._count?.models || 0} models available
+                  {makes
+                    .filter((m) => !brandSearch.trim() || m.name.toLowerCase().includes(brandSearch.toLowerCase().trim()))
+                    .map((m) => (
+                      <div
+                        key={m.id}
+                        className={`select-box-item ${
+                          selectedMake?.id === m.id ? 'selected' : ''
+                        }`}
+                        onClick={() => handleSelectMake(m)}
+                        id={`make-item-${m.id}`}
+                        style={{ display: 'flex', alignItems: 'center', gap: 14 }}
+                      >
+                        <BrandLogo brandName={m.name} size={36} />
+                        <div>
+                          <div className="select-box-title">{m.name}</div>
+                          <div className="select-box-sub">
+                            {m._count?.models || 0} models available
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
 
@@ -222,7 +243,8 @@ const VehicleOnboardingPage = () => {
           {/* Step 3: Model Selection */}
           {step === 3 && (
             <div>
-              <div className="selection-summary-badge">
+              <div className="selection-summary-badge" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <BrandLogo brandName={selectedMake?.name} size={28} />
                 <span>Selected Brand: <strong>{selectedMake?.name}</strong></span>
                 <Button variant="ghost" size="sm" onClick={() => setStep(2)}>
                   Change
@@ -231,6 +253,18 @@ const VehicleOnboardingPage = () => {
 
               <h2 className="step-heading">Select Model</h2>
 
+              {/* Search Bar for Models */}
+              <div style={{ marginBottom: 16 }}>
+                <input
+                  type="text"
+                  placeholder={`Search ${selectedMake?.name} models...`}
+                  className="form-input"
+                  value={modelSearch}
+                  onChange={(e) => setModelSearch(e.target.value)}
+                  id="onboarding-model-search"
+                />
+              </div>
+
               {loading ? (
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <span className="spinner spinner-lg" />
@@ -238,21 +272,23 @@ const VehicleOnboardingPage = () => {
                 </div>
               ) : (
                 <div className="selection-grid-modern">
-                  {models.map((m) => (
-                    <div
-                      key={m.id}
-                      className={`select-box-item ${
-                        selectedModel?.id === m.id ? 'selected' : ''
-                      }`}
-                      onClick={() => handleSelectModel(m)}
-                      id={`model-item-${m.id}`}
-                    >
-                      <div className="select-box-title">{m.name}</div>
-                      <div className="select-box-sub">
-                        {m._count?.variants || 0} variants
+                  {models
+                    .filter((m) => !modelSearch.trim() || m.name.toLowerCase().includes(modelSearch.toLowerCase().trim()))
+                    .map((m) => (
+                      <div
+                        key={m.id}
+                        className={`select-box-item ${
+                          selectedModel?.id === m.id ? 'selected' : ''
+                        }`}
+                        onClick={() => handleSelectModel(m)}
+                        id={`model-item-${m.id}`}
+                      >
+                        <div className="select-box-title">{m.name}</div>
+                        <div className="select-box-sub">
+                          {m._count?.variants || 0} variants
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
 

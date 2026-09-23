@@ -9,7 +9,7 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('partsphere_admin_token');
+    const token = localStorage.getItem('partnexa_admin_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -22,8 +22,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('partsphere_admin_token');
-      localStorage.removeItem('partsphere_admin_user');
+      localStorage.removeItem('partnexa_admin_token');
+      localStorage.removeItem('partnexa_admin_user');
+      localStorage.removeItem('partnexa_admin_refresh');
     }
     return Promise.reject(error);
   }

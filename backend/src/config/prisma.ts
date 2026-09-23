@@ -2,7 +2,6 @@ import { PrismaClient } from '@prisma/client';
 import config from './env';
 import inMemoryDb from './inMemoryDb';
 
-let isRealPrismaAvailable = false;
 let realPrisma: PrismaClient | null = null;
 
 try {
@@ -10,97 +9,44 @@ try {
     log: config.env === 'development' ? ['error', 'warn'] : ['error'],
   });
 } catch (err: any) {
-  console.warn('⚠️ Could not initialize PrismaClient, using in-memory database store.');
+  console.error('❌ Failed to instantiate PrismaClient:', err.message);
 }
 
-export const setRealPrismaAvailable = (available: boolean) => {
-  isRealPrismaAvailable = available;
+/**
+ * Actively probe database health by executing a lightweight query.
+ * Returns { isConnected: boolean, error?: string }
+ */
+export const checkDatabaseConnection = async (): Promise<{ isConnected: boolean; error?: string }> => {
+  if (config.useInMemoryDb) {
+    return { isConnected: true };
+  }
+
+  if (!realPrisma) {
+    return { isConnected: false, error: 'PrismaClient is not initialized' };
+  }
+
+  try {
+    const probe = realPrisma.$queryRaw`SELECT 1`;
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Database ping timed out after 3000ms')), 3000)
+    );
+    await Promise.race([probe, timeout]);
+    return { isConnected: true };
+  } catch (err: any) {
+    return { isConnected: false, error: err.message || 'Database unreachable' };
+  }
 };
 
-export const getIsRealPrismaAvailable = () => isRealPrismaAvailable;
+export const getIsRealPrismaAvailable = () => !config.useInMemoryDb;
 
-// Smart Proxy that routes calls to real Prisma or inMemoryDb seamlessly
-export const prisma: any = new Proxy(
-  {},
-  {
-    get(_target, prop: string) {
-      if (prop === '$connect') {
-        return async () => {
-          if (realPrisma) {
-            try {
-              await realPrisma.$connect();
-              isRealPrismaAvailable = true;
-              console.log('✅ Real Database connected successfully.');
-              return;
-            } catch (err: any) {
-              isRealPrismaAvailable = false;
-              console.warn('⚠️ Prisma database connection failed, activating in-memory store:', err.message);
-              return;
-            }
-          }
-          isRealPrismaAvailable = false;
-        };
-      }
-
-      if (prop === '$disconnect') {
-        return async () => {
-          if (realPrisma && isRealPrismaAvailable) {
-            return realPrisma.$disconnect();
-          }
-        };
-      }
-
-      if (prop === '$transaction') {
-        return async (fn: any) => {
-          if (isRealPrismaAvailable && realPrisma) {
-            try {
-              return await realPrisma.$transaction(fn);
-            } catch (err) {
-              return inMemoryDb.$transaction(fn);
-            }
-          }
-          return inMemoryDb.$transaction(fn);
-        };
-      }
-
-      const realModel = realPrisma ? (realPrisma as any)[prop] : null;
-      const memModel = (inMemoryDb as any)[prop];
-
-      if (!isRealPrismaAvailable || !realModel) {
-        return memModel;
-      }
-
-      return new Proxy(realModel, {
-        get(target, method: string) {
-          const originalMethod = target[method];
-          if (typeof originalMethod !== 'function') return originalMethod;
-
-          return async (...args: any[]) => {
-            if (!isRealPrismaAvailable) {
-              return memModel?.[method]?.(...args);
-            }
-            try {
-              return await originalMethod.apply(target, args);
-            } catch (error: any) {
-              if (
-                error.code?.startsWith('P1') ||
-                error.name === 'PrismaClientInitializationError' ||
-                error.name === 'PrismaClientKnownRequestError' ||
-                error.message?.includes('Can\'t reach database server')
-              ) {
-                console.warn(`⚠️ Prisma query failed on ${prop}.${method}, falling back to inMemoryDb`);
-                isRealPrismaAvailable = false;
-                if (memModel && typeof memModel[method] === 'function') {
-                  return memModel[method](...args);
-                }
-              }
-              throw error;
-            }
-          };
-        },
-      });
-    },
-  }
-);
+/**
+ * Primary database client:
+ * - When USE_IN_MEMORY_DB=true (explicit test mode): routes to inMemoryDb
+ * - By default (USE_IN_MEMORY_DB=false): exports real PrismaClient
+ * 
+ * NO SILENT FALLBACK: If PostgreSQL is disconnected, queries fail loudly with
+ * clear errors rather than silently substituting mock data.
+ */
+export const prisma: any = config.useInMemoryDb ? inMemoryDb : (realPrisma as PrismaClient);
 
 export default prisma;

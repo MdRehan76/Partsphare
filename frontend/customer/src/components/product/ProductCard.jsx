@@ -35,6 +35,7 @@ export const ProductCard = ({ product }) => {
     stockQuantity,
     warranty,
     isCompatible,
+    description,
   } = product;
 
   const displayPrice = lowestPrice || basePrice || 0;
@@ -105,6 +106,10 @@ export const ProductCard = ({ product }) => {
 
           <h3 className="product-card-name line-clamp-2">{name}</h3>
 
+          {description && (
+            <p className="product-card-description line-clamp-2">{description}</p>
+          )}
+
           {/* Compatibility Status Badge */}
           <div className="product-card-compatibility-row">
             {isCompatible === true && (
@@ -131,9 +136,9 @@ export const ProductCard = ({ product }) => {
                 🛡️ {warranty}
               </span>
             )}
-            {isAvailable ? (
+            {isAvailable && stockQuantity > 0 ? (
               <span className="product-tag-chip in-stock-chip">
-                ✓ In Stock {stockQuantity ? `(${stockQuantity})` : ''}
+                ✓ In Stock ({stockQuantity})
               </span>
             ) : (
               <span className="product-tag-chip oos-chip">

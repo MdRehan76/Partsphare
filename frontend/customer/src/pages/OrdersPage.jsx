@@ -5,51 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button, Badge, EmptyState, Skeleton } from '../components/ui';
 import './OrdersPage.css';
 
-const DEFAULT_ORDERS = [
-  {
-    id: 'ord_984121',
-    orderNumber: 'PNX-984121',
-    createdAt: '2026-09-15T10:30:00Z',
-    status: 'OUT_FOR_DELIVERY',
-    paymentStatus: 'PAID',
-    paymentMethod: 'ONLINE (Razorpay)',
-    total: 3249,
-    installationType: 'HOME',
-    items: [
-      {
-        id: 'it_1',
-        quantity: 1,
-        priceSnapshot: 3050,
-        product: {
-          name: 'Bosch Front Brake Pad Set (Low Metallic)',
-          images: [{ url: 'https://images.unsplash.com/photo-1600790142055-619df03207e6?w=300' }],
-        },
-      },
-    ],
-  },
-  {
-    id: 'ord_981005',
-    orderNumber: 'PNX-981005',
-    createdAt: '2026-08-28T14:15:00Z',
-    status: 'DELIVERED',
-    paymentStatus: 'PAID',
-    paymentMethod: 'COD',
-    total: 1899,
-    installationType: 'NONE',
-    items: [
-      {
-        id: 'it_2',
-        quantity: 2,
-        priceSnapshot: 949,
-        product: {
-          name: 'Philips X-tremeVision Pro150 H4 Headlight Bulb (Pair)',
-          images: [{ url: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=300' }],
-        },
-      },
-    ],
-  },
-];
-
 const OrdersPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -66,13 +21,13 @@ const OrdersPage = () => {
     setLoading(true);
     try {
       const res = await ordersService.listOrders();
-      if (res.data?.data && res.data.data.length > 0) {
+      if (res.data?.data && Array.isArray(res.data.data)) {
         setOrders(res.data.data);
       } else {
-        setOrders(DEFAULT_ORDERS);
+        setOrders([]);
       }
     } catch {
-      setOrders(DEFAULT_ORDERS);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -171,9 +126,17 @@ const OrdersPage = () => {
                     <div className="order-meta-item">
                       Placed: <strong>{new Date(order.createdAt).toLocaleDateString()}</strong>
                     </div>
-                    {order.installationType === 'HOME' && (
+                    {order.difmType === 'HOME_INSTALLATION' || order.installationType === 'HOME' ? (
                       <span className="badge badge-teal" style={{ fontSize: '0.75rem' }}>
                         🏡 Doorstep Installation
+                      </span>
+                    ) : order.difmType === 'SHOP_INSTALLATION' ? (
+                      <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>
+                        🔧 Workshop Installation
+                      </span>
+                    ) : (
+                      <span className="badge badge-secondary" style={{ fontSize: '0.75rem' }}>
+                        📦 DIY / Delivery Only
                       </span>
                     )}
                   </div>
@@ -200,7 +163,7 @@ const OrdersPage = () => {
                           </div>
                         </div>
                         <div className="order-item-price">
-                          ₹{((Number(it.priceSnapshot) || 0) * it.quantity).toLocaleString('en-IN')}
+                          ₹{((Number(it.unitPrice || it.priceSnapshot || 0)) * it.quantity).toLocaleString('en-IN')}
                         </div>
                       </div>
                     ))}

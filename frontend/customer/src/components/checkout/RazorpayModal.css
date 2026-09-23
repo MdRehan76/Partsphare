@@ -2,13 +2,15 @@
 .rzp-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
-  padding: 16px;
+  z-index: 9999999;
+  padding: 20px 16px;
+  overflow-y: auto;
+  box-sizing: border-box;
   animation: rzpFadeIn 0.2s ease-out;
 }
 
@@ -22,17 +24,21 @@
 }
 
 .rzp-modal-container {
+  margin: auto;
   width: 100%;
   max-width: 480px;
+  max-height: calc(100vh - 40px);
   background: var(--bg-surface, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 16px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
-  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   color: var(--text-primary, #0f172a);
   font-family: inherit;
+  box-sizing: border-box;
+  flex-shrink: 0;
   animation: rzpSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -80,14 +86,57 @@
   color: #38bdf8;
 }
 
+.rzp-demomode-tag {
+  font-size: 0.65rem;
+  font-weight: 800;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .rzp-testmode-tag {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 800;
   background: #f59e0b;
   color: #000000;
   padding: 2px 6px;
   border-radius: 4px;
   letter-spacing: 0.04em;
+}
+
+.rzp-demo-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(37, 99, 235, 0.08);
+  border-bottom: 1px solid rgba(37, 99, 235, 0.18);
+  padding: 10px 18px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-secondary, #475569);
+}
+
+[data-theme="dark"] .rzp-demo-banner {
+  background: rgba(56, 189, 248, 0.1);
+  border-bottom-color: rgba(56, 189, 248, 0.22);
+  color: #cbd5e1;
+}
+
+.rzp-demo-banner-icon {
+  font-size: 1.05rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.rzp-demo-banner-text strong {
+  color: #0284c7;
+}
+
+[data-theme="dark"] .rzp-demo-banner-text strong {
+  color: #38bdf8;
 }
 
 .rzp-close-btn {
@@ -457,5 +506,568 @@
 }
 
 [data-theme="dark"] .rzp-footer {
-  background: #0f172a;
+  background: #0b1120;
+  border-top-color: #1e293b;
 }
+
+/* Dark Mode Comprehensive Overrides */
+[data-theme="dark"] .rzp-modal-container {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .rzp-tabs {
+  background: #1e293b;
+}
+
+[data-theme="dark"] .rzp-qr-box {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .rzp-input {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .rzp-input:focus {
+  border-color: #38bdf8;
+}
+
+[data-theme="dark"] .rzp-preset-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .rzp-preset-card:hover {
+  border-color: #38bdf8;
+}
+
+[data-theme="dark"] .rzp-preset-card.selected {
+  background: #0b1120;
+  border-color: #38bdf8;
+}
+
+[data-theme="dark"] .preset-card-title {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .preset-card-num {
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .preset-card-sub {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .rzp-bank-pill {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .rzp-bank-pill.active {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .rzp-actions-zone {
+  border-color: #1e293b;
+}
+
+[data-theme="dark"] .rzp-btn-cancel {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .rzp-btn-cancel:hover:not(:disabled) {
+  background: #334155;
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   RAZORPAY DEMO PAYMENT ANIMATION SYSTEM
+   ========================================================================== */
+
+/* Main Animation View Container */
+.rzp-anim-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 28px 36px;
+  text-align: center;
+  min-height: 380px;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* -------------------------------------------------------------
+   1. PROCESSING & RADAR PULSE ANIMATION
+   ------------------------------------------------------------- */
+.rzp-radar-wrapper {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.rzp-gateway-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(2, 132, 199, 0.12);
+  border: 2px solid #0284c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  box-shadow: 0 0 20px rgba(2, 132, 199, 0.35);
+  animation: rzpIconFloat 2s ease-in-out infinite;
+}
+
+.rzp-radar-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid #0284c7;
+  opacity: 0.8;
+  animation: rzpRadarWave 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+.rzp-radar-pulse.outer {
+  animation-delay: 0.7s;
+}
+
+@keyframes rzpRadarWave {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@keyframes rzpIconFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.rzp-anim-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary, #0f172a);
+  margin: 0 0 8px 0;
+  letter-spacing: -0.01em;
+}
+
+.rzp-anim-sub {
+  font-size: 0.84rem;
+  color: var(--text-secondary, #64748b);
+  margin: 0 0 24px 0;
+  max-width: 340px;
+  line-height: 1.5;
+}
+
+/* Progress bar inside processing */
+.rzp-anim-progress-bar {
+  width: 100%;
+  max-width: 320px;
+  height: 6px;
+  background: var(--bg-tertiary, #e2e8f0);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.rzp-anim-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0284c7, #38bdf8, #10b981);
+  border-radius: 9999px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rzp-anim-progress-fill.stage-1 {
+  width: 45%;
+}
+
+.rzp-anim-progress-fill.stage-2 {
+  width: 90%;
+}
+
+.rzp-anim-security-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+  background: var(--bg-secondary, #f8fafc);
+  padding: 6px 14px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+/* -------------------------------------------------------------
+   2. CELEBRATORY SUCCESS & CONFETTI ANIMATION
+   ------------------------------------------------------------- */
+.rzp-success-view {
+  padding: 32px 24px 28px;
+}
+
+.rzp-checkmark-wrapper {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  z-index: 3;
+}
+
+.rzp-checkmark-svg {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  display: block;
+  stroke-width: 3.5;
+  stroke: #10b981;
+  stroke-miterlimit: 10;
+  box-shadow: inset 0px 0px 0px #10b981;
+  animation: rzpFill 0.4s ease-in-out 0.4s forwards, rzpScale 0.3s ease-in-out 0.8s both;
+}
+
+.rzp-checkmark-circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 3.5;
+  stroke-miterlimit: 10;
+  stroke: #10b981;
+  fill: none;
+  animation: rzpStroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.rzp-checkmark-check {
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  stroke-width: 4;
+  stroke: #ffffff;
+  animation: rzpStroke 0.35s cubic-bezier(0.65, 0, 0.45, 1) 0.65s forwards;
+}
+
+@keyframes rzpStroke {
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes rzpScale {
+  0%, 100% {
+    transform: none;
+  }
+  50% {
+    transform: scale3d(1.12, 1.12, 1);
+  }
+}
+
+@keyframes rzpFill {
+  100% {
+    box-shadow: inset 0px 0px 0px 42px #10b981;
+  }
+}
+
+/* Confetti Burst */
+.rzp-confetti-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.rzp-confetti-piece {
+  position: absolute;
+  top: 36%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  opacity: 0;
+}
+
+.rzp-confetti-piece.cp-1  { background: #10b981; animation: rzpBurst 1.4s ease-out forwards 0.4s; --tx: -85px;  --ty: -65px;  --rot: 120deg; }
+.rzp-confetti-piece.cp-2  { background: #38bdf8; animation: rzpBurst 1.4s ease-out forwards 0.45s; --tx: 80px;   --ty: -70px;  --rot: -80deg; }
+.rzp-confetti-piece.cp-3  { background: #f59e0b; animation: rzpBurst 1.4s ease-out forwards 0.42s; --tx: -110px; --ty: 10px;   --rot: 200deg; }
+.rzp-confetti-piece.cp-4  { background: #a855f7; animation: rzpBurst 1.4s ease-out forwards 0.48s; --tx: 110px;  --ty: 15px;   --rot: -140deg; }
+.rzp-confetti-piece.cp-5  { background: #ec4899; animation: rzpBurst 1.4s ease-out forwards 0.43s; --tx: -55px;  --ty: -105px; --rot: 70deg; }
+.rzp-confetti-piece.cp-6  { background: #10b981; animation: rzpBurst 1.4s ease-out forwards 0.46s; --tx: 50px;   --ty: -100px; --rot: -190deg; }
+.rzp-confetti-piece.cp-7  { background: #f59e0b; animation: rzpBurst 1.4s ease-out forwards 0.41s; --tx: -75px;  --ty: 75px;   --rot: 300deg; }
+.rzp-confetti-piece.cp-8  { background: #38bdf8; animation: rzpBurst 1.4s ease-out forwards 0.47s; --tx: 75px;   --ty: 70px;   --rot: -260deg; }
+.rzp-confetti-piece.cp-9  { background: #3b82f6; animation: rzpBurst 1.4s ease-out forwards 0.44s; --tx: -130px; --ty: -35px;  --rot: 150deg; }
+.rzp-confetti-piece.cp-10 { background: #10b981; animation: rzpBurst 1.4s ease-out forwards 0.49s; --tx: 130px;  --ty: -30px;  --rot: -75deg; }
+.rzp-confetti-piece.cp-11 { background: #fbbf24; animation: rzpBurst 1.4s ease-out forwards 0.42s; --tx: 0px;    --ty: -115px; --rot: 210deg; }
+.rzp-confetti-piece.cp-12 { background: #8b5cf6; animation: rzpBurst 1.4s ease-out forwards 0.46s; --tx: 0px;    --ty: 95px;   --rot: -120deg; }
+.rzp-confetti-piece.cp-13 { background: #06b6d4; animation: rzpBurst 1.4s ease-out forwards 0.43s; --tx: -95px;  --ty: -85px;  --rot: 180deg; }
+.rzp-confetti-piece.cp-14 { background: #f43f5e; animation: rzpBurst 1.4s ease-out forwards 0.48s; --tx: 95px;   --ty: -85px;  --rot: -210deg; }
+
+@keyframes rzpBurst {
+  0% {
+    transform: translate(0, 0) scale(0) rotate(0deg);
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(1.1) rotate(var(--rot));
+    opacity: 0;
+  }
+}
+
+.rzp-success-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  padding: 3px 10px;
+  border-radius: 9999px;
+  margin-bottom: 8px;
+  z-index: 2;
+}
+
+.rzp-success-amount {
+  font-size: 1.85rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--text-primary, #0f172a);
+  margin: 0 0 4px 0;
+  z-index: 2;
+}
+
+.rzp-success-heading {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #10b981;
+  margin: 0 0 4px 0;
+  z-index: 2;
+}
+
+.rzp-success-sub {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+  margin: 0 0 18px 0;
+  z-index: 2;
+}
+
+/* Receipt Card */
+.rzp-receipt-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  text-align: left;
+  z-index: 2;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.rzp-receipt-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+  font-size: 0.82rem;
+  border-bottom: 1px dashed var(--border-color, #e2e8f0);
+}
+
+.rzp-receipt-row:last-child {
+  border-bottom: none;
+}
+
+.rzp-receipt-label {
+  color: var(--text-secondary, #64748b);
+  font-weight: 600;
+}
+
+.rzp-receipt-value {
+  color: var(--text-primary, #0f172a);
+  font-weight: 700;
+  font-family: inherit;
+}
+
+.rzp-receipt-row code.rzp-receipt-value {
+  font-family: monospace;
+  font-size: 0.78rem;
+  background: var(--bg-tertiary, #e2e8f0);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #0284c7;
+}
+
+.rzp-receipt-pill {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #059669;
+}
+
+/* Redirecting Dots */
+.rzp-redirecting-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+  font-weight: 600;
+  z-index: 2;
+}
+
+.rzp-spinner-dots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rzp-spinner-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: rzpDotPulse 1.2s infinite ease-in-out both;
+}
+
+.rzp-spinner-dots span:nth-child(1) { animation-delay: -0.32s; }
+.rzp-spinner-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes rzpDotPulse {
+  0%, 80%, 100% {
+    transform: scale(0.4);
+    opacity: 0.3;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* -------------------------------------------------------------
+   3. DECLINE ANIMATION & STYLES
+   ------------------------------------------------------------- */
+.rzp-decline-view {
+  padding: 36px 24px 30px;
+}
+
+.rzp-decline-icon-wrap {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.12);
+  border: 2px solid #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  animation: rzpShake 0.5s ease-in-out 0.2s both;
+}
+
+.rzp-decline-svg {
+  width: 48px;
+  height: 48px;
+  stroke: #ef4444;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.rzp-decline-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ef4444;
+  margin: 0 0 6px 0;
+}
+
+.rzp-decline-sub {
+  font-size: 0.84rem;
+  color: var(--text-secondary, #64748b);
+  margin: 0 0 20px 0;
+  max-width: 320px;
+}
+
+.rzp-decline-reason-card {
+  width: 100%;
+  max-width: 340px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 24px;
+  font-size: 0.8rem;
+  color: #b91c1c;
+}
+
+.rzp-decline-reason-card code {
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
+.rzp-decline-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+}
+
+@keyframes rzpShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+/* Dark mode overrides for animation components */
+[data-theme="dark"] .rzp-anim-title,
+[data-theme="dark"] .rzp-success-amount,
+[data-theme="dark"] .rzp-receipt-value {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .rzp-anim-security-badge,
+[data-theme="dark"] .rzp-receipt-card {
+  background: #111c34;
+  border-color: #1e293b;
+}
+
+[data-theme="dark"] .rzp-receipt-row {
+  border-bottom-color: #1e293b;
+}
+
+[data-theme="dark"] .rzp-receipt-row code.rzp-receipt-value {
+  background: #1e293b;
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .rzp-anim-progress-bar {
+  background: #1e293b;
+}
+

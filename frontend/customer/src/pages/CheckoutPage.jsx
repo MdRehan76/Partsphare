@@ -272,7 +272,7 @@ const CheckoutPage = () => {
       orderNumber: activePaymentSession?.orderNumber,
       errorCode: errData.errorCode || 'BAD_REQUEST_PAYMENT_DECLINED',
       errorDescription: errData.errorDescription || 'The card/payment was declined by the simulated bank.',
-      amount: activePaymentSession?.amount,
+      amount: activePaymentSession?.amountInRupees || (activePaymentSession?.amount && activePaymentSession?.amount === activePaymentSession?.amountInPaise ? activePaymentSession.amount / 100 : activePaymentSession?.amount),
     });
     toast.error(errData.errorDescription || 'Payment declined by bank');
   };
@@ -295,7 +295,7 @@ const CheckoutPage = () => {
       orderNumber: activePaymentSession?.orderNumber,
       errorCode: 'PAYMENT_CANCELLED_BY_USER',
       errorDescription: cancelData.reason || 'You closed the Razorpay sandbox window before completing payment.',
-      amount: activePaymentSession?.amount,
+      amount: activePaymentSession?.amountInRupees || (activePaymentSession?.amount && activePaymentSession?.amount === activePaymentSession?.amountInPaise ? activePaymentSession.amount / 100 : activePaymentSession?.amount),
     });
     toast.error('Payment cancelled');
   };
@@ -341,14 +341,25 @@ const CheckoutPage = () => {
   const hasDifficultParts = Boolean(quote?.cartSummary?.hasDifficultParts);
 
   // Extract authoritative pricing breakdown from backend quote
+  const partSubtotalEst = items.reduce((s, it) => {
+    const p = Number(it.priceSnapshot) || Number(it.unitPrice) || Number(it.product?.basePrice) || Number(it.product?.sellingPrice) || 0;
+    const q = Number(it.quantity) || 1;
+    return s + p * q;
+  }, 0);
+
   const pricing = quote?.pricing || {
-    partSubtotal: items.reduce((s, it) => s + Number(it.priceSnapshot || 0) * it.quantity, 0),
-    deliveryFee: items.length > 0 ? 0 : 0,
-    baseInstallationFee: difmOption === 'NO_INSTALLATION' ? 0 : 499,
+    partSubtotal: partSubtotalEst,
+    deliveryFee: partSubtotalEst >= 999 || partSubtotalEst === 0 ? 0 : 49,
+    installationFee: difmOption === 'NO_INSTALLATION' ? 0 : 299,
     homeVisitSurcharge: difmOption === 'HOME_INSTALLATION' ? 135 : 0,
-    installationFee: difmOption === 'HOME_INSTALLATION' ? 634 : difmOption === 'SHOP_INSTALLATION' ? 499 : 0,
     discount: 0,
-    grandTotal: 0,
+    grandTotal: Math.max(
+      partSubtotalEst > 0 ? 1 : 0,
+      partSubtotalEst +
+        (partSubtotalEst >= 999 || partSubtotalEst === 0 ? 0 : 49) +
+        (difmOption === 'NO_INSTALLATION' ? 0 : 299) +
+        (difmOption === 'HOME_INSTALLATION' ? 135 : 0)
+    ),
   };
 
   const eligibleShops = quote?.eligibleShops || [];
@@ -756,7 +767,7 @@ const CheckoutPage = () => {
                         <h3 className="difm-option-title">Mechanic Comes to Customer's Home</h3>
                       </div>
                       <div className="difm-price-pill" id="option-a-price-pill">
-                        +₹{(pricing.baseInstallationFee + (pricing.homeVisitSurcharge || 0))}
+                        +₹{(Number(pricing.installationFee || 0) + Number(pricing.homeVisitSurcharge || 0))}
                       </div>
                     </div>
                     <p className="difm-option-desc">
@@ -764,7 +775,7 @@ const CheckoutPage = () => {
                     </p>
                     <div className="difm-formula-badge">
                       <span>Formula:</span>
-                      <code>Base Service Fee (₹{pricing.baseInstallationFee}) + Home Visit Surcharge (₹{pricing.homeVisitSurcharge || 135})</code>
+                      <code>Installation Fee (₹{pricing.installationFee || 0}) + Home Visit Surcharge (₹{pricing.homeVisitSurcharge || 0})</code>
                     </div>
                     {difmOption === 'HOME_INSTALLATION' && (
                       <div className="difm-subdetails">
@@ -790,7 +801,7 @@ const CheckoutPage = () => {
                         <h3 className="difm-option-title">Customer Visits Partnered Local Shop</h3>
                       </div>
                       <div className="difm-price-pill" id="option-b-price-pill">
-                        +₹{pricing.baseInstallationFee}
+                        +₹{pricing.installationFee || 0}
                       </div>
                     </div>
                     <p className="difm-option-desc">
@@ -798,7 +809,7 @@ const CheckoutPage = () => {
                     </p>
                     <div className="difm-formula-badge">
                       <span>Formula:</span>
-                      <code>Base Service Fee (₹{pricing.baseInstallationFee}) + Home Visit Surcharge (₹0)</code>
+                      <code>Installation Fee (₹{pricing.installationFee || 0}) + Home Visit Surcharge (₹0)</code>
                     </div>
                     {difmOption === 'SHOP_INSTALLATION' && (
                       <div className="difm-subdetails">
@@ -967,17 +978,21 @@ const CheckoutPage = () => {
 
               {/* Items in Cart mini-list */}
               <div className="summary-items-list">
-                {items.map((it) => (
-                  <div key={it.id} className="summary-item-row">
-                    <div className="summary-item-meta">
-                      <span className="summary-item-name">{it.product?.name}</span>
-                      <span className="summary-item-qty">Qty: {it.quantity}</span>
+                {items.map((it) => {
+                  const itemPrice = Number(it.priceSnapshot) || Number(it.unitPrice) || Number(it.product?.basePrice) || Number(it.product?.sellingPrice) || 0;
+                  const itemQty = Number(it.quantity) || 1;
+                  return (
+                    <div key={it.id} className="summary-item-row">
+                      <div className="summary-item-meta">
+                        <span className="summary-item-name">{it.product?.name}</span>
+                        <span className="summary-item-qty">Qty: {itemQty}</span>
+                      </div>
+                      <span className="summary-item-price">
+                        ₹{(itemPrice * itemQty).toLocaleString('en-IN')}
+                      </span>
                     </div>
-                    <span className="summary-item-price">
-                      ₹{(Number(it.priceSnapshot) * it.quantity).toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Coupon Code Box */}
@@ -1017,17 +1032,17 @@ const CheckoutPage = () => {
               <div className="price-breakdown-table" id="pricing-breakdown-box">
                 {/* 1. Part subtotal */}
                 <div className="breakdown-row" id="row-part-subtotal">
-                  <span className="row-label">Part subtotal</span>
+                  <span className="row-label">Product Subtotal</span>
                   <span className="row-value" id="val-part-subtotal">
-                    ₹{pricing.partSubtotal.toLocaleString('en-IN')}
+                    ₹{Number(pricing.partSubtotal || 0).toLocaleString('en-IN')}
                   </span>
                 </div>
 
                 {/* 2. Delivery fee */}
                 <div className="breakdown-row" id="row-delivery-fee">
-                  <span className="row-label">Delivery fee</span>
+                  <span className="row-label">Delivery Fee</span>
                   <span className="row-value" id="val-delivery-fee">
-                    {pricing.deliveryFee === 0 ? (
+                    {Number(pricing.deliveryFee || 0) === 0 ? (
                       <span className="text-free">FREE</span>
                     ) : (
                       `₹${pricing.deliveryFee}`
@@ -1038,16 +1053,16 @@ const CheckoutPage = () => {
                 {/* 3. Installation fee */}
                 <div className="breakdown-row" id="row-installation-fee">
                   <span className="row-label">
-                    Installation fee
+                    Installation Fee
                     {difmOption === 'HOME_INSTALLATION' && (
                       <span className="fee-subnote"> (Base service fee)</span>
                     )}
                   </span>
                   <span className="row-value" id="val-installation-fee">
-                    {difmOption === 'NO_INSTALLATION' || pricing.baseInstallationFee === 0 ? (
+                    {difmOption === 'NO_INSTALLATION' || Number(pricing.installationFee || 0) === 0 ? (
                       <span className="text-free">₹0</span>
                     ) : (
-                      `₹${pricing.baseInstallationFee}`
+                      `₹${pricing.installationFee}`
                     )}
                   </span>
                 </div>
@@ -1055,13 +1070,13 @@ const CheckoutPage = () => {
                 {/* 4. Home-visit fee */}
                 <div className="breakdown-row" id="row-home-visit-fee">
                   <span className="row-label">
-                    Home-visit fee
+                    Home Visit Surcharge
                     {difmOption === 'HOME_INSTALLATION' && (
                       <span className="fee-subnote"> ({distanceKm} km surcharge)</span>
                     )}
                   </span>
                   <span className="row-value" id="val-home-visit-fee">
-                    {difmOption === 'HOME_INSTALLATION' && pricing.homeVisitSurcharge > 0 ? (
+                    {difmOption === 'HOME_INSTALLATION' && Number(pricing.homeVisitSurcharge || 0) > 0 ? (
                       `₹${pricing.homeVisitSurcharge}`
                     ) : (
                       '₹0'
@@ -1073,7 +1088,7 @@ const CheckoutPage = () => {
                 <div className="breakdown-row discount-row" id="row-discount">
                   <span className="row-label">Discount</span>
                   <span className="row-value text-discount" id="val-discount">
-                    {pricing.discount > 0 ? `-₹${pricing.discount}` : '₹0'}
+                    {Number(pricing.discount || 0) > 0 ? `-₹${pricing.discount}` : '₹0'}
                   </span>
                 </div>
 
@@ -1081,9 +1096,9 @@ const CheckoutPage = () => {
 
                 {/* 6. Grand total */}
                 <div className="breakdown-row grand-total-row" id="row-grand-total">
-                  <span className="grand-label">Grand total</span>
+                  <span className="grand-label">Grand Total</span>
                   <span className="grand-value" id="val-grand-total">
-                    {isQuoteLoading ? 'Calculating...' : `₹${pricing.grandTotal.toLocaleString('en-IN')}`}
+                    {isQuoteLoading && !quote ? 'Calculating...' : `₹${Number(pricing.grandTotal || 0).toLocaleString('en-IN')}`}
                   </span>
                 </div>
               </div>

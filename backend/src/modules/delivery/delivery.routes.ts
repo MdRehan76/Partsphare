@@ -206,6 +206,16 @@ router.post('/jobs/:id/cod', authenticate, async (req: AuthenticatedRequest, res
   }
 });
 
+router.post('/jobs/:id/collect-cod', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { amount } = req.body;
+    const result = await deliveryService.recordCodCollection(req.user!.id, req.params.id as string, amount);
+    return successResponse(res, result, 'Cash on Delivery collection recorded successfully.');
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Settle / Reconcile cash at hub
 router.post('/reconcile', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {

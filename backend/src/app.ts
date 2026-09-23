@@ -6,6 +6,7 @@ import compression from 'compression';
 import path from 'path';
 
 import config from './config/env';
+import { checkDatabaseConnection } from './config/prisma';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { generalLimiter } from './middleware/rateLimiter.middleware';
 
@@ -23,6 +24,7 @@ import usedPartsRoutes from './modules/usedparts/usedparts.routes';
 import supportRoutes from './modules/support/support.routes';
 import deliveryRoutes from './modules/delivery/delivery.routes';
 import adminRoutes from './modules/admin/admin.routes';
+import inventoryRoutes from './modules/inventory/inventory.routes';
 
 const app = express();
 
@@ -65,17 +67,26 @@ app.use('/uploads', express.static(path.join(__dirname, '..', config.upload.dir)
 app.use('/api', generalLimiter);
 
 // ============================================================
-// Health Check
+// Health Checks (Live PostgreSQL Connection Probe)
 // ============================================================
-app.get('/health', (_req, res) => {
-  res.json({
-    success: true,
-    message: 'PartSphere (PartNexa) API is running.',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    env: config.env,
+const healthHandler = async (_req: express.Request, res: express.Response) => {
+  const dbStatus = await checkDatabaseConnection();
+  if (dbStatus.isConnected) {
+    return res.status(200).json({
+      success: true,
+      api: 'ok',
+      database: 'connected',
+    });
+  }
+  return res.status(200).json({
+    success: false,
+    api: 'ok',
+    database: 'disconnected',
   });
-});
+};
+
+app.get('/api/health', healthHandler);
+app.get('/health', healthHandler);
 
 // ============================================================
 // API Routes
@@ -93,6 +104,7 @@ app.use('/api/usedparts', usedPartsRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 // ============================================================
 // Error Handling

@@ -61,7 +61,9 @@ export const authorize = (...roles: UserRole[]) => {
       return next(AppError.unauthorized('Authentication required.'));
     }
 
-    if (!roles.includes(req.user.role)) {
+    const userRole = req.user.role;
+    const isAllowed = roles.includes(userRole) || (roles.includes(UserRole.ADMIN) && (userRole as string) === 'SUPER_ADMIN');
+    if (!isAllowed) {
       return next(
         AppError.forbidden(`Forbidden: Requires one of [${roles.join(', ')}] role.`)
       );

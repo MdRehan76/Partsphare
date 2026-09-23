@@ -97,7 +97,7 @@ const SubscriptionPlanDetailPage = () => {
       if (!data.requiresOnlinePayment) {
         setCheckoutModalOpen(false);
         toast.success('🎉 Subscription Activated! Payment scheduled on first service.');
-        navigate('/my-subscriptions');
+        navigate('/customer/my-subscriptions');
       } else {
         setCheckoutModalOpen(false);
         setPaymentSession({
@@ -127,7 +127,7 @@ const SubscriptionPlanDetailPage = () => {
       });
 
       toast.success(`🎉 ${plan.name} activated! Welcome to PartNexa Care.`, { id: toastId });
-      navigate('/my-subscriptions');
+      navigate('/customer/my-subscriptions');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Verification failed.', { id: toastId });
     }

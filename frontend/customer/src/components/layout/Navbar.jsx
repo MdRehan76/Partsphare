@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useVehicles } from '../../contexts/VehicleContext';
+import VehicleSelectorModal from '../vehicle/VehicleSelectorModal';
 import toast from 'react-hot-toast';
 import './Navbar.css';
 
@@ -100,7 +101,7 @@ const UserMenu = ({ user, onLogout }) => {
             </svg>
             My Orders
           </Link>
-          <Link to="/my-subscriptions" className="dropdown-item" onClick={() => setOpen(false)} role="menuitem" id="nav-my-subscriptions-link">
+          <Link to="/customer/my-subscriptions" className="dropdown-item" onClick={() => setOpen(false)} role="menuitem" id="nav-my-subscriptions-link">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
@@ -144,17 +145,25 @@ const Navbar = () => {
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [vehicleSelectorOpen, setVehicleSelectorOpen] = useState(false);
 
-  // Theme state: default to 'light' (clean automotive style), support 'dark'
-  const [theme, setTheme] = useState(() => localStorage.getItem('partsphere_theme') || 'light');
+  // Theme state: support light & dark across all unified portals
+  const [theme, setTheme] = useState(() => localStorage.getItem('partnexa_theme') || localStorage.getItem('partsphere_theme') || 'light');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('partsphere_theme', theme);
+    localStorage.setItem('partnexa_theme', theme);
+    const handleThemeChange = (e) => {
+      if (e.detail) setTheme(e.detail);
+    };
+    window.addEventListener('theme:change', handleThemeChange);
+    return () => window.removeEventListener('theme:change', handleThemeChange);
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    window.dispatchEvent(new CustomEvent('theme:change', { detail: next }));
   };
 
   useEffect(() => {
@@ -239,14 +248,15 @@ const Navbar = () => {
 
         {/* Actions (Theme Toggle, Cart, Auth) */}
         <div className="navbar-actions">
-          {/* Prominent Primary Vehicle Indicator */}
+          {/* Prominent Primary / Active Vehicle Indicator */}
           {primaryVehicle ? (
             <div className="navbar-vehicle-indicator">
-              <Link
-                to="/vehicles"
+              <button
+                type="button"
                 className="vehicle-pill"
                 id="navbar-primary-vehicle-pill"
-                title="Primary Vehicle (Click to view garage)"
+                onClick={() => setVehicleSelectorOpen(true)}
+                title="Active Vehicle (Click to change)"
               >
                 <span className="vehicle-pill-icon">
                   {primaryVehicle.variant?.model?.make?.type === 'BIKE' ||
@@ -265,25 +275,26 @@ const Navbar = () => {
                     {primaryVehicle.variant?.year} · {primaryVehicle.variant?.name}
                   </span>
                 </div>
-                <span className="vehicle-pill-badge">Primary</span>
-              </Link>
+                <span className="vehicle-pill-badge">Active</span>
+              </button>
             </div>
-          ) : user ? (
+          ) : (
             <div className="navbar-vehicle-indicator">
-              <Link
-                to="/vehicles"
+              <button
+                type="button"
                 className="vehicle-pill"
                 id="navbar-add-vehicle-pill"
                 style={{ borderStyle: 'dashed' }}
-                title="Add vehicle to garage"
+                onClick={() => setVehicleSelectorOpen(true)}
+                title="Select your vehicle for guaranteed fitment"
               >
                 <span className="vehicle-pill-icon">➕</span>
                 <div className="vehicle-pill-info">
-                  <span className="vehicle-pill-name">Add Vehicle</span>
+                  <span className="vehicle-pill-name">Select Vehicle</span>
                 </div>
-              </Link>
+              </button>
             </div>
-          ) : null}
+          )}
 
           {/* Visible Theme Switcher */}
           <button
@@ -381,7 +392,7 @@ const Navbar = () => {
                   <span>My Orders</span>
                   <span>→</span>
                 </Link>
-                <Link to="/my-subscriptions" className="mobile-link">
+                <Link to="/customer/my-subscriptions" className="mobile-link">
                   <span>My Subscriptions</span>
                   <span>→</span>
                 </Link>
@@ -398,6 +409,13 @@ const Navbar = () => {
           </div>
         </div>
       )}
+
+      {/* Global Vehicle Selector Modal */}
+      <VehicleSelectorModal
+        isOpen={vehicleSelectorOpen}
+        onClose={() => setVehicleSelectorOpen(false)}
+        title="Select Vehicle for Part Fitment"
+      />
     </nav>
   );
 };

@@ -10,6 +10,7 @@ export const config = {
   port: parseInt(process.env.PORT || '5000', 10),
   databaseUrl: process.env.DATABASE_URL || '',
   directUrl: process.env.DIRECT_URL || '',
+  useInMemoryDb: process.env.USE_IN_MEMORY_DB === 'true',
 
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET || 'fallback_access_secret_for_development_32chars!',

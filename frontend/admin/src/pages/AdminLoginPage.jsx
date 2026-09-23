@@ -75,7 +75,7 @@ export default function AdminLoginPage() {
             🛡️
           </div>
           <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
-            PartSphere Admin
+            PartNexa Admin
           </h1>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
             Operations & Executive Governance Portal

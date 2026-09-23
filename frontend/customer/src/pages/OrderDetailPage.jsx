@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ordersService, paymentsService } from '../services';
-import { Button, Badge, Skeleton } from '../components/ui';
+import { Button, Badge, Skeleton, EmptyState } from '../components/ui';
 import RazorpayModal from '../components/checkout/RazorpayModal';
 import toast from 'react-hot-toast';
 import './OrderDetailPage.css';
@@ -30,16 +30,18 @@ const OrderDetailPage = () => {
       if (res.data?.data) {
         setOrder(res.data.data);
       } else {
-        fallbackOrder();
+        setOrder(null);
       }
-    } catch {
-      fallbackOrder();
+    } catch (err) {
+      console.error('Failed to load order:', err);
+      setOrder(null);
     } finally {
       setLoading(false);
     }
   };
 
   const handleLaunchPayment = async () => {
+    if (!order) return;
     setIsRetryingPayment(true);
     try {
       const res = await paymentsService.retryPayment(order.id);
@@ -101,6 +103,7 @@ const OrderDetailPage = () => {
   };
 
   const handleSwitchToCOD = async () => {
+    if (!order) return;
     setIsSwitchingToCOD(true);
     try {
       await paymentsService.switchPaymentMethod(order.id, {
@@ -115,57 +118,6 @@ const OrderDetailPage = () => {
     }
   };
 
-  const fallbackOrder = () => {
-    setOrder({
-      id: id || 'PNX-984121',
-      orderNumber: id?.startsWith('PNX-') ? id : `PNX-${id}`,
-      createdAt: '2026-09-15T10:30:00Z',
-      status: 'OUT_FOR_DELIVERY',
-      paymentStatus: 'PAID',
-      paymentMethod: 'ONLINE (Razorpay)',
-      installationType: 'HOME',
-      total: 3249,
-      subtotal: 3050,
-      installationCost: 199,
-      shipping: 0,
-      deliveryAddress: {
-        name: 'Rahul Sharma',
-        phone: '9876543210',
-        street: 'Flat 402, Green Glen Layout, Bellandur',
-        city: 'Bengaluru',
-        state: 'Karnataka',
-        postalCode: '560103',
-      },
-      partnerShop: {
-        name: 'PartNexa Bellandur Tech Hub',
-        phone: '+91 80 4482 9100',
-        technicianName: 'Suresh Kumar (ID: PNX-M104)',
-      },
-      items: [
-        {
-          id: 'it_1',
-          quantity: 1,
-          priceSnapshot: 3050,
-          product: {
-            id: 'p1',
-            name: 'Bosch Front Brake Pad Set (Low Metallic)',
-            slug: 'bosch-front-brake-pad-set',
-            brand: { name: 'BOSCH' },
-            images: [{ url: 'https://images.unsplash.com/photo-1600790142055-619df03207e6?w=300' }],
-          },
-        },
-      ],
-    });
-  };
-
-  const steps = [
-    { label: 'Order Confirmed', time: 'Sep 15, 10:30 AM', status: 'completed' },
-    { label: 'Packed & Verified', time: 'Sep 15, 02:45 PM', status: 'completed' },
-    { label: 'Dispatched', time: 'Sep 16, 08:15 AM', status: 'completed' },
-    { label: 'Out for Delivery', time: 'Sep 16, 11:20 AM', status: 'active' },
-    { label: 'Doorstep Fitment', time: 'Est. Sep 16, 03:00 PM', status: 'pending' },
-  ];
-
   if (loading) {
     return (
       <div className="order-detail-page">
@@ -179,16 +131,42 @@ const OrderDetailPage = () => {
     );
   }
 
+  if (!order) {
+    return (
+      <div className="order-detail-page">
+        <div className="container" style={{ padding: '60px 0', textAlign: 'center' }}>
+          <EmptyState
+            title="Order Not Found"
+            description={`Could not find order "${id}". It may not exist or belongs to another customer account.`}
+            action={
+              <Link to="/orders" style={{ textDecoration: 'none' }}>
+                <Button variant="primary">Return to My Orders</Button>
+              </Link>
+            }
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Derive status milestones based on real order state
+  const isDelivered = order.status === 'DELIVERED';
+  const isShipped = ['SHIPPED', 'DISPATCHED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status);
+  const isOutForDelivery = ['OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status);
+  const isDifmCompleted = order.difmRequest?.status === 'COMPLETED';
+
+  const trackingEvents = Array.isArray(order.tracking) ? order.tracking : [];
+
   return (
     <div className="order-detail-page">
       <div className="container">
         {/* Top bar */}
         <div className="order-detail-top">
           <div className="order-detail-title-wrap">
-            <h1>Order #{order?.orderNumber || order?.id}</h1>
+            <h1>Order #{order.orderNumber || order.id}</h1>
             <p>
-              Placed on {order?.createdAt ? new Date(order.createdAt).toLocaleString() : 'Recently'} · Payment:{' '}
-              <strong>{order?.paymentMethod || 'Razorpay Demo'}</strong>
+              Placed on {order.createdAt ? new Date(order.createdAt).toLocaleString() : 'Recently'} · Payment:{' '}
+              <strong>{order.paymentMethod === 'CASH_ON_DELIVERY' ? '💵 Cash on Delivery' : '⚡ Razorpay'}</strong>
             </p>
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
@@ -200,33 +178,94 @@ const OrderDetailPage = () => {
             <Button
               variant="teal"
               size="sm"
-              onClick={() => toast.success('Invoice downloaded successfully (PDF)')}
+              onClick={() => toast.success(`Invoice for #${order.orderNumber || order.id} downloaded`)}
             >
               📄 Download Invoice
             </Button>
           </div>
         </div>
 
-        {/* Tracking Stepper */}
+        {/* Live Milestone Progress */}
         <div className="tracking-stepper-card">
           <div className="stepper-header">
-            <div className="stepper-header-title">Live Tracking & Status</div>
-            <div className="stepper-eta">🚀 Expected Delivery: Today by 4:00 PM</div>
+            <div className="stepper-header-title">Live Fulfillment & Delivery Tracking</div>
+            <div className="stepper-eta">
+              Status: <span style={{ fontWeight: 700, color: 'var(--color-primary-600)' }}>{order.status}</span>
+            </div>
           </div>
 
           <div className="stepper-track">
-            {steps.map((s, idx) => (
-              <div key={idx} className={`stepper-step ${s.status}`}>
-                <div className="stepper-dot">
-                  {s.status === 'completed' ? '✓' : idx + 1}
-                </div>
-                <div>
-                  <div className="stepper-label">{s.label}</div>
-                  <div className="stepper-time">{s.time}</div>
+            <div className={`stepper-step ${order.status !== 'CANCELLED' ? 'completed' : 'danger'}`}>
+              <div className="stepper-dot">✓</div>
+              <div>
+                <div className="stepper-label">Order Confirmed</div>
+                <div className="stepper-time">
+                  {order.createdAt ? new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Verified'}
                 </div>
               </div>
-            ))}
+            </div>
+
+            <div className={`stepper-step ${isShipped ? 'completed' : 'pending'}`}>
+              <div className="stepper-dot">{isShipped ? '✓' : '2'}</div>
+              <div>
+                <div className="stepper-label">Dispatched / In Transit</div>
+                <div className="stepper-time">{isShipped ? 'On the way' : 'Pending dispatch'}</div>
+              </div>
+            </div>
+
+            <div className={`stepper-step ${isOutForDelivery ? 'completed' : 'pending'}`}>
+              <div className="stepper-dot">{isOutForDelivery ? '✓' : '3'}</div>
+              <div>
+                <div className="stepper-label">Out for Delivery</div>
+                <div className="stepper-time">{isOutForDelivery ? 'With Delivery Rider' : 'Pending route'}</div>
+              </div>
+            </div>
+
+            <div className={`stepper-step ${isDelivered ? 'completed' : 'pending'}`}>
+              <div className="stepper-dot">{isDelivered ? '✓' : '4'}</div>
+              <div>
+                <div className="stepper-label">Delivered</div>
+                <div className="stepper-time">{isDelivered ? 'Delivered to Doorstep' : 'Awaiting arrival'}</div>
+              </div>
+            </div>
+
+            {order.difmType && order.difmType !== 'NO_INSTALLATION' && (
+              <div className={`stepper-step ${isDifmCompleted ? 'completed' : 'pending'}`}>
+                <div className="stepper-dot">{isDifmCompleted ? '✓' : '5'}</div>
+                <div>
+                  <div className="stepper-label">
+                    {order.difmType === 'HOME_INSTALLATION' ? 'Home Installation' : 'Workshop Fitment'}
+                  </div>
+                  <div className="stepper-time">
+                    {isDifmCompleted ? 'Installation Completed' : order.difmRequest?.status || 'Scheduled'}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Real Chronological Activity Logs */}
+          {trackingEvents.length > 0 && (
+            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Chronological Activity Log ({trackingEvents.length} events)
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {trackingEvents.map((t, idx) => (
+                  <div key={t.id || idx} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--color-primary-500)', fontWeight: 700 }}>•</span>
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{t.status}: </span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t.message}</span>
+                    </div>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                      {new Date(t.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Two-column Order Details */}
@@ -234,53 +273,54 @@ const OrderDetailPage = () => {
           {/* Left Column: Items */}
           <div className="order-detail-items-col">
             <div className="order-items-card">
-              <h2 className="card-title-bordered">Ordered Items ({order?.items?.length || 0})</h2>
+              <h2 className="card-title-bordered">Ordered Items ({order.items?.length || 0})</h2>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {(order?.items || []).map((item) => (
-                  <div
-                    key={item.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      paddingBottom: '16px',
-                      borderBottom: '1px solid var(--border-color)',
-                      gap: '16px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                      <img
-                        src={
-                          item.product?.images?.[0]?.url ||
-                          'https://images.unsplash.com/photo-1600790142055-619df03207e6?w=200'
-                        }
-                        alt=""
-                        style={{
-                          width: '64px',
-                          height: '64px',
-                          borderRadius: '8px',
-                          objectFit: 'cover',
-                          background: 'var(--bg-tertiary)',
-                        }}
-                      />
-                      <div>
-                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                          {item.product?.name}
-                        </div>
-                        <div className="text-xs text-muted" style={{ marginTop: '2px' }}>
-                          Qty: {item.quantity} × ₹
-                          {Number(item.priceSnapshot || 0).toLocaleString('en-IN')}
+                {(order.items || []).map((item) => {
+                  const unitPrice = Number(item.unitPrice || item.priceSnapshot || 0);
+                  const totalPrice = Number(item.totalPrice || (unitPrice * item.quantity));
+                  const imgUrl = item.product?.images?.[0]?.url || 'https://images.unsplash.com/photo-1600790142055-619df03207e6?w=200';
+
+                  return (
+                    <div
+                      key={item.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        paddingBottom: '16px',
+                        borderBottom: '1px solid var(--border-color)',
+                        gap: '16px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <img
+                          src={imgUrl}
+                          alt=""
+                          style={{
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '8px',
+                            objectFit: 'cover',
+                            background: 'var(--bg-tertiary)',
+                          }}
+                        />
+                        <div>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                            {item.product?.name || 'Automotive Component'}
+                          </div>
+                          <div className="text-xs text-muted" style={{ marginTop: '2px' }}>
+                            Qty: {item.quantity} × ₹{unitPrice.toLocaleString('en-IN')}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
-                      ₹
-                      {(Number(item.priceSnapshot || 0) * item.quantity).toLocaleString('en-IN')}
+                      <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                        ₹{totalPrice.toLocaleString('en-IN')}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Price Breakdown */}
@@ -295,18 +335,30 @@ const OrderDetailPage = () => {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
                   <span>Subtotal</span>
-                  <span>₹{Number(order?.subtotal || order?.total || 0).toLocaleString('en-IN')}</span>
+                  <span>₹{Number(order.subtotal || 0).toLocaleString('en-IN')}</span>
                 </div>
-                {order?.installationType === 'HOME' && (
+                {Number(order.installationFee || 0) > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                    <span>Doorstep Fitment (DIFM)</span>
-                    <span>₹199</span>
+                    <span>Professional Installation (DIFM)</span>
+                    <span>₹{Number(order.installationFee).toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+                {Number(order.homeVisitSurcharge || 0) > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+                    <span>Doorstep Visit Surcharge</span>
+                    <span>₹{Number(order.homeVisitSurcharge).toLocaleString('en-IN')}</span>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                  <span>Delivery</span>
-                  <span className="text-success font-semibold">FREE</span>
+                  <span>Delivery Fee</span>
+                  <span>{Number(order.deliveryFee || 0) > 0 ? `₹${Number(order.deliveryFee).toLocaleString('en-IN')}` : <span className="text-success font-semibold">FREE</span>}</span>
                 </div>
+                {Number(order.discount || 0) > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-success-600)' }}>
+                    <span>Coupon Discount</span>
+                    <span>-₹{Number(order.discount).toLocaleString('en-IN')}</span>
+                  </div>
+                )}
                 <div
                   style={{
                     display: 'flex',
@@ -318,42 +370,42 @@ const OrderDetailPage = () => {
                     borderTop: '1px solid var(--border-color)',
                   }}
                 >
-                  <span>Total Amount Paid</span>
-                  <span>₹{Number(order?.total || 0).toLocaleString('en-IN')}</span>
+                  <span>Grand Total</span>
+                  <span>₹{Number(order.total || 0).toLocaleString('en-IN')}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right Column: Address & Technician info & Payment Details */}
+          {/* Right Column: Details & Assignments */}
           <div className="order-detail-side-col">
-            {/* Payment & Gateway Card */}
+            {/* Payment Status Card */}
             <div className="order-side-card" id="order-payment-status-card">
-              <h3 className="card-title-bordered">💳 Payment Status & Gateway</h3>
+              <h3 className="card-title-bordered">💳 Payment Status</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.9rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Method:</span>
                   <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {order?.paymentMethod === 'CASH_ON_DELIVERY' ? '💵 Cash on Delivery' : '⚡ Razorpay Demo'}
+                    {order.paymentMethod === 'CASH_ON_DELIVERY' ? '💵 Cash on Delivery' : '⚡ Razorpay Online'}
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Status:</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>Payment Status:</span>
                   <span>
-                    {order?.paymentStatus === 'CAPTURED' ? (
-                      <span className="status-pill-paid">✓ CAPTURED & PAID</span>
-                    ) : order?.paymentMethod === 'CASH_ON_DELIVERY' ? (
+                    {order.paymentStatus === 'PAID' || order.paymentStatus === 'CAPTURED' ? (
+                      <span className="status-pill-paid">✓ PAID</span>
+                    ) : order.paymentMethod === 'CASH_ON_DELIVERY' ? (
                       <span className="status-pill-cod">⏳ PENDING COD</span>
-                    ) : order?.paymentStatus === 'FAILED' ? (
-                      <span className="status-pill-pending">❌ PAYMENT FAILED</span>
+                    ) : order.paymentStatus === 'FAILED' ? (
+                      <span className="status-pill-pending">❌ FAILED</span>
                     ) : (
                       <span className="status-pill-pending">⏳ PENDING</span>
                     )}
                   </span>
                 </div>
 
-                {order?.payment?.razorpayPaymentId && (
+                {order.payment?.razorpayPaymentId && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Payment ID:</span>
                     <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
@@ -362,21 +414,8 @@ const OrderDetailPage = () => {
                   </div>
                 )}
 
-                {order?.payment?.razorpayOrderId && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Gateway Ref:</span>
-                    <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      {order.payment.razorpayOrderId}
-                    </span>
-                  </div>
-                )}
-
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                  🔒 Anti-tamper signature verified · No raw card details stored
-                </div>
-
                 {/* If payment is failed or pending online, allow Retry or Switch to COD */}
-                {order?.paymentStatus !== 'CAPTURED' && order?.paymentMethod !== 'CASH_ON_DELIVERY' && (
+                {order.paymentStatus !== 'CAPTURED' && order.paymentStatus !== 'PAID' && order.paymentMethod !== 'CASH_ON_DELIVERY' && (
                   <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <Button
                       variant="primary"
@@ -403,40 +442,72 @@ const OrderDetailPage = () => {
               </div>
             </div>
 
+            {/* Delivery Address Card */}
             <div className="order-side-card">
               <h3 className="card-title-bordered">📍 Delivery Address</h3>
               <div style={{ fontSize: '0.9rem', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
                 <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
-                  {order?.deliveryAddress?.name || 'Customer'}
+                  {order.address?.fullName || 'Customer'}
                 </div>
-                <div>{order?.deliveryAddress?.street}</div>
+                <div>{order.address?.line1}</div>
+                {order.address?.line2 && <div>{order.address.line2}</div>}
                 <div>
-                  {order?.deliveryAddress?.city}, {order?.deliveryAddress?.state} -{' '}
-                  {order?.deliveryAddress?.postalCode}
+                  {order.address?.city}, {order.address?.state} - {order.address?.pincode}
                 </div>
                 <div style={{ marginTop: '8px', color: 'var(--text-muted)' }}>
-                  📞 {order?.deliveryAddress?.phone || '9876543210'}
+                  📞 {order.address?.phone || 'Phone not specified'}
                 </div>
               </div>
             </div>
 
-            {order?.installationType === 'HOME' && (
+            {/* DIFM Installation Details (if requested) */}
+            {order.difmType && order.difmType !== 'NO_INSTALLATION' && (
               <div
                 className="order-side-card"
                 style={{ borderColor: 'var(--color-teal-400)', background: 'var(--bg-surface)' }}
               >
                 <h3 className="card-title-bordered" style={{ color: 'var(--color-teal-600)' }}>
-                  🔧 Assigned Mechanic (DIFM)
+                  🔧 {order.difmType === 'HOME_INSTALLATION' ? 'Doorstep Mechanic (Option A)' : 'Partnered Workshop (Option B)'}
                 </h3>
                 <div style={{ fontSize: '0.9rem', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
                   <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {order?.partnerShop?.technicianName || 'Certified Technician'}
+                    {order.difmRequest?.shop?.name || 'Assigned Partner Workshop'}
                   </div>
-                  <div className="text-xs text-muted" style={{ marginTop: '2px' }}>
-                    Hub: {order?.partnerShop?.name || 'PartNexa Garage Hub'}
+                  {order.difmRequest?.shop?.phone && (
+                    <div className="text-xs text-muted" style={{ marginTop: '2px' }}>
+                      📞 Workshop Contact: {order.difmRequest.shop.phone}
+                    </div>
+                  )}
+                  <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Status:</span>
+                    <Badge variant={order.difmRequest?.status === 'COMPLETED' ? 'success' : 'teal'}>
+                      {order.difmRequest?.status || 'SCHEDULED'}
+                    </Badge>
                   </div>
-                  <div style={{ marginTop: '12px' }}>
-                    <Badge variant="teal">Technician On The Way</Badge>
+                  {order.difmRequest?.preferredDate && (
+                    <div style={{ marginTop: '6px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      📅 Scheduled Date: {new Date(order.difmRequest.preferredDate).toLocaleDateString()}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Delivery Assignment Info */}
+            {order.deliveryAssignments && order.deliveryAssignments.length > 0 && (
+              <div className="order-side-card">
+                <h3 className="card-title-bordered">🚚 Logistics Partner</h3>
+                <div style={{ fontSize: '0.9rem', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {order.deliveryAssignments[0].deliveryPartner?.user
+                      ? `${order.deliveryAssignments[0].deliveryPartner.user.firstName} ${order.deliveryAssignments[0].deliveryPartner.user.lastName}`
+                      : 'Delivery Fleet Broadcast'}
+                  </div>
+                  <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Trip Status:</span>
+                    <Badge variant={order.deliveryAssignments[0].status === 'DELIVERED' ? 'success' : 'primary'}>
+                      {order.deliveryAssignments[0].status}
+                    </Badge>
                   </div>
                 </div>
               </div>
@@ -447,7 +518,7 @@ const OrderDetailPage = () => {
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
                 Questions about your order fitment, return request, or rescheduling technician?
               </p>
-              <Link to={`/support?orderId=${order?.orderNumber || order?.id}`} style={{ textDecoration: 'none' }}>
+              <Link to={`/support?orderId=${order.orderNumber || order.id}`} style={{ textDecoration: 'none' }}>
                 <Button variant="outline" size="sm" fullWidth>
                   💬 Contact PartNexa Support
                 </Button>

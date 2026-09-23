@@ -1,0 +1,54 @@
+/* ============================================================================
+   PartNexa Unified Header System — Prevents Navigation Overlap
+   Structure:
+   ┌─────────────────────────────────────────────────────────┐
+   │ PORTAL SWITCHER (Row 1)                                 │
+   ├─────────────────────────────────────────────────────────┤
+   │ PARTNEXA NAVBAR (Row 2)                                 │
+   └─────────────────────────────────────────────────────────┘
+   ============================================================================ */
+
+.unified-header-system {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg, #0B0F19);
+  transition: all var(--transition-fast, 150ms ease);
+}
+
+.unified-header-portal-row {
+  width: 100%;
+  min-height: var(--portal-bar-height, 38px);
+  position: relative;
+  z-index: 902;
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  background-color: var(--color-bg-elevated, #0f172a);
+}
+
+.unified-header-navbar-row {
+  width: 100%;
+  position: relative;
+  z-index: 901;
+}
+
+/* Ensure child navbars inside unified header flow normally without conflicting positions */
+.unified-header-navbar-row .navbar,
+.unified-header-navbar-row > header {
+  position: relative !important;
+  top: 0 !important;
+  left: auto !important;
+  right: auto !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 768px) {
+  .unified-header-system {
+    position: sticky;
+    top: 0;
+  }
+}

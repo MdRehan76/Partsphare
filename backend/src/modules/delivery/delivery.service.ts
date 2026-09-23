@@ -3,6 +3,7 @@ import prisma from '../../config/prisma';
 import AppError from '../../utils/AppError';
 import { generateAccessToken } from '../../utils/jwt';
 import { KYCDocumentType } from '@prisma/client';
+import { InventorySyncEngine } from '../inventory/inventorySync.service';
 
 // ============================================================================
 // HELPER: RESOLVE PARTNER FROM USER
@@ -166,6 +167,8 @@ export const loginDeliveryPartner = async (data: { email: string; password: stri
     partner,
     kyc,
     token,
+    accessToken: token,
+    refreshToken: token,
   };
 };
 
@@ -599,10 +602,23 @@ export const updateJobStatus = async (
   // Real-time status update to Customer Order
   if (assignment.orderId) {
     if (status === 'DELIVERED') {
+      const order = await prisma.order.findUnique({ where: { id: assignment.orderId } });
+      const isCod = order?.paymentMethod === 'CASH_ON_DELIVERY';
       await prisma.order.update({
         where: { id: assignment.orderId },
-        data: { status: 'DELIVERED' },
+        data: {
+          status: 'DELIVERED',
+          ...(isCod && { paymentStatus: 'PAID' }),
+        },
       });
+      if (isCod) {
+        try {
+          await prisma.payment.updateMany({
+            where: { orderId: assignment.orderId },
+            data: { status: 'PAID' },
+          });
+        } catch {}
+      }
       await prisma.orderTracking.create({
         data: {
           orderId: assignment.orderId,
@@ -855,10 +871,13 @@ export const performUsedPartVerification = async (
           status: 'IN_TRANSIT',
         },
       });
+
+      // 4. Update refurbished inventory
+      await InventorySyncEngine.recordUsedPartIntake(assignment.usedPartListingId, 'shop-1');
     }
   }
 
-  // 4. Update Assignment status
+  // 5. Update Assignment status
   const updatedAssignment = await prisma.deliveryAssignment.update({
     where: { id: jobId },
     data: {

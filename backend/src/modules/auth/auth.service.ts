@@ -189,7 +189,7 @@ export const refreshTokens = async (refreshToken: string) => {
     },
   });
 
-  return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+  return { user: safeUser(storedToken.user), accessToken: newAccessToken, refreshToken: newRefreshToken };
 };
 
 export const logout = async (refreshToken?: string) => {

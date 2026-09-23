@@ -1,5 +1,6 @@
 import prisma from '../../config/prisma';
 import AppError from '../../utils/AppError';
+import { resolveItemUnitPrice } from '../orders/difmEngine';
 
 export interface CartTotals {
   itemCount: number;
@@ -20,8 +21,8 @@ export const calculateCartTotals = (items: any[]): CartTotals => {
   let itemCount = 0;
 
   for (const item of items) {
-    const qty = Number(item.quantity) || 0;
-    const unitPrice = Number(item.priceSnapshot) || 0;
+    const qty = Math.max(1, Number(item.quantity) || 1);
+    const unitPrice = resolveItemUnitPrice(item);
     const mrp = Number(item.product?.mrp || item.product?.basePrice || unitPrice);
 
     subtotal += unitPrice * qty;

@@ -122,10 +122,37 @@ export function calculateHomeVisitSurcharge(distanceKm: number): number {
 }
 
 /**
+ * Resolves the unit price for a cart item safely with fallbacks.
+ * Prevents NaN, null, and 0 when product has a price.
+ */
+export function resolveItemUnitPrice(it: any): number {
+  if (!it) return 0;
+  const candidates = [
+    it.priceSnapshot,
+    it.unitPrice,
+    it.price,
+    it.sellingPrice,
+    it.product?.sellingPrice,
+    it.product?.basePrice,
+    it.product?.lowestPrice,
+    it.product?.mrp,
+  ];
+  for (const c of candidates) {
+    if (c !== undefined && c !== null) {
+      const val = Number(c);
+      if (!isNaN(val) && val > 0) {
+        return val;
+      }
+    }
+  }
+  return 0;
+}
+
+/**
  * Inspects cart items to determine if any difficult-to-install parts require DIFM
  */
 export function evaluateCartDIFM(cartItems: any[]) {
-  const difficultItems = cartItems.filter(
+  const difficultItems = (cartItems || []).filter(
     (it) => it.product?.requiresDIFM === true || it.product?.installationDifficulty === 'HARD' || it.product?.installationDifficulty === 'MODERATE'
   );
 
@@ -140,13 +167,17 @@ export function evaluateCartDIFM(cartItems: any[]) {
     for (let i = 1; i < fees.length; i++) {
       baseServiceFee += Math.round(fees[i] * 0.5);
     }
+  } else {
+    // For standard / normal products when customer opts for installation (Option A or Option B)
+    const fees = (cartItems || []).map((it) => Number(it.product?.baseServiceFee) || 199).sort((a, b) => b - a);
+    baseServiceFee = fees[0] || 199;
   }
 
   return {
     requiresDIFM,
     difficultItems: difficultItems.map((it) => ({
       itemId: it.id,
-      productId: it.product?.id,
+      productId: it.product?.id || it.productId,
       productName: it.product?.name,
       partNumber: it.product?.partNumber,
       difficulty: it.product?.installationDifficulty || 'HARD',
@@ -192,13 +223,14 @@ export function calculateCouponDiscount(couponCode: string | undefined, subtotal
 /**
  * Central DIFM checkout pricing engine.
  * Pricing is strictly backend-authoritative!
+ *
  * Formula:
- * Final Price = Sum(Product Prices) + Installation Fee + Standard Delivery Fee - Discounts
+ * Final Price = Product Subtotal + Delivery Fee + Installation Fee + Home Visit Surcharge - Discount
  *
  * Rules:
- * Option A (HOME_INSTALLATION): Installation_Fee = Base_Service_Fee + Home_Visit_Surcharge(distance)
- * Option B (SHOP_INSTALLATION): Installation_Fee = Base_Service_Fee
- * Option C (NO_INSTALLATION): Installation_Fee = 0
+ * Option A (HOME_INSTALLATION): Installation_Fee = Base_Service_Fee, Home_Visit_Surcharge = distance Surcharge
+ * Option B (SHOP_INSTALLATION): Installation_Fee = Base_Service_Fee, Home_Visit_Surcharge = 0
+ * Option C (NO_INSTALLATION): Installation_Fee = 0, Home_Visit_Surcharge = 0
  */
 export async function calculateAuthoritativePricing(params: {
   cartItems: any[];
@@ -209,14 +241,15 @@ export async function calculateAuthoritativePricing(params: {
 }) {
   const { cartItems, difmType, customerAddress, shopLocation, couponCode } = params;
 
-  // 1. Part subtotal
-  const subtotal = cartItems.reduce(
-    (sum, it) => sum + Number(it.priceSnapshot) * it.quantity,
-    0
-  );
+  // 1. Authoritative Part subtotal (never NaN, guards every item)
+  const partSubtotal = (cartItems || []).reduce((sum, it) => {
+    const unitPrice = resolveItemUnitPrice(it);
+    const qty = Math.max(1, Number(it.quantity) || 1);
+    return sum + unitPrice * qty;
+  }, 0);
 
   // 2. DIFM evaluation
-  const difmEvaluation = evaluateCartDIFM(cartItems);
+  const difmEvaluation = evaluateCartDIFM(cartItems || []);
 
   // 3. Normalize DIFM type
   let resolvedDIFMType: DIFMType = DIFMType.NO_INSTALLATION;
@@ -229,17 +262,16 @@ export async function calculateAuthoritativePricing(params: {
   }
 
   // 4. Delivery Fee
-  const standardDeliveryFee = calculateDeliveryFee(subtotal);
+  const deliveryFee = calculateDeliveryFee(partSubtotal);
 
-  // 5. Distance and Home Visit Surcharge
+  // 5. Distance and Installation Fees
   let distanceKm = 0;
   let durationMinutes = 0;
   let homeVisitSurcharge = 0;
-  let baseInstallationFee = 0;
-  let totalInstallationFee = 0;
+  let installationFee = 0;
 
   if (resolvedDIFMType === DIFMType.HOME_INSTALLATION) {
-    baseInstallationFee = difmEvaluation.baseServiceFee;
+    installationFee = difmEvaluation.baseServiceFee;
 
     // Calculate distance between customer address and partnered shop
     if (customerAddress && shopLocation) {
@@ -252,11 +284,9 @@ export async function calculateAuthoritativePricing(params: {
     }
 
     homeVisitSurcharge = calculateHomeVisitSurcharge(distanceKm);
-    totalInstallationFee = baseInstallationFee + homeVisitSurcharge;
   } else if (resolvedDIFMType === DIFMType.SHOP_INSTALLATION) {
-    baseInstallationFee = difmEvaluation.baseServiceFee;
+    installationFee = difmEvaluation.baseServiceFee;
     homeVisitSurcharge = 0;
-    totalInstallationFee = baseInstallationFee;
 
     if (customerAddress && shopLocation) {
       const distResult = await activeDistanceProvider.calculateDistance(customerAddress, shopLocation);
@@ -265,30 +295,39 @@ export async function calculateAuthoritativePricing(params: {
     }
   } else {
     // Option C: No installation
-    baseInstallationFee = 0;
+    installationFee = 0;
     homeVisitSurcharge = 0;
-    totalInstallationFee = 0;
   }
 
   // 6. Discounts
-  const { discount, appliedCoupon } = calculateCouponDiscount(
+  const { discount: rawDiscount, appliedCoupon } = calculateCouponDiscount(
     couponCode,
-    subtotal,
-    standardDeliveryFee,
-    baseInstallationFee
+    partSubtotal,
+    deliveryFee,
+    installationFee
   );
 
-  // 7. Final Price = Sum(Product Prices) + Installation Fee + Standard Delivery Fee - Discounts
-  const finalPrice = Math.max(0, subtotal + totalInstallationFee + standardDeliveryFee - discount);
+  // Discount guard: If partSubtotal > 0, discount must not reduce grandTotal to <= 0!
+  const preDiscountTotal = partSubtotal + deliveryFee + installationFee + homeVisitSurcharge;
+  const maxAllowedDiscount = partSubtotal > 0 ? Math.max(0, preDiscountTotal - 1) : 0;
+  const discount = Math.min(rawDiscount, maxAllowedDiscount);
+
+  // 7. Authoritative Grand Total Formula:
+  // Final Price = Product Subtotal + Delivery Fee + Installation Fee + Home Visit Surcharge - Discount
+  const grandTotal = Math.max(partSubtotal > 0 ? 1 : 0, preDiscountTotal - discount);
 
   return {
-    subtotal,
-    standardDeliveryFee,
-    baseInstallationFee,
+    partSubtotal,
+    deliveryFee,
+    installationFee,
     homeVisitSurcharge,
-    installationFee: totalInstallationFee,
     discount,
-    finalPrice,
+    grandTotal,
+    // Contextual aliases for backwards compatibility
+    subtotal: partSubtotal,
+    standardDeliveryFee: deliveryFee,
+    baseInstallationFee: installationFee,
+    finalPrice: grandTotal,
     appliedCoupon,
     resolvedDIFMType,
     difmEvaluation,

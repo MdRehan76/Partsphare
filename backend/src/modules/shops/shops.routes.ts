@@ -147,6 +147,31 @@ router.patch('/portal/deliveries/:id/receive', authenticate, async (req: Authent
   }
 });
 
+// Shop inventory listing
+router.get('/portal/inventory', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const inventory = await shopsService.getShopInventory(req.user!.id);
+    return successResponse(res, inventory);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Shop stock adjustment
+router.patch('/portal/inventory/:id/stock', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const updated = await shopsService.updateShopStock(
+      req.user!.id,
+      req.params.id as string,
+      req.body.quantity,
+      req.body.lowStockThreshold
+    );
+    return successResponse(res, updated, 'Workshop inventory stock updated successfully.');
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Used-part intake queue
 router.get('/portal/used-parts', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {

@@ -1,4 +1,5 @@
 import { Router, Response, NextFunction } from 'express';
+import { UserRole } from '@prisma/client';
 import { authenticate, authorize } from '../../middleware/auth.middleware';
 import { successResponse, createdResponse } from '../../utils/response';
 import { AuthenticatedRequest } from '../../types';
@@ -11,7 +12,7 @@ const router = Router();
 // Non-admin tokens (CUSTOMER, SHOP_OWNER, DELIVERY_PARTNER) will receive 403 Forbidden!
 // ============================================================================
 router.use(authenticate);
-router.use(authorize('ADMIN' as any));
+router.use(authorize(UserRole.ADMIN));
 
 // ============================================================================
 // 1. ANALYTICS & KPIS
@@ -35,7 +36,79 @@ router.get('/analytics/charts', async (_req: AuthenticatedRequest, res: Response
 });
 
 // ============================================================================
-// 2. CUSTOMER MANAGEMENT
+// 2. ORDER & DIFM MANAGEMENT
+// ============================================================================
+router.get('/orders', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { status, difmType, paymentStatus, search } = req.query;
+    const orders = await adminService.listOrders({
+      status: status ? String(status) : undefined,
+      difmType: difmType ? String(difmType) : undefined,
+      paymentStatus: paymentStatus ? String(paymentStatus) : undefined,
+      search: search ? String(search) : undefined,
+    });
+    return successResponse(res, orders);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/orders/:id', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    const order = await adminService.getOrderById(id);
+    return successResponse(res, order);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/orders/:id/status', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    const { status, notes } = req.body;
+    const updated = await adminService.updateOrderStatus(id, status, notes);
+    return successResponse(res, updated, 'Order status updated successfully.');
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/orders/:id/payment-status', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    const { paymentStatus, notes } = req.body;
+    const updated = await adminService.updateOrderPaymentStatus(id, paymentStatus, notes);
+    return successResponse(res, updated, 'Order payment status updated successfully.');
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/orders/:id/delivery', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    const { deliveryPartnerId } = req.body;
+    const updated = await adminService.assignOrderDelivery(id, deliveryPartnerId);
+    return successResponse(res, updated, 'Order assigned to delivery partner.');
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/orders/:id/difm', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    const { shopId, status } = req.body;
+    const updated = await adminService.assignOrderDifm(id, shopId, status);
+    return successResponse(res, updated, 'DIFM workshop assigned to order.');
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================================
+// 3. CUSTOMER MANAGEMENT
 // ============================================================================
 router.get('/customers', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -45,6 +118,16 @@ router.get('/customers', async (req: AuthenticatedRequest, res: Response, next: 
       status: status ? String(status) : undefined,
     });
     return successResponse(res, customers);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/customers/:id', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    const customer = await adminService.getCustomerById(id);
+    return successResponse(res, customer);
   } catch (error) {
     next(error);
   }
@@ -62,7 +145,7 @@ router.patch('/customers/:id/status', async (req: AuthenticatedRequest, res: Res
 });
 
 // ============================================================================
-// 3. SHOP MANAGEMENT & COMMISSIONS
+// 4. SHOP MANAGEMENT & COMMISSIONS
 // ============================================================================
 router.get('/shops', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -78,11 +161,32 @@ router.get('/shops', async (req: AuthenticatedRequest, res: Response, next: Next
   }
 });
 
+router.get('/shops/:id', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    const shop = await adminService.getShopById(id);
+    return successResponse(res, shop);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.patch('/shops/:id/verification', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const id = String(req.params.id);
     const updated = await adminService.verifyShop(id, req.body);
     return successResponse(res, updated, 'Shop verification status updated.');
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/shops/:id/status', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    const { isActive } = req.body;
+    const updated = await adminService.toggleShopStatus(id, Boolean(isActive));
+    return successResponse(res, updated, `Shop ${isActive ? 'activated' : 'deactivated'} successfully.`);
   } catch (error) {
     next(error);
   }
@@ -100,7 +204,7 @@ router.patch('/shops/:id/commission', async (req: AuthenticatedRequest, res: Res
 });
 
 // ============================================================================
-// 4. DELIVERY PARTNERS & KYC
+// 5. DELIVERY PARTNERS & KYC
 // ============================================================================
 router.get('/delivery-partners', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -110,6 +214,16 @@ router.get('/delivery-partners', async (req: AuthenticatedRequest, res: Response
       search: search ? String(search) : undefined,
     });
     return successResponse(res, partners);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/delivery-partners/:id', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    const partner = await adminService.getDeliveryPartnerById(id);
+    return successResponse(res, partner);
   } catch (error) {
     next(error);
   }
@@ -137,7 +251,7 @@ router.patch('/delivery-partners/:id/activation', async (req: AuthenticatedReque
 });
 
 // ============================================================================
-// 5. PRODUCTS & INVENTORY
+// 6. PRODUCTS, CATEGORIES, BRANDS & INVENTORY
 // ============================================================================
 router.get('/products', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -182,6 +296,42 @@ router.delete('/products/:id', async (req: AuthenticatedRequest, res: Response, 
   }
 });
 
+router.get('/categories', async (_req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const categories = await adminService.listCategories();
+    return successResponse(res, categories);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/categories', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const category = await adminService.createCategory(req.body);
+    return createdResponse(res, category, 'Category created.');
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/brands', async (_req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const brands = await adminService.listBrands();
+    return successResponse(res, brands);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/brands', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const brand = await adminService.createBrand(req.body);
+    return createdResponse(res, brand, 'Brand created.');
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/inventory', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const lowStockOnly = req.query.lowStock === 'true';
@@ -203,7 +353,7 @@ router.patch('/inventory/:id/stock', async (req: AuthenticatedRequest, res: Resp
 });
 
 // ============================================================================
-// 6. PLATFORM CONFIGURATION (DIFM, COMMISSIONS, SUBSCRIPTIONS)
+// 7. PLATFORM CONFIGURATION (DIFM, COMMISSIONS, SUBSCRIPTIONS)
 // ============================================================================
 router.get('/config/difm', async (_req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -241,6 +391,29 @@ router.put('/config/commissions', async (req: AuthenticatedRequest, res: Respons
   }
 });
 
+router.get('/commissions/ledger', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { shopId, releaseStatus } = req.query;
+    const ledger = await adminService.getCommissionLedger({
+      shopId: shopId ? String(shopId) : undefined,
+      releaseStatus: releaseStatus ? String(releaseStatus) : undefined,
+    });
+    return successResponse(res, ledger);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/commissions/ledger/:id/release', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    const updated = await adminService.releaseCommissionPayout(id);
+    return successResponse(res, updated, 'Shop commission payout released.');
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/config/subscriptions', async (_req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const plans = await adminService.listSubscriptionPlans();
@@ -261,7 +434,7 @@ router.patch('/config/subscriptions/:id', async (req: AuthenticatedRequest, res:
 });
 
 // ============================================================================
-// 7. USED PARTS OVERSIGHT
+// 8. USED PARTS OVERSIGHT
 // ============================================================================
 router.get('/used-parts', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -273,10 +446,59 @@ router.get('/used-parts', async (req: AuthenticatedRequest, res: Response, next:
   }
 });
 
+router.get('/used-parts/:id', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    const item = await adminService.getUsedPartById(id);
+    return successResponse(res, item);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/used-parts/:id/verify', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    const { status, notes } = req.body;
+    const updated = await adminService.verifyUsedPart(id, status, notes);
+    return successResponse(res, updated, 'Used part verification status updated.');
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/used-parts/:id/value', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    const { valuationAmount, notes } = req.body;
+    const updated = await adminService.valueUsedPart(id, Number(valuationAmount), notes);
+    return successResponse(res, updated, 'Used part valuation recorded.');
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/used-parts/:id/payout', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    const { payoutReference } = req.body;
+    const updated = await adminService.payoutUsedPart(id, payoutReference);
+    return successResponse(res, updated, 'Seller payout marked as completed.');
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.patch('/used-parts/:id', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const id = String(req.params.id);
-    const updated = await adminService.updateUsedPart(id, req.body);
+    const { status, valuationAmount, finalValuation, notes } = req.body;
+    const valuation = valuationAmount !== undefined ? valuationAmount : finalValuation;
+    if (valuation !== undefined) {
+      const updated = await adminService.valueUsedPart(id, Number(valuation), notes);
+      return successResponse(res, updated, 'Used part listing updated.');
+    }
+    const updated = await adminService.verifyUsedPart(id, status || 'VERIFIED', notes);
     return successResponse(res, updated, 'Used part listing updated.');
   } catch (error) {
     next(error);
@@ -284,7 +506,7 @@ router.patch('/used-parts/:id', async (req: AuthenticatedRequest, res: Response,
 });
 
 // ============================================================================
-// 8. DELIVERIES FLEET MANAGEMENT
+// 9. DELIVERIES FLEET MANAGEMENT
 // ============================================================================
 router.get('/deliveries', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -309,7 +531,7 @@ router.patch('/deliveries/:id/reassign', async (req: AuthenticatedRequest, res: 
 });
 
 // ============================================================================
-// 9. CUSTOMER CARE HUB (UNIFIED TICKETING SYSTEM)
+// 10. CUSTOMER CARE HUB (UNIFIED TICKETING SYSTEM)
 // ============================================================================
 router.get('/tickets', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {

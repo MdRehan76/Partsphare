@@ -12,6 +12,11 @@ const DEMO_RAZORPAY_SECRET = config.razorpay?.keySecret && !config.razorpay.keyS
   ? config.razorpay.keySecret
   : 'partsphere_rzp_secret_key_demo_32chars';
 
+const isDemoMode =
+  !config.razorpay?.keyId ||
+  config.razorpay.keyId.includes('placeholder') ||
+  config.razorpay.keyId === 'rzp_test_partsphere_demo';
+
 /**
  * Generates an authoritative HMAC-SHA256 signature for Razorpay sandbox verification:
  * HMAC_SHA256(order_id + "|" + payment_id, secret)
@@ -82,23 +87,29 @@ export const createRazorpayPaymentOrder = async (userId: string, orderId: string
 
   return {
     orderId: order.id,
+    paymentId: payment.id,
     orderNumber: order.orderNumber,
     razorpayOrderId,
     amount: Number(order.total),
+    amountInRupees: Number(order.total),
     amountInPaise,
     currency: 'INR',
     keyId: DEMO_RAZORPAY_KEY_ID,
+    isDemoMode,
+    demoSecretKey: isDemoMode ? DEMO_RAZORPAY_SECRET : undefined,
     customer: {
       name: `${order.user?.firstName || ''} ${order.user?.lastName || ''}`.trim() || 'Customer',
       email: order.user?.email || 'customer@partsphere.in',
       phone: order.user?.phone || '9876543210',
     },
     orderSummary: {
-      subtotal: Number(order.subtotal),
+      partSubtotal: Number(order.subtotal),
       deliveryFee: Number(order.deliveryFee),
       installationFee: Number(order.installationFee),
       homeVisitSurcharge: Number(order.homeVisitSurcharge),
       discount: Number(order.discount),
+      grandTotal: Number(order.total),
+      subtotal: Number(order.subtotal),
       total: Number(order.total),
       difmType: order.difmType,
     },
@@ -146,19 +157,34 @@ export const verifyRazorpayPayment = async (
     throw AppError.notFound('Payment record not found for this order.');
   }
 
-  // IDEMPOTENCY GUARD: If already captured with same payment ID, return idempotent success
-  if (payment.status === PaymentStatus.CAPTURED && payment.razorpayPaymentId === razorpayPaymentId) {
+  // IDEMPOTENCY GUARD: If already captured, return idempotent success without mutating again
+  if (
+    (payment.status === PaymentStatus.CAPTURED || order.paymentStatus === PaymentStatus.CAPTURED) &&
+    (payment.razorpayPaymentId === razorpayPaymentId || payment.razorpayOrderId === razorpayOrderId)
+  ) {
+    const refreshedOrder = await prisma.order.findFirst({
+      where: { id: order.id },
+      include: {
+        items: { include: { product: true } },
+        address: true,
+        payment: true,
+        difmRequest: { include: { shop: true } },
+        tracking: { orderBy: { createdAt: 'desc' } },
+      },
+    });
+
     return {
       success: true,
       message: 'Payment has already been verified and captured.',
       alreadyProcessed: true,
-      order,
+      order: refreshedOrder || order,
       payment: {
         id: payment.id,
         orderId: payment.orderId,
         method: payment.method,
         status: payment.status,
         amount: Number(payment.amount),
+        currency: payment.currency,
         razorpayOrderId: payment.razorpayOrderId,
         razorpayPaymentId: payment.razorpayPaymentId,
         createdAt: payment.createdAt,
@@ -199,7 +225,7 @@ export const verifyRazorpayPayment = async (
       data: {
         orderId: order.id,
         status: order.status,
-        message: 'Payment verification failed: Invalid digital signature signature mismatch.',
+        message: 'Payment verification failed: Invalid digital signature mismatch.',
       },
     });
 
@@ -226,6 +252,16 @@ export const verifyRazorpayPayment = async (
     },
   });
 
+  // Authoritatively clear user's cart on payment success
+  try {
+    const userCart = await prisma.cart.findUnique({ where: { userId } });
+    if (userCart) {
+      await prisma.cartItem.deleteMany({ where: { cartId: userCart.id } });
+    }
+  } catch (cartErr) {
+    console.warn('Cart items clearing warning:', cartErr);
+  }
+
   // Update DIFMRequest status if applicable
   if (order.difmRequest) {
     await prisma.difmRequest.update({
@@ -237,14 +273,65 @@ export const verifyRazorpayPayment = async (
     });
   }
 
+  // Update delivery assignment for this order (payment captured, cod not applicable)
+  try {
+    const existingDelivery = await prisma.deliveryAssignment.findFirst({ where: { orderId: order.id } });
+    if (existingDelivery) {
+      await prisma.deliveryAssignment.update({
+        where: { id: existingDelivery.id },
+        data: {
+          paymentStatus: 'CAPTURED',
+          paymentMethod: 'RAZORPAY',
+          codAmountToCollect: 0,
+          codStatus: 'NOT_APPLICABLE',
+          updatedAt: new Date(),
+        },
+      });
+    }
+  } catch (delErr) {
+    console.warn('Delivery assignment sync warning:', delErr);
+  }
+
+  // Update commission ledger if applicable
+  try {
+    const comm = await prisma.commissionLedger.findFirst({ where: { orderId: order.id } });
+    if (comm) {
+      await prisma.commissionLedger.update({
+        where: { id: comm.id },
+        data: {
+          paymentStatus: 'PAID',
+          updatedAt: new Date(),
+        },
+      });
+    }
+  } catch (commErr) {
+    console.warn('Commission ledger sync warning:', commErr);
+  }
+
   // Append tracking entry
   await prisma.orderTracking.create({
     data: {
       orderId: order.id,
       status: OrderStatus.CONFIRMED,
-      message: `Payment of ₹${Number(order.total).toLocaleString('en-IN')} captured successfully via Razorpay Sandbox (Txn: ${razorpayPaymentId}).`,
+      message: `Payment of ₹${Number(order.total).toLocaleString('en-IN')} captured successfully via Razorpay Sandbox (Txn: ${razorpayPaymentId}). Order confirmed and released for dispatch.`,
     },
   });
+
+  // Create authoritative notification for customer
+  try {
+    await prisma.notification.create({
+      data: {
+        userId: order.userId,
+        title: 'Payment Successful',
+        body: `Payment of ₹${Number(order.total).toLocaleString('en-IN')} confirmed for Order #${order.orderNumber}. Your items are being prepared for dispatch.`,
+        channel: 'IN_APP',
+        status: 'DELIVERED',
+        data: { orderId: order.id, type: 'ORDER_PAYMENT_CAPTURED' },
+      },
+    });
+  } catch (notifErr) {
+    console.warn('Customer notification warning:', notifErr);
+  }
 
   const refreshedOrder = await prisma.order.findFirst({
     where: { id: order.id },
@@ -288,9 +375,10 @@ export const recordPaymentFailure = async (
     errorCode?: string;
     errorDescription?: string;
     reason?: string;
+    errorReason?: string;
   }
 ) => {
-  const { orderId, errorCode, errorDescription, reason } = data;
+  const { orderId, errorCode, errorDescription, reason, errorReason } = data;
 
   const order = await prisma.order.findFirst({
     where: { id: orderId, userId },
@@ -320,6 +408,7 @@ export const recordPaymentFailure = async (
     });
   }
 
+  // Keep order status strictly PENDING; never falsely confirm
   await prisma.order.update({
     where: { id: order.id },
     data: {
@@ -328,19 +417,36 @@ export const recordPaymentFailure = async (
     },
   });
 
-  const failureMessage = errorDescription || reason || 'Payment cancelled or declined by gateway.';
+  const failureMessage =
+    errorDescription || errorReason || reason || 'Payment cancelled or declined by gateway.';
 
   await prisma.orderTracking.create({
     data: {
       orderId: order.id,
-      status: order.status,
+      status: order.status, // Strictly PENDING
       message: `Payment attempt failed (${errorCode || 'CANCELLED'}): ${failureMessage}. Order remains reserved for retry.`,
     },
   });
 
+  try {
+    await prisma.notification.create({
+      data: {
+        userId: order.userId,
+        title: 'Payment Incomplete',
+        body: `Payment for Order #${order.orderNumber} was not completed (${errorCode || 'CANCELLED'}). You can retry anytime.`,
+        channel: 'IN_APP',
+        status: 'DELIVERED',
+        data: { orderId: order.id, type: 'ORDER_PAYMENT_FAILED' },
+      },
+    });
+  } catch (notifErr) {
+    console.warn('Customer failure notification warning:', notifErr);
+  }
+
   return {
     success: false,
     orderId: order.id,
+    orderStatus: order.status,
     paymentStatus: PaymentStatus.FAILED,
     canRetry: true,
     reason: failureMessage,
@@ -369,6 +475,15 @@ export const retryPayment = async (userId: string, orderId: string) => {
   if (order.status === OrderStatus.CANCELLED) {
     throw AppError.badRequest('Cannot retry payment for a cancelled order.');
   }
+
+  // Reset payment status to PENDING for retry
+  await prisma.order.update({
+    where: { id: order.id },
+    data: {
+      paymentStatus: PaymentStatus.PENDING,
+      updatedAt: new Date(),
+    },
+  });
 
   // Create a new Razorpay Sandbox payment order
   const checkoutPayload = await createRazorpayPaymentOrder(userId, orderId);
@@ -423,6 +538,25 @@ export const switchPaymentMethodToCOD = async (userId: string, orderId: string) 
     });
   }
 
+  // Update delivery assignment with COD amount to collect
+  try {
+    const existingDelivery = await prisma.deliveryAssignment.findFirst({ where: { orderId: order.id } });
+    if (existingDelivery) {
+      await prisma.deliveryAssignment.update({
+        where: { id: existingDelivery.id },
+        data: {
+          paymentMethod: 'CASH_ON_DELIVERY',
+          paymentStatus: 'PENDING',
+          codAmountToCollect: Number(order.total),
+          codStatus: 'PENDING',
+          updatedAt: new Date(),
+        },
+      });
+    }
+  } catch (delErr) {
+    console.warn('Delivery assignment COD update warning:', delErr);
+  }
+
   if (order.difmRequest) {
     await prisma.difmRequest.update({
       where: { id: order.difmRequest.id },
@@ -431,6 +565,16 @@ export const switchPaymentMethodToCOD = async (userId: string, orderId: string) 
         updatedAt: new Date(),
       },
     });
+  }
+
+  // Clear customer's cart now that order is confirmed as COD
+  try {
+    const userCart = await prisma.cart.findUnique({ where: { userId } });
+    if (userCart) {
+      await prisma.cartItem.deleteMany({ where: { cartId: userCart.id } });
+    }
+  } catch (cartErr) {
+    console.warn('Cart items clearing warning:', cartErr);
   }
 
   await prisma.orderTracking.create({

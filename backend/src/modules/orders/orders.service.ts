@@ -6,8 +6,10 @@ import {
   calculateAuthoritativePricing,
   findEligiblePartneredShops,
   evaluateCartDIFM,
+  resolveItemUnitPrice,
   LocationPoint,
 } from './difmEngine';
+import { InventorySyncEngine } from '../inventory/inventorySync.service';
 
 export const listCustomerOrders = async (userId: string) => {
   return prisma.order.findMany({
@@ -36,7 +38,13 @@ export const listCustomerOrders = async (userId: string) => {
 
 export const getOrderById = async (userId: string, orderId: string) => {
   const order = await prisma.order.findFirst({
-    where: { id: orderId, userId },
+    where: {
+      userId,
+      OR: [
+        { id: orderId },
+        { orderNumber: orderId },
+      ],
+    },
     include: {
       items: {
         include: {
@@ -51,6 +59,13 @@ export const getOrderById = async (userId: string, orderId: string) => {
       difmRequest: {
         include: { shop: true, serviceBooking: true },
       },
+      deliveryAssignments: {
+        include: {
+          deliveryPartner: {
+            include: { user: true },
+          },
+        },
+      },
       tracking: {
         orderBy: { createdAt: 'asc' },
       },
@@ -61,7 +76,17 @@ export const getOrderById = async (userId: string, orderId: string) => {
   });
 
   if (!order) throw AppError.notFound('Order not found.');
-  return order;
+  return {
+    ...order,
+    pricing: {
+      partSubtotal: Number(order.subtotal),
+      deliveryFee: Number(order.deliveryFee),
+      installationFee: Number(order.installationFee),
+      homeVisitSurcharge: Number(order.homeVisitSurcharge),
+      discount: Number(order.discount),
+      grandTotal: Number(order.total),
+    },
+  };
 };
 
 /**
@@ -135,29 +160,34 @@ export const getCheckoutQuote = async (
   return {
     cartSummary: {
       itemCount: cart.items.reduce((sum: number, it: any) => sum + it.quantity, 0),
-      items: cart.items.map((it: any) => ({
-        id: it.id,
-        productId: it.productId,
-        productName: it.product?.name,
-        partNumber: it.product?.partNumber,
-        unitPrice: Number(it.priceSnapshot),
-        quantity: it.quantity,
-        totalPrice: Number(it.priceSnapshot) * it.quantity,
-        requiresDIFM: Boolean(it.product?.requiresDIFM),
-        difficulty: it.product?.installationDifficulty || 'EASY',
-      })),
+      items: cart.items.map((it: any) => {
+        const unitPrice = resolveItemUnitPrice(it);
+        const qty = it.quantity;
+        return {
+          id: it.id,
+          productId: it.productId,
+          productName: it.product?.name,
+          partNumber: it.product?.partNumber,
+          unitPrice,
+          quantity: qty,
+          totalPrice: unitPrice * qty,
+          requiresDIFM: Boolean(it.product?.requiresDIFM),
+          difficulty: it.product?.installationDifficulty || 'EASY',
+        };
+      }),
       hasDifficultParts: pricing.difmEvaluation.requiresDIFM,
       difficultItems: pricing.difmEvaluation.difficultItems,
     },
     pricing: {
-      partSubtotal: pricing.subtotal,
-      deliveryFee: pricing.standardDeliveryFee,
-      baseInstallationFee: pricing.baseInstallationFee,
-      homeVisitSurcharge: pricing.homeVisitSurcharge,
+      partSubtotal: pricing.partSubtotal,
+      deliveryFee: pricing.deliveryFee,
       installationFee: pricing.installationFee,
+      homeVisitSurcharge: pricing.homeVisitSurcharge,
       discount: pricing.discount,
+      grandTotal: pricing.grandTotal,
+      // Compatibility metadata
+      baseInstallationFee: pricing.installationFee,
       appliedCoupon: pricing.appliedCoupon,
-      grandTotal: pricing.finalPrice,
     },
     difm: {
       required: pricing.difmEvaluation.requiresDIFM,
@@ -269,6 +299,23 @@ export const createOrderDraft = async (
     assignedShop = eligibleShops[0];
   }
 
+  // 1. Authoritative Inventory Stock Check: Prevent negative stock or ordering above available inventory
+  for (const it of cart.items) {
+    const inv = await prisma.inventory.findFirst({
+      where: {
+        productId: it.productId,
+        ...(it.shopId ? { shopId: it.shopId } : {}),
+      },
+    });
+
+    const stock = inv ? Number(inv.quantity || 0) : 0;
+    if (!inv || stock < it.quantity) {
+      throw AppError.badRequest(
+        `Insufficient inventory for "${it.product?.name || 'Selected product'}". Requested: ${it.quantity}, Available in stock: ${stock}. Please adjust quantity.`
+      );
+    }
+  }
+
   // Calculate authoritative pricing strictly on backend
   const pricing = await calculateAuthoritativePricing({
     cartItems: cart.items,
@@ -281,6 +328,32 @@ export const createOrderDraft = async (
   const orderNumber = generateOrderNumber();
 
   const newOrder = await prisma.$transaction(async (tx: any) => {
+    // Deduct stock atomically in database with concurrency safety
+    for (const it of cart.items) {
+      const inv = await tx.inventory.findFirst({
+        where: {
+          productId: it.productId,
+          ...(it.shopId ? { shopId: it.shopId } : {}),
+        },
+      });
+      const currentStock = inv ? Number(inv.quantity || 0) : 0;
+      if (!inv || currentStock < it.quantity) {
+        throw AppError.badRequest(
+          `Insufficient inventory for "${it.product?.name || 'Selected product'}". Requested: ${it.quantity}, Available in stock: ${currentStock}. Please adjust quantity.`
+        );
+      }
+      const newQty = currentStock - it.quantity;
+      await tx.inventory.update({
+        where: { id: inv.id },
+        data: {
+          quantity: newQty,
+          isAvailable: newQty > 0,
+          availabilityStatus: newQty > 0 ? (newQty <= 5 ? 'LOW_STOCK' : 'IN_STOCK') : 'OUT_OF_STOCK',
+          updatedAt: new Date(),
+        },
+      });
+    }
+
     const isOnlinePayment = data.paymentMethod === PaymentMethod.RAZORPAY;
     const initialOrderStatus = isOnlinePayment ? OrderStatus.PENDING : OrderStatus.CONFIRMED;
     const initialPaymentStatus = PaymentStatus.PENDING;
@@ -299,28 +372,31 @@ export const createOrderDraft = async (
         status: initialOrderStatus,
         paymentMethod: data.paymentMethod || PaymentMethod.CASH_ON_DELIVERY,
         paymentStatus: initialPaymentStatus,
-        subtotal: pricing.subtotal,
-        deliveryFee: pricing.standardDeliveryFee,
+        subtotal: pricing.partSubtotal,
+        deliveryFee: pricing.deliveryFee,
         discount: pricing.discount,
-        installationFee: pricing.baseInstallationFee,
+        installationFee: pricing.installationFee,
         homeVisitSurcharge: pricing.homeVisitSurcharge,
-        total: pricing.finalPrice,
+        total: pricing.grandTotal,
         couponCode: data.couponCode || null,
         notes: data.notes || null,
         difmType: pricing.resolvedDIFMType,
         items: {
-          create: cart.items.map((it: any) => ({
-            productId: it.productId,
-            shopId: it.shopId,
-            quantity: it.quantity,
-            unitPrice: it.priceSnapshot,
-            totalPrice: Number(it.priceSnapshot) * it.quantity,
-          })),
+          create: cart.items.map((it: any) => {
+            const unitPrice = resolveItemUnitPrice(it);
+            return {
+              productId: it.productId,
+              shopId: it.shopId,
+              quantity: it.quantity,
+              unitPrice: unitPrice,
+              totalPrice: unitPrice * it.quantity,
+            };
+          }),
         },
         payment: {
           create: {
             method: data.paymentMethod || PaymentMethod.CASH_ON_DELIVERY,
-            amount: pricing.finalPrice,
+            amount: pricing.grandTotal,
             status: initialPaymentStatus,
             razorpayOrderId,
           },
@@ -338,7 +414,7 @@ export const createOrderDraft = async (
                   shopId: assignedShop?.id || null,
                   type: pricing.resolvedDIFMType,
                   status: DIFMStatus.PENDING,
-                  installationFee: pricing.baseInstallationFee,
+                  installationFee: pricing.installationFee,
                   homeVisitSurcharge: pricing.homeVisitSurcharge,
                   preferredDate: data.preferredDate
                     ? new Date(data.preferredDate)
@@ -351,11 +427,35 @@ export const createOrderDraft = async (
       },
     });
 
-    // Clear cart items
-    await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+    // Clear cart items immediately for Cash on Delivery (since COD orders are immediately CONFIRMED).
+    // For online Razorpay payments, cart items are cleared authoritatively upon backend verification
+    // so the customer doesn't lose their cart if the payment window is cancelled or declined.
+    if (!isOnlinePayment) {
+      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+    }
 
     return createdOrder;
   });
+
+  // Log authoritative inventory stock deduction events
+  for (const it of cart.items) {
+    const inv = await prisma.inventory.findFirst({
+      where: {
+        productId: it.productId,
+        ...(it.shopId ? { shopId: it.shopId } : {}),
+      },
+    });
+    const currentStock = inv ? Number(inv.quantity) : 0;
+    await InventorySyncEngine.recordOrderDeduction(
+      it.productId,
+      it.shopId || inv?.shopId || 'shop-1',
+      it.quantity,
+      currentStock + it.quantity,
+      currentStock,
+      newOrder.id,
+      userId
+    );
+  }
 
   return getOrderById(userId, newOrder.id);
 };

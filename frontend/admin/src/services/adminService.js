@@ -4,7 +4,13 @@ export const adminService = {
   // Auth
   login: async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
-    return res.data;
+    // Backend response shape: { success, message, data: { user, accessToken, refreshToken } }
+    const payload = res.data?.data || res.data;
+    return {
+      user: payload.user,
+      token: payload.accessToken,
+      refreshToken: payload.refreshToken,
+    };
   },
 
   getMe: async () => {

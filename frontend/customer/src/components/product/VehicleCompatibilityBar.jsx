@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { vehiclesService } from '../../services';
 import { useVehicles } from '../../contexts/VehicleContext';
+import VehicleSelectorModal from '../vehicle/VehicleSelectorModal';
+import { BrandLogo } from '../vehicle/BrandLogos';
 import './VehicleCompatibilityBar.css';
 
 export const VehicleCompatibilityBar = ({
@@ -9,81 +11,9 @@ export const VehicleCompatibilityBar = ({
   onVariantChange,
   onCompatibleOnlyChange,
 }) => {
-  const { vehicles, primaryVehicle } = useVehicles();
-
+  const { vehicles, activeVehicle, selectVehicleForFitment } = useVehicles();
   const [isOpen, setIsOpen] = useState(false);
-  const [vehicleType, setVehicleType] = useState('4_WHEELER');
-  const [makes, setMakes] = useState([]);
-  const [models, setModels] = useState([]);
-  const [variants, setVariants] = useState([]);
-
-  const [selectedMakeId, setSelectedMakeId] = useState('');
-  const [selectedModelId, setSelectedModelId] = useState('');
-  const [selectedVarId, setSelectedVarId] = useState('');
-
   const [activeVehicleDetails, setActiveVehicleDetails] = useState(null);
-  const [loadingMakes, setLoadingMakes] = useState(false);
-  const [loadingModels, setLoadingModels] = useState(false);
-  const [loadingVariants, setLoadingVariants] = useState(false);
-
-  // Fetch makes when vehicleType changes or dialog opens
-  useEffect(() => {
-    if (isOpen) {
-      setLoadingMakes(true);
-      vehiclesService
-        .getMakes(vehicleType)
-        .then(({ data }) => {
-          setMakes(data.data || []);
-          setSelectedMakeId('');
-          setModels([]);
-          setSelectedModelId('');
-          setVariants([]);
-          setSelectedVarId('');
-        })
-        .catch(() => setMakes([]))
-        .finally(() => setLoadingMakes(false));
-    }
-  }, [vehicleType, isOpen]);
-
-  // Fetch models when make changes
-  useEffect(() => {
-    if (selectedMakeId) {
-      setLoadingModels(true);
-      vehiclesService
-        .getModels(selectedMakeId)
-        .then(({ data }) => {
-          setModels(data.data || []);
-          setSelectedModelId('');
-          setVariants([]);
-          setSelectedVarId('');
-        })
-        .catch(() => setModels([]))
-        .finally(() => setLoadingModels(false));
-    } else {
-      setModels([]);
-      setSelectedModelId('');
-      setVariants([]);
-      setSelectedVarId('');
-    }
-  }, [selectedMakeId]);
-
-  // Fetch variants when model changes
-  useEffect(() => {
-    if (selectedModelId) {
-      setLoadingVariants(true);
-      vehiclesService
-        .getVariants(selectedModelId)
-        .then(({ data }) => {
-          setVariants(data.data || []);
-          setSelectedVarId('');
-        })
-        .catch(() => setVariants([]))
-        .finally(() => setLoadingVariants(false));
-    } else {
-      setVariants([]);
-      setSelectedVarId('');
-    }
-  }, [selectedModelId]);
 
   // Resolve details of active selectedVariantId
   useEffect(() => {
@@ -92,110 +22,150 @@ export const VehicleCompatibilityBar = ({
       return;
     }
 
-    // Check in user garage vehicles first
+    // 1. Check in user garage vehicles first
     const garageMatch = vehicles.find(
       (v) => v.variantId === selectedVariantId || v.variant?.id === selectedVariantId
     );
     if (garageMatch && garageMatch.variant) {
       setActiveVehicleDetails({
         make: garageMatch.variant.model?.make?.name,
+        makeId: garageMatch.variant.model?.make?.id,
         model: garageMatch.variant.model?.name,
         variant: garageMatch.variant.name,
         year: garageMatch.variant.year,
         fuelType: garageMatch.variant.fuelType,
         isGarage: true,
         nickname: garageMatch.nickname,
+        type: garageMatch.variant.model?.type || garageMatch.variant.model?.make?.type,
       });
       return;
     }
 
-    // Fallback: search across cached makes/models/variants
-    const variantObj = variants.find((v) => v.id === selectedVariantId);
-    if (variantObj) {
-      const modelObj = models.find((m) => m.id === variantObj.modelId);
-      const makeObj = makes.find((m) => m.id === (modelObj?.makeId || selectedMakeId));
+    // 2. Check in activeVehicle context
+    if (activeVehicle && (activeVehicle.variantId === selectedVariantId || activeVehicle.variant?.id === selectedVariantId)) {
       setActiveVehicleDetails({
-        make: makeObj?.name || 'Selected Vehicle',
-        model: modelObj?.name || '',
-        variant: variantObj.name,
-        year: variantObj.year,
-        fuelType: variantObj.fuelType,
+        make: activeVehicle.variant?.model?.make?.name,
+        makeId: activeVehicle.variant?.model?.make?.id,
+        model: activeVehicle.variant?.model?.name,
+        variant: activeVehicle.variant?.name,
+        year: activeVehicle.variant?.year,
+        fuelType: activeVehicle.variant?.fuelType,
+        isGarage: Boolean(activeVehicle.isPrimary || activeVehicle.nickname),
+        nickname: activeVehicle.nickname,
+        type: activeVehicle.variant?.model?.type || activeVehicle.variant?.model?.make?.type,
+      });
+      return;
+    }
+
+    // 3. Fallback to recents in localStorage
+    try {
+      const recents = JSON.parse(localStorage.getItem('partnexa_recent_vehicles') || '[]');
+      const found = recents.find((r) => r.variantId === selectedVariantId || r.variant?.id === selectedVariantId);
+      if (found) {
+        setActiveVehicleDetails({
+          make: found.makeName || found.variant?.model?.make?.name,
+          makeId: found.variant?.model?.make?.id,
+          model: found.modelName || found.variant?.model?.name,
+          variant: found.variantName || found.variant?.name,
+          year: found.year || found.variant?.year,
+          fuelType: found.fuelType || found.variant?.fuelType,
+          isGarage: false,
+          type: found.type,
+        });
+        return;
+      }
+    } catch (e) {
+      // Ignore
+    }
+
+    // 4. Default fallback metadata based on variantId pattern
+    if (selectedVariantId.includes('swift')) {
+      setActiveVehicleDetails({
+        make: 'Maruti Suzuki',
+        model: 'Swift',
+        variant: selectedVariantId.includes('plus') ? 'ZXi Plus AMT' : 'VXi',
+        year: 2024,
+        fuelType: 'Petrol',
         isGarage: false,
+        type: 'CAR',
+      });
+    } else if (selectedVariantId.includes('creta')) {
+      setActiveVehicleDetails({
+        make: 'Hyundai',
+        model: 'Creta',
+        variant: 'SX (O) Turbo',
+        year: 2023,
+        fuelType: 'Petrol',
+        isGarage: false,
+        type: 'CAR',
+      });
+    } else if (selectedVariantId.includes('pulsar')) {
+      setActiveVehicleDetails({
+        make: 'Bajaj',
+        model: 'Pulsar 150',
+        variant: 'Twin Disc BS6',
+        year: 2023,
+        fuelType: 'Petrol',
+        isGarage: false,
+        type: 'BIKE',
       });
     } else {
-      // Named placeholder based on well-known IDs
-      if (selectedVariantId.includes('swift')) {
-        setActiveVehicleDetails({
-          make: 'Maruti Suzuki',
-          model: 'Swift',
-          variant: 'VXi',
-          year: 2022,
-          fuelType: 'Petrol',
-          isGarage: false,
-        });
-      } else if (selectedVariantId.includes('pulsar')) {
-        setActiveVehicleDetails({
-          make: 'Bajaj',
-          model: 'Pulsar 150',
-          variant: 'Twin Disc',
-          year: 2023,
-          fuelType: 'Petrol',
-          isGarage: false,
-        });
-      } else if (selectedVariantId.includes('creta')) {
-        setActiveVehicleDetails({
-          make: 'Hyundai',
-          model: 'Creta',
-          variant: 'SX',
-          year: 2022,
-          fuelType: 'Petrol',
-          isGarage: false,
-        });
-      } else {
-        setActiveVehicleDetails({
-          make: 'Specific Vehicle',
-          model: 'Selected',
-          variant: '',
-          year: '',
-          fuelType: '',
-          isGarage: false,
-        });
-      }
+      setActiveVehicleDetails({
+        make: 'Selected Vehicle',
+        model: 'Vehicle',
+        variant: 'Active Fitment',
+        year: '',
+        fuelType: '',
+        isGarage: false,
+      });
     }
-  }, [selectedVariantId, vehicles, variants, models, makes, selectedMakeId]);
+  }, [selectedVariantId, vehicles, activeVehicle]);
 
-  const handleApplyCascading = () => {
-    if (!selectedVarId) return;
-    onVariantChange(selectedVarId);
-    setIsOpen(false);
-  };
-
-  const handleSelectGarageVehicle = (v) => {
-    const varId = v.variantId || v.variant?.id;
-    if (varId) {
-      onVariantChange(varId);
-      setIsOpen(false);
+  const handleVehicleSelected = (payload) => {
+    if (payload && payload.variantId) {
+      onVariantChange(payload.variantId);
+      onCompatibleOnlyChange(true);
+      setActiveVehicleDetails({
+        make: payload.make?.name,
+        makeId: payload.make?.id,
+        model: payload.model?.name,
+        variant: payload.variant?.name,
+        year: payload.variant?.year,
+        fuelType: payload.variant?.fuelType,
+        isGarage: Boolean(payload.nickname),
+        nickname: payload.nickname,
+        type: payload.make?.type,
+      });
     }
   };
 
   const handleClearVehicle = () => {
     onVariantChange('');
     onCompatibleOnlyChange(false);
-    setIsOpen(false);
+    setActiveVehicleDetails(null);
   };
+
+  const isTwoWheeler =
+    activeVehicleDetails?.type === 'BIKE' ||
+    activeVehicleDetails?.type === 'SCOOTER' ||
+    activeVehicleDetails?.make?.toLowerCase().includes('hero') ||
+    activeVehicleDetails?.make?.toLowerCase().includes('bajaj') ||
+    activeVehicleDetails?.make?.toLowerCase().includes('tvs') ||
+    activeVehicleDetails?.make?.toLowerCase().includes('enfield') ||
+    activeVehicleDetails?.make?.toLowerCase().includes('ktm');
 
   return (
     <div className="compatibility-bar-container" id="compatibility-bar">
       <div className="compatibility-bar card">
         <div className="compatibility-left">
           <div className="compatibility-icon-wrapper">
-            <span className="compatibility-icon">
-              {activeVehicleDetails?.make?.toLowerCase().includes('hero') ||
-              activeVehicleDetails?.make?.toLowerCase().includes('bajaj') ||
-              activeVehicleDetails?.make?.toLowerCase().includes('tvs')
-                ? '🏍️'
-                : '🚗'}
-            </span>
+            {activeVehicleDetails?.make ? (
+              <BrandLogo brandName={activeVehicleDetails.make} size={36} />
+            ) : (
+              <span className="compatibility-icon">
+                {isTwoWheeler ? '🏍️' : '🚗'}
+              </span>
+            )}
           </div>
 
           <div className="compatibility-info">
@@ -204,15 +174,16 @@ export const VehicleCompatibilityBar = ({
                 <div className="compatibility-heading">
                   <span className="fitment-label">Verified Fitment For:</span>
                   <span className="vehicle-name-highlight">
-                    {activeVehicleDetails.year} {activeVehicleDetails.make}{' '}
-                    {activeVehicleDetails.model} ({activeVehicleDetails.variant})
+                    {activeVehicleDetails.year ? `${activeVehicleDetails.year} ` : ''}
+                    {activeVehicleDetails.make} {activeVehicleDetails.model}
+                    {activeVehicleDetails.variant ? ` (${activeVehicleDetails.variant})` : ''}
                   </span>
                   {activeVehicleDetails.isGarage && (
                     <span className="badge badge-teal text-xs">Garage Vehicle</span>
                   )}
                 </div>
                 <p className="compatibility-subtext">
-                  Products below display exact verified compatibility with this vehicle.
+                  Parts catalog is strictly matching this vehicle configuration for 100% mechanical fit.
                 </p>
               </>
             ) : (
@@ -221,7 +192,7 @@ export const VehicleCompatibilityBar = ({
                   <span>Select your vehicle to see 100% verified compatible parts</span>
                 </div>
                 <p className="compatibility-subtext">
-                  Filter parts by Year, Make, Model, and Variant to guarantee exact fit.
+                  Choose from 20+ Car & 9+ Two-Wheeler manufacturers to eliminate wrong-part returns.
                 </p>
               </>
             )}
@@ -274,165 +245,14 @@ export const VehicleCompatibilityBar = ({
         </div>
       </div>
 
-      {/* CASCADING VEHICLE SELECTOR MODAL / PANEL */}
-      {isOpen && (
-        <div className="vehicle-modal-overlay" onClick={() => setIsOpen(false)}>
-          <div
-            className="vehicle-modal-card card"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-labelledby="modal-fitment-title"
-          >
-            <div className="vehicle-modal-header">
-              <h3 id="modal-fitment-title">Select Vehicle for Part Compatibility</h3>
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={() => setIsOpen(false)}
-                aria-label="Close vehicle selector"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Quick Garage Selection if user has vehicles */}
-            {vehicles.length > 0 && (
-              <div className="garage-quick-section">
-                <h4 className="section-label">Select from Your Garage:</h4>
-                <div className="garage-quick-list">
-                  {vehicles.map((v) => (
-                    <button
-                      key={v.id}
-                      type="button"
-                      className={`garage-quick-btn ${
-                        selectedVariantId === (v.variantId || v.variant?.id) ? 'active' : ''
-                      }`}
-                      onClick={() => handleSelectGarageVehicle(v)}
-                      id={`select-garage-veh-${v.id}`}
-                    >
-                      <span className="veh-icon">
-                        {v.variant?.model?.type === 'CAR' ? '🚗' : '🏍️'}
-                      </span>
-                      <div className="veh-text">
-                        <span className="veh-title">
-                          {v.variant?.model?.make?.name} {v.variant?.model?.name}
-                        </span>
-                        <span className="veh-meta">
-                          {v.variant?.year} · {v.variant?.name}
-                          {v.isPrimary && ' · (Primary)'}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                <div className="divider-or"><span>OR SELECT ANY VEHICLE</span></div>
-              </div>
-            )}
-
-            {/* 5-Step Cascading Selector */}
-            <div className="cascading-flow">
-              {/* Step 1: Vehicle Type */}
-              <div className="flow-step">
-                <label className="flow-label">1. Vehicle Category</label>
-                <div className="type-toggle-group">
-                  <button
-                    type="button"
-                    className={`type-btn ${vehicleType === '4_WHEELER' ? 'active' : ''}`}
-                    onClick={() => setVehicleType('4_WHEELER')}
-                    id="cat-4w-btn"
-                  >
-                    🚗 4 Wheeler (Cars)
-                  </button>
-                  <button
-                    type="button"
-                    className={`type-btn ${vehicleType === '2_WHEELER' ? 'active' : ''}`}
-                    onClick={() => setVehicleType('2_WHEELER')}
-                    id="cat-2w-btn"
-                  >
-                    🏍️ 2 Wheeler (Bikes / Scooters)
-                  </button>
-                </div>
-              </div>
-
-              {/* Step 2: Make */}
-              <div className="flow-step">
-                <label htmlFor="select-make-input" className="flow-label">2. Make / Brand</label>
-                <select
-                  id="select-make-input"
-                  className="form-select"
-                  value={selectedMakeId}
-                  onChange={(e) => setSelectedMakeId(e.target.value)}
-                  disabled={loadingMakes || makes.length === 0}
-                >
-                  <option value="">-- Choose Make --</option>
-                  {makes.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Step 3: Model */}
-              <div className="flow-step">
-                <label htmlFor="select-model-input" className="flow-label">3. Model</label>
-                <select
-                  id="select-model-input"
-                  className="form-select"
-                  value={selectedModelId}
-                  onChange={(e) => setSelectedModelId(e.target.value)}
-                  disabled={!selectedMakeId || loadingModels || models.length === 0}
-                >
-                  <option value="">-- Choose Model --</option>
-                  {models.map((mod) => (
-                    <option key={mod.id} value={mod.id}>
-                      {mod.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Step 4: Year & Variant */}
-              <div className="flow-step">
-                <label htmlFor="select-variant-input" className="flow-label">4. Year & Variant</label>
-                <select
-                  id="select-variant-input"
-                  className="form-select"
-                  value={selectedVarId}
-                  onChange={(e) => setSelectedVarId(e.target.value)}
-                  disabled={!selectedModelId || loadingVariants || variants.length === 0}
-                >
-                  <option value="">-- Choose Year & Variant --</option>
-                  {variants.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.year} — {v.name} ({v.fuelType}, {v.engineCC}cc)
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="vehicle-modal-actions">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setIsOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={!selectedVarId}
-                onClick={handleApplyCascading}
-                id="apply-fitment-btn"
-              >
-                Apply Fitment Filter
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Redesigned 5-Step Vehicle Selector Modal */}
+      <VehicleSelectorModal
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        onSelect={handleVehicleSelected}
+        initialVariantId={selectedVariantId}
+        title="Select Vehicle for Part Fitment"
+      />
     </div>
   );
 };

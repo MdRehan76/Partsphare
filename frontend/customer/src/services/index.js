@@ -100,3 +100,8 @@ export const supportService = {
   getTickets: () => api.get('/support/tickets'),
   createTicket: (data) => api.post('/support/tickets', data),
 };
+
+export { default as shopService } from './shopService';
+export { default as deliveryService } from './deliveryService';
+export { default as adminService } from './adminService';
+

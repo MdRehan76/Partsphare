@@ -114,7 +114,7 @@ const SubscriptionsPage = () => {
         // COD / Pay on first visit flow: immediate activation!
         setCheckoutModalOpen(false);
         toast.success('🎉 Subscription Activated! Payment scheduled on first service.');
-        navigate('/my-subscriptions');
+        navigate('/customer/my-subscriptions');
       } else {
         // Online Razorpay flow: open sandbox modal
         setCheckoutModalOpen(false);
@@ -145,7 +145,7 @@ const SubscriptionsPage = () => {
       });
 
       toast.success('🎉 Membership activated successfully! Welcome to PartNexa Care.', { id: toastId });
-      navigate('/my-subscriptions');
+      navigate('/customer/my-subscriptions');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Payment verification failed.', { id: toastId });
     }

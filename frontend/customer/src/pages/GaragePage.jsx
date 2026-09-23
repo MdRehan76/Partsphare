@@ -6,6 +6,9 @@ import { Button, Modal, Input } from '../components/ui';
 import toast from 'react-hot-toast';
 import './GaragePage.css';
 
+import VehicleSelectorModal from '../components/vehicle/VehicleSelectorModal';
+import { BrandLogo } from '../components/vehicle/BrandLogos';
+
 const VehicleCard = ({ vehicle, onEdit, onRemove, onSetPrimary }) => {
   const { variant } = vehicle;
   const make = variant?.model?.make;
@@ -24,7 +27,13 @@ const VehicleCard = ({ vehicle, onEdit, onRemove, onSetPrimary }) => {
         </div>
       )}
       <div className="vehicle-card-body">
-        <div className="vehicle-icon">{is2Wheeler ? '🏍️' : '🚗'}</div>
+        <div className="vehicle-icon">
+          {make?.name ? (
+            <BrandLogo brandName={make.name} size={38} />
+          ) : (
+            is2Wheeler ? '🏍️' : '🚗'
+          )}
+        </div>
         <div className="vehicle-info">
           <div className="vehicle-name">
             {vehicle.nickname || `${make?.name} ${model?.name}`}
@@ -46,7 +55,7 @@ const VehicleCard = ({ vehicle, onEdit, onRemove, onSetPrimary }) => {
 
       <div className="vehicle-card-actions">
         <Link
-          to={`/products?vehicleVariantId=${variant?.id}`}
+          to={`/products?vehicleVariantId=${variant?.id}&compatibleOnly=true`}
           className="btn btn-primary btn-sm"
           id={`find-parts-${vehicle.id}`}
         >
@@ -84,291 +93,6 @@ const VehicleCard = ({ vehicle, onEdit, onRemove, onSetPrimary }) => {
   );
 };
 
-const AddVehicleModal = ({ onClose, onAdd }) => {
-  const [step, setStep] = useState(1);
-  const [vehicleType, setVehicleType] = useState('4_WHEELER');
-  const [makes, setMakes] = useState([]);
-  const [models, setModels] = useState([]);
-  const [variants, setVariants] = useState([]);
-  const [selectedMake, setSelectedMake] = useState(null);
-  const [selectedModel, setSelectedModel] = useState(null);
-  const [selectedVariant, setSelectedVariant] = useState(null);
-  const [nickname, setNickname] = useState('');
-  const [regNumber, setRegNumber] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (step === 2) {
-      setLoading(true);
-      vehiclesService
-        .getMakes(vehicleType)
-        .then(({ data }) => setMakes(data.data || []))
-        .catch(() => toast.error('Failed to load makes'))
-        .finally(() => setLoading(false));
-    }
-  }, [step, vehicleType]);
-
-  const selectMake = async (make) => {
-    setSelectedMake(make);
-    setLoading(true);
-    try {
-      const { data } = await vehiclesService.getModels(make.id);
-      setModels(data.data || []);
-      setStep(3);
-    } catch {
-      toast.error('Failed to load models');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const selectModel = async (model) => {
-    setSelectedModel(model);
-    setLoading(true);
-    try {
-      const { data } = await vehiclesService.getVariants(model.id);
-      setVariants(data.data || []);
-      setStep(4);
-    } catch {
-      toast.error('Failed to load variants');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const selectVariant = (variant) => {
-    setSelectedVariant(variant);
-    setNickname(`${selectedMake?.name} ${selectedModel?.name}`);
-    setStep(5);
-  };
-
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    if (!selectedVariant) return;
-    setLoading(true);
-    try {
-      await onAdd({
-        variantId: selectedVariant.id,
-        nickname: nickname.trim(),
-        regNumber: regNumber.trim().toUpperCase(),
-      });
-      onClose();
-    } catch {
-      // Handled in context
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box animate-scale-in" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 className="modal-title">Add Vehicle to Garage</h2>
-          <button
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Close modal"
-            id="modal-close-btn"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Steps */}
-        <div className="modal-steps">
-          {['Type', 'Make', 'Model', 'Variant', 'Details'].map((s, i) => (
-            <div
-              key={s}
-              className={`modal-step ${
-                step > i + 1 ? 'done' : step === i + 1 ? 'active' : ''
-              }`}
-            >
-              <div className="step-dot">{step > i + 1 ? '✓' : i + 1}</div>
-              <span>{s}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="modal-body">
-          {step === 1 && (
-            <div className="modal-step-content animate-fade-in-up">
-              <h3 className="step-title">Select Vehicle Category</h3>
-              <div className="type-options">
-                <button
-                  type="button"
-                  className={`type-option ${vehicleType === '4_WHEELER' ? 'selected' : ''}`}
-                  onClick={() => setVehicleType('4_WHEELER')}
-                  id="garage-type-car"
-                >
-                  <span className="type-emoji">🚗</span>
-                  <span>4 Wheeler (Car)</span>
-                </button>
-                <button
-                  type="button"
-                  className={`type-option ${vehicleType === '2_WHEELER' ? 'selected' : ''}`}
-                  onClick={() => setVehicleType('2_WHEELER')}
-                  id="garage-type-bike"
-                >
-                  <span className="type-emoji">🏍️</span>
-                  <span>2 Wheeler (Bike/Scooter)</span>
-                </button>
-              </div>
-              <Button
-                variant="primary"
-                fullWidth
-                className="mt-6"
-                onClick={() => setStep(2)}
-                id="garage-step1-next"
-              >
-                Next: Select Make →
-              </Button>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="modal-step-content animate-fade-in-up">
-              <h3 className="step-title">Select Brand / Make</h3>
-              {loading ? (
-                <p className="text-muted text-center py-4">Loading makes...</p>
-              ) : (
-                <div className="selection-grid">
-                  {makes.map((make) => (
-                    <button
-                      key={make.id}
-                      type="button"
-                      className="selection-item"
-                      onClick={() => selectMake(make)}
-                      id={`garage-make-${make.id}`}
-                    >
-                      {make.name}
-                      <span className="text-muted text-xs">
-                        {make._count?.models || 0} models
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              <Button variant="ghost" size="sm" className="mt-4" onClick={() => setStep(1)}>
-                ← Back
-              </Button>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="modal-step-content animate-fade-in-up">
-              <h3 className="step-title">{selectedMake?.name} — Select Model</h3>
-              {loading ? (
-                <p className="text-muted text-center py-4">Loading models...</p>
-              ) : (
-                <div className="selection-grid">
-                  {models.map((model) => (
-                    <button
-                      key={model.id}
-                      type="button"
-                      className="selection-item"
-                      onClick={() => selectModel(model)}
-                      id={`garage-model-${model.id}`}
-                    >
-                      {model.name}
-                      <span className="text-muted text-xs">
-                        {model._count?.variants || 0} variants
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              <Button variant="ghost" size="sm" className="mt-4" onClick={() => setStep(2)}>
-                ← Back
-              </Button>
-            </div>
-          )}
-
-          {step === 4 && (
-            <div className="modal-step-content animate-fade-in-up">
-              <h3 className="step-title">{selectedModel?.name} — Select Year & Variant</h3>
-              {loading ? (
-                <p className="text-muted text-center py-4">Loading variants...</p>
-              ) : (
-                <div className="selection-grid">
-                  {variants.map((variant) => (
-                    <button
-                      key={variant.id}
-                      type="button"
-                      className="selection-item"
-                      onClick={() => selectVariant(variant)}
-                      id={`garage-variant-${variant.id}`}
-                    >
-                      <span>{variant.year} — {variant.name}</span>
-                      <span className="text-muted text-xs">
-                        {variant.fuelType} {variant.engineCC ? `· ${variant.engineCC}cc` : ''}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              <Button variant="ghost" size="sm" className="mt-4" onClick={() => setStep(3)}>
-                ← Back
-              </Button>
-            </div>
-          )}
-
-          {step === 5 && (
-            <form onSubmit={handleAdd} className="modal-step-content animate-fade-in-up">
-              <h3 className="step-title">Vehicle Details</h3>
-              <div className="selected-vehicle-summary">
-                🚗 <strong>{selectedMake?.name} {selectedModel?.name}</strong>
-                — {selectedVariant?.year} {selectedVariant?.name} ({selectedVariant?.fuelType})
-              </div>
-
-              <div className="form-group mt-4">
-                <label className="form-label" htmlFor="garage-nickname">
-                  Vehicle Nickname
-                </label>
-                <input
-                  id="garage-nickname"
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g., My Swift, Daily Bike"
-                  value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" htmlFor="garage-regnum">
-                  Registration Number (Optional)
-                </label>
-                <input
-                  id="garage-regnum"
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g., MH12AB1234"
-                  value={regNumber}
-                  onChange={(e) => setRegNumber(e.target.value.toUpperCase())}
-                />
-              </div>
-
-              <div className="modal-actions">
-                <Button type="button" variant="ghost" onClick={() => setStep(4)}>
-                  ← Back
-                </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  loading={loading}
-                  id="garage-add-confirm-btn"
-                >
-                  Save Vehicle
-                </Button>
-              </div>
-            </form>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const EditVehicleModal = ({ vehicle, onClose, onSave }) => {
   const [nickname, setNickname] = useState(vehicle.nickname || '');
@@ -591,13 +315,12 @@ const GaragePage = () => {
         )}
       </div>
 
-      {/* Add Vehicle Modal */}
-      {showAddModal && (
-        <AddVehicleModal
-          onClose={() => setShowAddModal(false)}
-          onAdd={addVehicle}
-        />
-      )}
+      {/* Redesigned 5-Step Vehicle Selector Modal */}
+      <VehicleSelectorModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Add Vehicle to Your Garage"
+      />
 
       {/* Edit Vehicle Modal */}
       {editingVehicle && (

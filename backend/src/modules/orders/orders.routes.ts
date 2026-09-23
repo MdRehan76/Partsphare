@@ -7,6 +7,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', ordersController.listOrders);
+router.get('/checkout-quote', ordersController.getCheckoutQuote);
 router.post('/checkout-quote', ordersController.getCheckoutQuote);
 router.get('/:id/tracking', ordersController.getOrderTracking);
 router.get('/:id', ordersController.getOrder);

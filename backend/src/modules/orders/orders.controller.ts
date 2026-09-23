@@ -33,7 +33,8 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response, next
 
 export const getCheckoutQuote = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const quote = await ordersService.getCheckoutQuote(req.user!.id, req.body);
+    const data = req.method === 'GET' ? req.query : req.body;
+    const quote = await ordersService.getCheckoutQuote(req.user!.id, data);
     return successResponse(res, quote, 'Checkout quote generated successfully.');
   } catch (error) {
     next(error);

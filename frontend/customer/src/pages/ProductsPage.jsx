@@ -30,6 +30,12 @@ export const ProductsPage = () => {
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('partnexa_view_mode') || 'grid');
+
+  const handleViewMode = (mode) => {
+    setViewMode(mode);
+    localStorage.setItem('partnexa_view_mode', mode);
+  };
 
   // Filter state synced with URL searchParams
   const search = searchParams.get('search') || '';
@@ -352,6 +358,37 @@ export const ProductsPage = () => {
             </div>
 
             <div className="toolbar-right">
+              {/* Grid / List View Toggle */}
+              <div className="view-toggle-group" role="group" aria-label="View mode">
+                <button
+                  className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                  onClick={() => handleViewMode('grid')}
+                  title="Grid View"
+                  aria-pressed={viewMode === 'grid'}
+                  id="view-grid-btn"
+                >
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                    <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+                  </svg>
+                </button>
+                <button
+                  className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+                  onClick={() => handleViewMode('list')}
+                  title="List View"
+                  aria-pressed={viewMode === 'list'}
+                  id="view-list-btn"
+                >
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+
               <label htmlFor="sort-select" className="sort-label">Sort by:</label>
               <select
                 id="sort-select"
@@ -441,7 +478,7 @@ export const ProductsPage = () => {
 
           {/* PRODUCT GRID */}
           {loading ? (
-            <div className="grid-products">
+            <div className={viewMode === 'list' ? 'list-products' : 'grid-products'}>
               {Array.from({ length: 8 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
@@ -460,7 +497,7 @@ export const ProductsPage = () => {
               </div>
             </div>
           ) : (
-            <div className="grid-products">
+            <div className={viewMode === 'list' ? 'list-products' : 'grid-products'}>
               {products.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}

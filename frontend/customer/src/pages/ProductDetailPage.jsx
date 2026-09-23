@@ -109,11 +109,16 @@ export const ProductDetailPage = () => {
       ? Math.round(((product.mrp - primaryPrice) / product.mrp) * 100)
       : 0;
 
-  const isOutOfStock = !product.isAvailable || (selectedShop && selectedShop.quantity <= 0);
+  const activeStock = selectedShop ? Number(selectedShop.quantity ?? 0) : Number(product.stockQuantity ?? 0);
+  const isOutOfStock = !product.isAvailable || activeStock <= 0 || (selectedShop && selectedShop.quantity <= 0);
 
   const handleAddToCart = async () => {
-    if (isOutOfStock) {
+    if (isOutOfStock || activeStock <= 0) {
       toast.error('This item is currently out of stock.');
+      return;
+    }
+    if (quantity > activeStock) {
+      toast.error(`Cannot add ${quantity} units. Only ${activeStock} available in stock.`);
       return;
     }
     setAddingToCart(true);
@@ -128,8 +133,12 @@ export const ProductDetailPage = () => {
   };
 
   const handleBuyNow = async () => {
-    if (isOutOfStock) {
+    if (isOutOfStock || activeStock <= 0) {
       toast.error('This item is currently out of stock.');
+      return;
+    }
+    if (quantity > activeStock) {
+      toast.error(`Cannot order ${quantity} units. Only ${activeStock} available in stock.`);
       return;
     }
     try {
@@ -306,7 +315,7 @@ export const ProductDetailPage = () => {
               ) : (
                 <div className="stock-badge stock-in">
                   <span className="stock-dot">●</span>
-                  <span>In Stock — Ships within 24 Hours ({product.stockQuantity || 10} units available)</span>
+                  <span>In Stock — Ships within 24 Hours ({activeStock} unit{activeStock === 1 ? '' : 's'} available)</span>
                 </div>
               )}
             </div>
@@ -375,8 +384,8 @@ export const ProductDetailPage = () => {
                 <button
                   type="button"
                   className="qty-btn"
-                  onClick={() => setQuantity((q) => q + 1)}
-                  disabled={isOutOfStock}
+                  onClick={() => setQuantity((q) => (activeStock > 0 ? Math.min(activeStock, q + 1) : 1))}
+                  disabled={isOutOfStock || quantity >= activeStock}
                   id="qty-plus-btn"
                 >
                   +

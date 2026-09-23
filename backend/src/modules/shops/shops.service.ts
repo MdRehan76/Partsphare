@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '../../config/prisma';
 import AppError from '../../utils/AppError';
 import { generateAccessToken } from '../../utils/jwt';
+import { InventorySyncEngine } from '../inventory/inventorySync.service';
 
 // Helper to resolve shop from authenticated owner
 export const resolveShopByOwner = async (ownerId: string) => {
@@ -204,6 +205,8 @@ export const loginShop = async (data: { email: string; password: string }) => {
     },
     shop,
     token,
+    accessToken: token,
+    refreshToken: token,
   };
 };
 
@@ -424,6 +427,29 @@ export const updateJobStatus = async (
         status: status === 'COMPLETED' ? 'COMPLETED' : status === 'CANCELLED' ? 'CANCELLED' : 'ACCEPTED',
       },
     });
+  }
+
+  // Push tracking update to Customer order
+  if (job.orderId) {
+    try {
+      if (status === 'IN_PROGRESS') {
+        await prisma.orderTracking.create({
+          data: {
+            orderId: job.orderId,
+            status: 'DIFM_IN_PROGRESS',
+            message: `Workshop technician at ${shop.name} has started part installation.`,
+          },
+        });
+      } else if (status === 'COMPLETED') {
+        await prisma.orderTracking.create({
+          data: {
+            orderId: job.orderId,
+            status: 'DIFM_COMPLETED',
+            message: `DIFM professional part installation completed and tested by ${shop.name}.`,
+          },
+        });
+      }
+    } catch {}
   }
 
   // Fetch updated commission ledger status
@@ -688,3 +714,64 @@ export const addTicketMessage = async (
 
   return updated;
 };
+
+// ============================================================================
+// SHOP INVENTORY MANAGEMENT
+// ============================================================================
+
+export const getShopInventory = async (ownerId: string) => {
+  const shop = await resolveShopByOwner(ownerId);
+  const inventories = await prisma.inventory.findMany({
+    where: { shopId: shop.id },
+  });
+
+  // Enrich with product details
+  const enriched = await Promise.all(
+    inventories.map(async (inv: any) => {
+      const prod = await prisma.product.findUnique({
+        where: { id: inv.productId },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          brand: true,
+          partNumber: true,
+          sku: true,
+          basePrice: true,
+          category: { select: { name: true } },
+          images: true,
+        },
+      });
+      return {
+        ...inv,
+        product: prod,
+        shop: { id: shop.id, name: shop.name, city: shop.city },
+      };
+    })
+  );
+
+  return enriched;
+};
+
+export const updateShopStock = async (
+  ownerId: string,
+  inventoryId: string,
+  quantity: number,
+  lowStockThreshold?: number
+) => {
+  const shop = await resolveShopByOwner(ownerId);
+  const inv = await prisma.inventory.findUnique({ where: { id: inventoryId } });
+  if (!inv) throw AppError.notFound('Inventory record not found.');
+  if (inv.shopId !== shop.id) {
+    throw AppError.forbidden('You do not have permission to manage this inventory record.');
+  }
+
+  return InventorySyncEngine.adjustStock(
+    inventoryId,
+    quantity,
+    `Workshop stock adjustment by ${shop.name}`,
+    `SHOP:${shop.name}`,
+    lowStockThreshold
+  );
+};
+

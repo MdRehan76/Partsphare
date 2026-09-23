@@ -1,0 +1,1145 @@
+/* ==========================================================================
+   PartNexa Redesigned Vehicle Selector Experience
+   Light & Dark Mode Adaptive, Responsive Glassmorphism Design
+   ========================================================================== */
+
+/* Overlay with blur */
+.vsm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  animation: vsmFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes vsmFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Modal Window */
+.vsm-modal {
+  margin: auto;
+  background: var(--bg-primary, #ffffff);
+  color: var(--text-primary, #0f172a);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 900px;
+  max-height: min(92vh, 840px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  animation: vsmScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+@keyframes vsmScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Header */
+.vsm-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 28px 16px;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-secondary, #f8fafc);
+  flex-shrink: 0;
+}
+
+.vsm-header-text .vsm-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--text-primary, #0f172a);
+}
+
+.vsm-header-text .vsm-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #64748b);
+  margin-top: 4px;
+}
+
+.vsm-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  color: var(--text-muted, #94a3b8);
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.vsm-close-btn:hover {
+  background: var(--bg-tertiary, #e2e8f0);
+  color: var(--text-primary, #0f172a);
+}
+
+/* Progress Tracker / Breadcrumbs */
+.vsm-progress-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 28px;
+  background: var(--bg-secondary, #f8fafc);
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  overflow-x: auto;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.vsm-step-node {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  flex: 1;
+  min-width: 110px;
+  cursor: default;
+}
+
+.vsm-step-node.completed {
+  cursor: pointer;
+}
+
+.vsm-step-node.completed:hover .vsm-step-name {
+  color: var(--color-primary-600, #0284c7);
+}
+
+.vsm-step-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-tertiary, #e2e8f0);
+  color: var(--text-secondary, #64748b);
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.vsm-step-node.active .vsm-step-icon {
+  background: var(--color-primary-600, #0284c7);
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.2);
+}
+
+.vsm-step-node.completed .vsm-step-icon {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.vsm-step-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.vsm-step-tag {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--text-muted, #94a3b8);
+}
+
+.vsm-step-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.vsm-step-node.active .vsm-step-name {
+  color: var(--color-primary-600, #0284c7);
+  font-weight: 700;
+}
+
+.vsm-step-node.completed .vsm-step-name {
+  color: var(--text-primary, #0f172a);
+}
+
+.vsm-step-connector {
+  position: absolute;
+  right: -6px;
+  top: 14px;
+  width: 12px;
+  height: 2px;
+  background: var(--border-color, #cbd5e1);
+}
+
+/* Modal Body */
+.vsm-body {
+  padding: 20px 28px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.vsm-step-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.vsm-pane-header h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary, #0f172a);
+}
+
+.vsm-pane-header p {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #64748b);
+  margin-top: 4px;
+}
+
+.vsm-pane-header.flex-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.vsm-active-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-secondary, #f1f5f9);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+}
+
+.vsm-tag-change,
+.vsm-crumb-edit {
+  background: none;
+  border: none;
+  color: var(--color-primary-600, #0284c7);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  margin-left: 4px;
+}
+
+.vsm-selected-crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-secondary, #f1f5f9);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 6px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+}
+
+/* STEP 1: Type Selection Cards */
+.vsm-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-top: 10px;
+}
+
+.vsm-type-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 24px;
+  border: 2px solid var(--border-color, #e2e8f0);
+  border-radius: 16px;
+  background: var(--bg-primary, #ffffff);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.vsm-type-card:hover {
+  border-color: var(--color-primary-500, #0284c7);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.15);
+}
+
+.vsm-type-card.selected {
+  border-color: var(--color-primary-600, #0284c7);
+  background: rgba(2, 132, 199, 0.04);
+}
+
+.vsm-type-icon-wrapper {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: var(--bg-secondary, #f1f5f9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.vsm-type-content h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary, #0f172a);
+}
+
+.vsm-type-content p {
+  font-size: 0.82rem;
+  color: var(--text-secondary, #64748b);
+  margin-top: 4px;
+}
+
+.vsm-type-badge {
+  display: inline-block;
+  margin-top: 8px;
+  background: rgba(2, 132, 199, 0.1);
+  color: var(--color-primary-600, #0284c7);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.vsm-type-arrow {
+  margin-left: auto;
+  font-size: 1.3rem;
+  color: var(--text-muted, #94a3b8);
+  transition: transform 0.2s ease;
+}
+
+.vsm-type-card:hover .vsm-type-arrow {
+  transform: translateX(4px);
+  color: var(--color-primary-600, #0284c7);
+}
+
+/* Recents Section in Step 1 */
+.vsm-recents-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px dashed var(--border-color, #e2e8f0);
+}
+
+.vsm-recents-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary, #64748b);
+  margin-bottom: 12px;
+}
+
+.vsm-recents-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.vsm-recent-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  color: var(--text-primary, #0f172a);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.vsm-recent-chip:hover {
+  background: rgba(2, 132, 199, 0.08);
+  border-color: var(--color-primary-500, #0284c7);
+  color: var(--color-primary-600, #0284c7);
+}
+
+.recent-chip-action {
+  font-size: 0.75rem;
+  color: var(--color-primary-600, #0284c7);
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+/* Recents Mini Bar in Step 2 */
+.vsm-recents-mini-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-secondary, #f8fafc);
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.mini-bar-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted, #94a3b8);
+  white-space: nowrap;
+}
+
+.mini-chips-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.vsm-mini-chip {
+  background: var(--bg-primary, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.vsm-mini-chip:hover {
+  border-color: var(--color-primary-600, #0284c7);
+  color: var(--color-primary-600, #0284c7);
+}
+
+/* Search Bar */
+.vsm-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-secondary, #f8fafc);
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 10px 16px;
+  transition: all 0.15s ease;
+}
+
+.vsm-search-bar:focus-within {
+  border-color: var(--color-primary-600, #0284c7);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+  background: var(--bg-primary, #ffffff);
+}
+
+.vsm-search-icon {
+  font-size: 1rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+.vsm-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 0.95rem;
+  color: var(--text-primary, #0f172a);
+}
+
+.vsm-search-input::placeholder {
+  color: var(--text-muted, #94a3b8);
+}
+
+.vsm-search-clear {
+  background: none;
+  border: none;
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.vsm-search-clear:hover {
+  color: var(--text-primary, #0f172a);
+}
+
+.vsm-search-count {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted, #94a3b8);
+  background: var(--bg-tertiary, #e2e8f0);
+  padding: 3px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* STEP 2: Brand Grid */
+.vsm-brand-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.vsm-brand-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 18px 14px;
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  border-radius: 14px;
+  background: var(--bg-primary, #ffffff);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.vsm-brand-card:hover {
+  border-color: var(--color-primary-500, #0284c7);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -4px rgba(2, 132, 199, 0.12);
+}
+
+.vsm-brand-card.active {
+  border-color: var(--color-primary-600, #0284c7);
+  background: rgba(2, 132, 199, 0.05);
+}
+
+.vsm-brand-logo-wrap {
+  margin-bottom: 10px;
+}
+
+.vsm-brand-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.vsm-brand-model-count {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #64748b);
+  background: var(--bg-secondary, #f1f5f9);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+/* STEP 3: Model Grid */
+.vsm-model-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.vsm-model-card {
+  padding: 18px;
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  border-radius: 14px;
+  background: var(--bg-primary, #ffffff);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 120px;
+}
+
+.vsm-model-card:hover {
+  border-color: var(--color-primary-500, #0284c7);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -4px rgba(2, 132, 199, 0.12);
+}
+
+.vsm-model-card.active {
+  border-color: var(--color-primary-600, #0284c7);
+  background: rgba(2, 132, 199, 0.05);
+}
+
+.vsm-model-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.vsm-model-type-tag {
+  font-size: 0.72rem;
+  color: var(--text-muted, #94a3b8);
+  font-weight: 600;
+}
+
+.vsm-model-variant-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-primary-600, #0284c7);
+  background: rgba(2, 132, 199, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.vsm-model-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary, #0f172a);
+  margin: 0 0 12px 0;
+}
+
+.vsm-model-card-footer {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-primary-600, #0284c7);
+  text-align: right;
+}
+
+/* STEP 4: Variant Grid */
+.vsm-variant-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.vsm-variant-card {
+  padding: 18px;
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  border-radius: 14px;
+  background: var(--bg-primary, #ffffff);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.vsm-variant-card:hover {
+  border-color: var(--color-primary-500, #0284c7);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -4px rgba(2, 132, 199, 0.12);
+}
+
+.vsm-variant-card.active {
+  border-color: var(--color-primary-600, #0284c7);
+  background: rgba(2, 132, 199, 0.05);
+}
+
+.vsm-variant-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.vsm-variant-year-badge {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-primary, #0f172a);
+  background: var(--bg-secondary, #f1f5f9);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.vsm-fuel-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.fuel-petrol {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.fuel-diesel {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+.fuel-cng {
+  background: rgba(6, 182, 212, 0.15);
+  color: #0891b2;
+}
+
+.fuel-electric {
+  background: rgba(37, 99, 235, 0.15);
+  color: #2563eb;
+}
+
+.fuel-hybrid {
+  background: rgba(147, 51, 234, 0.15);
+  color: #9333ea;
+}
+
+.vsm-variant-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+  margin: 0 0 10px 0;
+}
+
+.vsm-variant-specs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+  margin-bottom: 12px;
+}
+
+.vsm-variant-action {
+  margin-top: auto;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-primary-600, #0284c7);
+  text-align: right;
+}
+
+/* STEP 5: Details & Hero Card */
+.vsm-summary-hero {
+  background: var(--bg-secondary, #f8fafc);
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.vsm-hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.vsm-hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.vsm-hero-names {
+  display: flex;
+  flex-direction: column;
+}
+
+.vsm-hero-make {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary-600, #0284c7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.vsm-hero-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-primary, #0f172a);
+  margin: 2px 0 4px 0;
+}
+
+.vsm-hero-variant-badge {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
+}
+
+.vsm-hero-guarantee {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 12px;
+  padding: 12px 16px;
+  max-width: 320px;
+}
+
+.guarantee-shield {
+  font-size: 1.5rem;
+}
+
+.vsm-hero-guarantee strong {
+  display: block;
+  font-size: 0.88rem;
+  color: #059669;
+}
+
+.vsm-hero-guarantee p {
+  font-size: 0.76rem;
+  color: var(--text-secondary, #64748b);
+  margin: 2px 0 0 0;
+}
+
+.vsm-hero-specs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--border-color, #e2e8f0);
+}
+
+.spec-pill {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  padding: 6px 14px;
+}
+
+.spec-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted, #94a3b8);
+  text-transform: uppercase;
+}
+
+.spec-val {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text-primary, #0f172a);
+}
+
+/* Customization Inputs in Step 5 */
+.vsm-inputs-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.vsm-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vsm-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+}
+
+.vsm-input {
+  background: var(--bg-secondary, #f8fafc);
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.92rem;
+  color: var(--text-primary, #0f172a);
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.vsm-input:focus {
+  border-color: var(--color-primary-600, #0284c7);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+  background: var(--bg-primary, #ffffff);
+}
+
+.vsm-help-text {
+  font-size: 0.74rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+/* Authentic IND License Plate */
+.vsm-ind-plate-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--bg-secondary, #f8fafc);
+  border: 1.5px solid var(--border-color, #cbd5e1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ind-badge {
+  background: #1e3a8a;
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 0.75rem;
+  padding: 12px 10px;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plate-input {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  font-family: monospace;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.vsm-checkbox-row {
+  margin-top: 4px;
+}
+
+.vsm-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--text-primary, #0f172a);
+}
+
+.vsm-checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary-600, #0284c7);
+}
+
+/* Actions Bar on Step 5 */
+.vsm-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+/* Global Footer (Steps 1–4) */
+.vsm-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-secondary, #f8fafc);
+  flex-shrink: 0;
+}
+
+.vsm-back-btn {
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+}
+
+/* Loading & Empty States */
+.vsm-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--text-secondary, #64748b);
+  gap: 12px;
+}
+
+.vsm-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(2, 132, 199, 0.15);
+  border-top-color: var(--color-primary-600, #0284c7);
+  border-radius: 50%;
+  animation: vsmSpin 0.75s linear infinite;
+}
+
+@keyframes vsmSpin {
+  to { transform: rotate(360deg); }
+}
+
+.vsm-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 50px 20px;
+  color: var(--text-secondary, #64748b);
+}
+
+.vsm-empty-state span {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+}
+
+.vsm-empty-state h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+  margin: 0 0 6px 0;
+}
+
+/* ==========================================================================
+   DARK MODE OVERRIDES ([data-theme="dark"])
+   ========================================================================== */
+[data-theme="dark"] .vsm-overlay {
+  background: rgba(3, 7, 18, 0.8);
+}
+
+[data-theme="dark"] .vsm-modal {
+  background: #0f172a;
+  border-color: #1e293b;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .vsm-header,
+[data-theme="dark"] .vsm-progress-bar,
+[data-theme="dark"] .vsm-footer {
+  background: #111c34;
+  border-color: #1e293b;
+}
+
+[data-theme="dark"] .vsm-step-icon {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .vsm-step-node.completed .vsm-step-icon {
+  background: #059669;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .vsm-step-connector {
+  background: #334155;
+}
+
+[data-theme="dark"] .vsm-type-card,
+[data-theme="dark"] .vsm-brand-card,
+[data-theme="dark"] .vsm-model-card,
+[data-theme="dark"] .vsm-variant-card,
+[data-theme="dark"] .spec-pill {
+  background: #162035;
+  border-color: #24324d;
+}
+
+[data-theme="dark"] .vsm-type-card:hover,
+[data-theme="dark"] .vsm-brand-card:hover,
+[data-theme="dark"] .vsm-model-card:hover,
+[data-theme="dark"] .vsm-variant-card:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 8px 24px -4px rgba(56, 189, 248, 0.2);
+}
+
+[data-theme="dark"] .vsm-type-card.selected,
+[data-theme="dark"] .vsm-brand-card.active,
+[data-theme="dark"] .vsm-model-card.active,
+[data-theme="dark"] .vsm-variant-card.active {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+}
+
+[data-theme="dark"] .vsm-type-icon-wrapper {
+  background: #1e293b;
+}
+
+[data-theme="dark"] .vsm-search-bar,
+[data-theme="dark"] .vsm-input,
+[data-theme="dark"] .vsm-ind-plate-wrap {
+  background: #111c34;
+  border-color: #24324d;
+}
+
+[data-theme="dark"] .vsm-search-bar:focus-within,
+[data-theme="dark"] .vsm-input:focus {
+  background: #162035;
+  border-color: #38bdf8;
+}
+
+[data-theme="dark"] .vsm-summary-hero {
+  background: #111c34;
+  border-color: #1e293b;
+}
+
+[data-theme="dark"] .vsm-recents-mini-bar,
+[data-theme="dark"] .vsm-recent-chip,
+[data-theme="dark"] .vsm-active-tag,
+[data-theme="dark"] .vsm-selected-crumb,
+[data-theme="dark"] .vsm-brand-model-count,
+[data-theme="dark"] .vsm-variant-year-badge {
+  background: #1a253c;
+  border-color: #273652;
+}
+
+[data-theme="dark"] .vsm-mini-chip {
+  background: #162035;
+  border-color: #273652;
+}
+
+/* ==========================================================================
+   RESPONSIVE BREAKPOINTS
+   ========================================================================== */
+@media (max-width: 820px) {
+  .vsm-brand-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .vsm-model-grid,
+  .vsm-variant-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .vsm-summary-hero .vsm-hero-top {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .vsm-modal {
+    max-height: 96vh;
+    border-radius: 16px;
+  }
+
+  .vsm-header {
+    padding: 16px 20px;
+  }
+
+  .vsm-body {
+    padding: 16px 20px;
+  }
+
+  .vsm-progress-bar {
+    padding: 10px 16px;
+  }
+
+  .vsm-type-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vsm-brand-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .vsm-model-grid,
+  .vsm-variant-grid,
+  .vsm-inputs-row {
+    grid-template-columns: 1fr;
+  }
+
+  .vsm-actions-bar {
+    flex-direction: column-reverse;
+  }
+
+  .vsm-actions-bar button {
+    width: 100%;
+  }
+}
