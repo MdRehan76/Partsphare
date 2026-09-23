@@ -4,6 +4,8 @@
   "description": "PartNexa — Circular E-Commerce Platform for Vehicle Spare Parts & Services",
   "private": true,
   "scripts": {
+    "build": "cd frontend/customer && npm install && npm run build",
+    "vercel-build": "cd frontend/customer && npm install && npm run build",
     "dev": "concurrently -n \"API,WEB\" -c \"cyan,magenta\" \"npm run dev --prefix backend\" \"npm run dev --prefix frontend/customer\"",
     "dev:backend": "npm run dev --prefix backend",
     "dev:customer": "npm run dev --prefix frontend/customer",
