@@ -4,6 +4,12 @@ import 'leaflet/dist/leaflet.css';
 import api from '../../services/api';
 import './NearbyShopsMap.css';
 
+// Google Maps API Key provided for PartNexa
+const GOOGLE_MAPS_API_KEY =
+  import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
+  (typeof window !== 'undefined' ? window.__PARTNEXA_GMAP_KEY__ : '') ||
+  '';
+
 // Known default city coordinates
 const CITY_COORDINATES = {
   Bengaluru: { lat: 12.9716, lng: 77.5946 },
@@ -32,6 +38,56 @@ function calculateHaversineKm(lat1, lon1, lat2, lon2) {
   // Apply urban road circuity factor (~1.25x)
   return Math.round(Math.max(0.8, rawDist * 1.25) * 10) / 10;
 }
+
+/**
+ * Singleton Google Maps JavaScript SDK Loader
+ */
+let googleMapsPromise = null;
+const loadGoogleMapsSDK = (apiKey) => {
+  if (typeof window === 'undefined') return Promise.reject(new Error('Window unavailable'));
+  if (window.google?.maps) return Promise.resolve(window.google.maps);
+  if (googleMapsPromise) return googleMapsPromise;
+
+  googleMapsPromise = new Promise((resolve, reject) => {
+    const existing = document.getElementById('google-maps-js-sdk');
+    if (existing) {
+      if (window.google?.maps) {
+        resolve(window.google.maps);
+      } else {
+        existing.addEventListener('load', () => resolve(window.google.maps));
+        existing.addEventListener('error', (e) => reject(e));
+      }
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'google-maps-js-sdk';
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry`;
+    script.async = true;
+    script.defer = true;
+
+    window.gm_authFailure = () => {
+      console.warn('[GoogleMaps] Authentication failed. Falling back to Leaflet layer.');
+      reject(new Error('Google Maps authentication failure'));
+    };
+
+    script.onload = () => {
+      if (window.google?.maps) {
+        resolve(window.google.maps);
+      } else {
+        reject(new Error('google.maps object unavailable'));
+      }
+    };
+
+    script.onerror = (err) => {
+      reject(err);
+    };
+
+    document.head.appendChild(script);
+  });
+
+  return googleMapsPromise;
+};
 
 export const NearbyShopsMap = ({
   selectedShopId,
@@ -67,10 +123,42 @@ export const NearbyShopsMap = ({
   const [shops, setShops] = useState([]);
   const [loadingShops, setLoadingShops] = useState(true);
 
-  // Map DOM and instance refs
-  const mapContainerRef = useRef(null);
-  const mapInstanceRef = useRef(null);
-  const markersLayerRef = useRef(null);
+  // 4. Map Engine state: 'google' | 'leaflet'
+  const [mapEngine, setMapEngine] = useState('google');
+
+  // Google Maps Refs
+  const googleMapContainerRef = useRef(null);
+  const googleMapInstanceRef = useRef(null);
+  const googleMarkersRef = useRef([]);
+  const googleRadiusCircleRef = useRef(null);
+  const googleInfoWindowRef = useRef(null);
+
+  // Leaflet Maps Refs
+  const leafletMapContainerRef = useRef(null);
+  const leafletMapInstanceRef = useRef(null);
+  const leafletMarkersLayerRef = useRef(null);
+
+  // Try loading Google Maps on mount; fallback to Leaflet on error
+  useEffect(() => {
+    let isCancelled = false;
+
+    loadGoogleMapsSDK(GOOGLE_MAPS_API_KEY)
+      .then(() => {
+        if (!isCancelled) {
+          setMapEngine('google');
+        }
+      })
+      .catch((err) => {
+        console.warn('[NearbyShopsMap] Google Maps SDK init notice (using Leaflet fallback):', err?.message);
+        if (!isCancelled) {
+          setMapEngine('leaflet');
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   // Fetch shops from backend API
   useEffect(() => {
@@ -233,17 +321,141 @@ export const NearbyShopsMap = ({
     return annotatedShops.find((s) => s.id === selectedShopId) || filteredShops[0] || null;
   }, [annotatedShops, selectedShopId, filteredShops]);
 
-  // Initialize and update Leaflet Map
+  // =========================================================================
+  // 1. GOOGLE MAPS ENGINE INITIALIZATION & RENDERING
+  // =========================================================================
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    if (mapEngine !== 'google' || !googleMapContainerRef.current || !window.google?.maps) return;
 
-    // Create map instance if not already initialized
-    if (!mapInstanceRef.current) {
-      const map = L.map(mapContainerRef.current, {
+    if (!googleMapInstanceRef.current) {
+      const gMap = new window.google.maps.Map(googleMapContainerRef.current, {
+        center: { lat: customerCoords.lat, lng: customerCoords.lng },
+        zoom: 13,
+        zoomControl: true,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+        styles: [
+          { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+          { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+        ],
+      });
+
+      googleMapInstanceRef.current = gMap;
+      googleInfoWindowRef.current = new window.google.maps.InfoWindow();
+    }
+
+    const gMap = googleMapInstanceRef.current;
+
+    // Clear previous markers
+    googleMarkersRef.current.forEach((m) => m.setMap(null));
+    googleMarkersRef.current = [];
+
+    if (googleRadiusCircleRef.current) {
+      googleRadiusCircleRef.current.setMap(null);
+    }
+
+    // Add User Location Pin
+    const userMarker = new window.google.maps.Marker({
+      position: { lat: customerCoords.lat, lng: customerCoords.lng },
+      map: gMap,
+      title: 'Your Location',
+      icon: {
+        path: window.google.maps.SymbolPath.CIRCLE,
+        scale: 9,
+        fillColor: '#0284C7',
+        fillOpacity: 1,
+        strokeColor: '#FFFFFF',
+        strokeWeight: 3,
+      },
+      zIndex: 999,
+    });
+    googleMarkersRef.current.push(userMarker);
+
+    // Add Radius Circle
+    const radiusCircle = new window.google.maps.Circle({
+      strokeColor: '#0F766E',
+      strokeOpacity: 0.6,
+      strokeWeight: 1.5,
+      fillColor: '#0F766E',
+      fillOpacity: 0.08,
+      map: gMap,
+      center: { lat: customerCoords.lat, lng: customerCoords.lng },
+      radius: radiusKm * 1000,
+    });
+    googleRadiusCircleRef.current = radiusCircle;
+
+    const bounds = new window.google.maps.LatLngBounds();
+    bounds.extend({ lat: customerCoords.lat, lng: customerCoords.lng });
+
+    filteredShops.forEach((shop) => {
+      const isSelected = shop.id === selectedShopId;
+      bounds.extend({ lat: shop.computedLat, lng: shop.computedLng });
+
+      const marker = new window.google.maps.Marker({
+        position: { lat: shop.computedLat, lng: shop.computedLng },
+        map: gMap,
+        title: shop.name,
+        icon: {
+          path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
+          fillColor: isSelected ? '#F59E0B' : '#0F766E',
+          fillOpacity: 1,
+          strokeColor: '#FFFFFF',
+          strokeWeight: 2,
+          scale: isSelected ? 1.6 : 1.3,
+          anchor: new window.google.maps.Point(12, 22),
+        },
+        zIndex: isSelected ? 1000 : 100,
+      });
+
+      googleMarkersRef.current.push(marker);
+
+      const infoHtml = `
+        <div style="font-family: inherit; padding: 6px; max-width: 240px; color: #0F172A;">
+          <div style="font-weight: 800; font-size: 14px; margin-bottom: 2px;">🔧 ${shop.name}</div>
+          <div style="font-size: 12px; color: #64748B; margin-bottom: 4px;">★ ${shop.rating} (${shop.totalRatings || 24} reviews)</div>
+          <div style="font-size: 12px; color: #64748B; margin-bottom: 6px;">📍 ${shop.distanceKm} km · ~${shop.durationMinutes} mins</div>
+          <div style="font-weight: 700; color: #0F766E; margin-bottom: 8px;">₹${shop.installationFee} Fitment Fee</div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <button id="gmap-select-btn-${shop.id}" style="width: 100%; background: #0F766E; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 12px;">
+              ${isSelected ? '✓ Selected Shop' : 'Select This Shop'}
+            </button>
+            <a href="https://www.google.com/maps/dir/?api=1&destination=${shop.computedLat},${shop.computedLng}" target="_blank" rel="noopener noreferrer" style="text-align: center; font-size: 11px; color: #2563EB; text-decoration: underline; font-weight: 600;">
+              Directions in Google Maps ↗
+            </a>
+          </div>
+        </div>
+      `;
+
+      marker.addListener('click', () => {
+        onSelectShop(shop);
+        if (googleInfoWindowRef.current) {
+          googleInfoWindowRef.current.setContent(infoHtml);
+          googleInfoWindowRef.current.open(gMap, marker);
+        }
+      });
+    });
+
+    if (filteredShops.length > 0) {
+      gMap.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
+    } else {
+      gMap.setCenter({ lat: customerCoords.lat, lng: customerCoords.lng });
+      gMap.setZoom(13);
+    }
+  }, [mapEngine, customerCoords, filteredShops, selectedShopId, radiusKm, onSelectShop]);
+
+  // =========================================================================
+  // 2. LEAFLET FALLBACK ENGINE INITIALIZATION & RENDERING
+  // =========================================================================
+  useEffect(() => {
+    if (mapEngine !== 'leaflet' || !leafletMapContainerRef.current) return;
+
+    if (!leafletMapInstanceRef.current) {
+      const map = L.map(leafletMapContainerRef.current, {
         center: [customerCoords.lat, customerCoords.lng],
         zoom: 13,
         zoomControl: true,
-        scrollWheelZoom: false, // Prevent page scroll hijack
+        scrollWheelZoom: false,
       });
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -252,15 +464,15 @@ export const NearbyShopsMap = ({
       }).addTo(map);
 
       const markersGroup = L.layerGroup().addTo(map);
-      mapInstanceRef.current = map;
-      markersLayerRef.current = markersGroup;
+      leafletMapInstanceRef.current = map;
+      leafletMarkersLayerRef.current = markersGroup;
     }
 
-    const map = mapInstanceRef.current;
-    const markersGroup = markersLayerRef.current;
+    const map = leafletMapInstanceRef.current;
+    const markersGroup = leafletMarkersLayerRef.current;
     markersGroup.clearLayers();
 
-    // 1. Add User Location Marker
+    // User Location Marker
     const userMarkerIcon = L.divIcon({
       className: 'user-marker-wrapper',
       html: '<div class="user-marker-pulse" title="Your Fitment Location"></div>',
@@ -280,7 +492,7 @@ export const NearbyShopsMap = ({
       </div>
     `);
 
-    // 2. Add Shop Markers
+    // Shop Markers
     const bounds = L.latLngBounds([[customerCoords.lat, customerCoords.lng]]);
 
     filteredShops.forEach((shop) => {
@@ -330,19 +542,21 @@ export const NearbyShopsMap = ({
       });
     });
 
-    // Fit map bounds to view all shops and user location
     if (filteredShops.length > 0) {
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
     } else {
       map.setView([customerCoords.lat, customerCoords.lng], 13);
     }
-  }, [customerCoords, filteredShops, selectedShopId, onSelectShop]);
+  }, [mapEngine, customerCoords, filteredShops, selectedShopId, onSelectShop]);
 
-  // Center on selected shop when clicked
+  // Center on selected shop when clicked in list
   const handleSelectAndCenter = (shop) => {
     onSelectShop(shop);
-    if (mapInstanceRef.current && shop.computedLat && shop.computedLng) {
-      mapInstanceRef.current.setView([shop.computedLat, shop.computedLng], 14, {
+    if (mapEngine === 'google' && googleMapInstanceRef.current && shop.computedLat && shop.computedLng) {
+      googleMapInstanceRef.current.panTo({ lat: shop.computedLat, lng: shop.computedLng });
+      googleMapInstanceRef.current.setZoom(14);
+    } else if (mapEngine === 'leaflet' && leafletMapInstanceRef.current && shop.computedLat && shop.computedLng) {
+      leafletMapInstanceRef.current.setView([shop.computedLat, shop.computedLng], 14, {
         animate: true,
       });
     }
@@ -406,86 +620,93 @@ export const NearbyShopsMap = ({
               </button>
             ))}
           </div>
-
-          <div className="manual-input-row">
-            <input
-              type="text"
-              className="manual-input"
-              placeholder="Or enter city / area name (e.g. Indiranagar, Bengaluru)"
-              value={manualCityInput}
-              onChange={(e) => setManualCityInput(e.target.value)}
-            />
-            <button
-              type="button"
-              className="btn-location primary"
-              onClick={() => handleSelectCity(manualCityInput.trim() || 'Bengaluru')}
-            >
-              Set Location
-            </button>
-          </div>
         </div>
       )}
 
-      {/* 2. Filter & Sort Bar */}
-      <div className="map-filter-bar">
-        <div className="radius-filter-group">
-          <span className="radius-label">Search Radius:</span>
-          {[5, 10, 15, 25].map((r) => (
+      {/* 2. Filters & Radius Controls */}
+      <div className="map-controls-toolbar">
+        {/* Radius selector */}
+        <div className="filter-pill-group">
+          <span className="filter-group-label">Distance:</span>
+          {[5, 10, 15, 25].map((km) => (
             <button
-              key={r}
+              key={km}
               type="button"
-              className={`radius-pill ${radiusKm === r ? 'active' : ''}`}
+              className={`filter-pill-btn ${radiusKm === km ? 'active' : ''}`}
               onClick={() => {
-                setRadiusKm(r);
+                setRadiusKm(km);
                 setAutoExpanded(false);
               }}
-              id={`radius-${r}km`}
             >
-              {r} km
+              {km} km
+            </button>
+          ))}
+          {autoExpanded && (
+            <span className="auto-expanded-badge" title="Expanded automatically to find nearby workshops">
+              ⚡ Auto-expanded to {radiusKm} km
+            </span>
+          )}
+        </div>
+
+        {/* Vehicle filter */}
+        <div className="filter-pill-group">
+          <span className="filter-group-label">Vehicle:</span>
+          {['ALL', 'CAR', 'BIKE', 'SCOOTER'].map((vf) => (
+            <button
+              key={vf}
+              type="button"
+              className={`filter-pill-btn ${vehicleFilter === vf ? 'active' : ''}`}
+              onClick={() => setVehicleFilter(vf)}
+            >
+              {vf === 'ALL' ? 'All Types' : vf.charAt(0) + vf.slice(1).toLowerCase()}
             </button>
           ))}
         </div>
 
-        <div className="sort-and-count-group">
-          <span className="shops-count-badge">
-            {filteredShops.length} Partner Garages Found
-            {autoExpanded && ` (Expanded to ${radiusKm} km)`}
-          </span>
-
+        {/* Sort by */}
+        <div className="filter-pill-group sort-group">
+          <span className="filter-group-label">Sort:</span>
           <select
-            className="sort-select"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            aria-label="Sort shops by"
-            id="sort-shops-select"
+            className="sort-dropdown"
+            aria-label="Sort workshops by"
           >
             <option value="NEAREST">Nearest First</option>
             <option value="RATING">Highest Rated</option>
-            <option value="FEE">Lowest Installation Fee</option>
+            <option value="FEE">Lowest Fitment Fee</option>
           </select>
         </div>
       </div>
 
-      {/* 3. Split Layout: List on Left, Map on Right */}
-      <div className="map-split-layout">
-        {/* Left Column: Scrollable Shop Cards */}
-        <div className="shops-list-column" role="listbox" aria-label="Available mechanical shops">
+      {/* 3. Main Split View: Workshop Cards + Interactive Map */}
+      <div className="shops-map-split-view">
+        {/* Left Column: Workshop List */}
+        <div className="shops-list-column" id="nearby-shops-list">
+          <div className="shops-list-header">
+            <span className="shops-found-count">
+              {loadingShops
+                ? 'Searching workshops...'
+                : `${filteredShops.length} Partner Workshops Available`}
+            </span>
+            <span className="shops-sub-info">Click to select installation location</span>
+          </div>
+
           {loadingShops ? (
-            <div className="no-shops-found-card">
-              <div className="no-shops-icon">⏳</div>
-              <h4>Loading verified mechanical workshops...</h4>
+            <div className="shops-loading-state">
+              <div className="loading-spinner-circle" />
+              <span>Scanning mechanical workshops in {customerCoords.city || 'your area'}...</span>
             </div>
           ) : filteredShops.length === 0 ? (
-            <div className="no-shops-found-card">
-              <div className="no-shops-icon">🔍</div>
-              <h4>No mechanical shops found within {radiusKm} km.</h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                Try expanding your search radius to find certified PartNexa partner hubs.
-              </p>
+            <div className="shops-empty-state">
+              <div className="empty-icon">🔍</div>
+              <h4>No workshops found within {radiusKm} km</h4>
+              <p>Try expanding the search distance to view workshops in neighboring zones.</p>
               <button
                 type="button"
-                className="btn-location primary"
+                className="btn-location"
                 onClick={() => setRadiusKm(25)}
+                style={{ marginTop: '0.75rem' }}
               >
                 Search Within 25 km
               </button>
@@ -533,6 +754,19 @@ export const NearbyShopsMap = ({
                     </span>
                   </div>
 
+                  {/* Directions link */}
+                  <div style={{ marginTop: '0.4rem' }}>
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${shop.computedLat},${shop.computedLng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shop-gmap-link"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      🗺️ Open in Google Maps ↗
+                    </a>
+                  </div>
+
                   {/* Footer: Fee & Select Button */}
                   <div className="shop-card-footer">
                     <div className="shop-fee-label">
@@ -558,9 +792,18 @@ export const NearbyShopsMap = ({
           )}
         </div>
 
-        {/* Right Column: Interactive Leaflet Map */}
-        <div className="interactive-map-column">
-          <div ref={mapContainerRef} className="leaflet-map-element" id="leaflet-shops-map" />
+        {/* Right Column: Interactive Map (Google Maps / Leaflet) */}
+        <div className="interactive-map-column" style={{ position: 'relative' }}>
+          <div className="map-engine-badge" id="map-engine-badge">
+            <span>{mapEngine === 'google' ? '🗺️ Google Maps' : '📍 OpenStreetMap'}</span>
+            <span style={{ color: '#10B981', fontSize: '10px' }}>● Live</span>
+          </div>
+
+          {mapEngine === 'google' ? (
+            <div ref={googleMapContainerRef} className="google-map-element" id="google-shops-map" />
+          ) : (
+            <div ref={leafletMapContainerRef} className="leaflet-map-element" id="leaflet-shops-map" />
+          )}
         </div>
       </div>
 

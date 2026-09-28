@@ -50,6 +50,10 @@ export const config = {
     freeDeliveryThreshold: parseFloat(process.env.FREE_DELIVERY_THRESHOLD || '999'),
     difmHomeVisitSurcharge: parseFloat(process.env.DIFM_HOME_VISIT_SURCHARGE || '199'),
   },
+
+  googleMaps: {
+    apiKey: process.env.GOOGLE_MAPS_API_KEY || '',
+  },
 };
 
 export default config;
