@@ -25,6 +25,7 @@ import supportRoutes from './modules/support/support.routes';
 import deliveryRoutes from './modules/delivery/delivery.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import inventoryRoutes from './modules/inventory/inventory.routes';
+import procurementRoutes from './modules/procurement/procurement.routes';
 
 const app = express();
 
@@ -106,6 +107,7 @@ app.use('/api/shops', shopsRoutes);
 app.use('/api/usedparts', usedPartsRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/delivery', deliveryRoutes);
+app.use('/api/admin/procurement', procurementRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/inventory', inventoryRoutes);
 

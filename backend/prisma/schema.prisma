@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================================
@@ -186,6 +187,7 @@ enum StockMovementType {
   ADJUSTMENT
   DAMAGE
   TRANSFER
+  PROCUREMENT_RECEIVED
 }
 
 enum StockAvailability {
@@ -249,6 +251,8 @@ model User {
   reminders       MaintenanceReminder[]
   auditLogs       AuditLog[]
   supplier        Supplier?
+  procurementCart ProcurementCart?
+  createdPurchaseOrders PurchaseOrder[] @relation("AdminCreatedPOs")
 
   @@index([role, status])
   @@map("users")
@@ -345,7 +349,8 @@ model VehicleMake {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
-  models    VehicleModel[]
+  models               VehicleModel[]
+  supplierCatalogItems SupplierCatalogItem[]
 
   @@index([type])
   @@map("vehicle_makes")
@@ -360,7 +365,8 @@ model VehicleModel {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
-  variants  VehicleVariant[]
+  variants             VehicleVariant[]
+  supplierCatalogItems SupplierCatalogItem[]
 
   @@unique([makeId, name])
   @@index([makeId, type])
@@ -380,6 +386,7 @@ model VehicleVariant {
 
   customerVehicles        CustomerVehicle[]
   productCompatibilities  ProductCompatibility[]
+  supplierCatalogItems    SupplierCatalogItem[]
 
   @@unique([modelId, name, year, fuelType])
   @@index([modelId, year, fuelType])
@@ -420,7 +427,8 @@ model Brand {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  products  Product[]
+  products             Product[]
+  supplierCatalogItems SupplierCatalogItem[]
 
   @@map("brands")
 }
@@ -440,29 +448,40 @@ model Category {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  products    Product[]
-  commissionConfigs CommissionConfig[]
+  products             Product[]
+  commissionConfigs    CommissionConfig[]
+  supplierCatalogItems SupplierCatalogItem[]
 
   @@index([parentId, isActive])
   @@map("categories")
 }
 
 model Supplier {
-  id            String   @id @default(uuid())
-  userId        String?  @unique
-  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  name          String
-  slug          String   @unique
-  contactPerson String
-  email         String
-  phone         String
-  address       String?
-  gstNumber     String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  userId             String?  @unique
+  user               User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name               String
+  slug               String   @unique
+  contactPerson      String
+  email              String
+  phone              String
+  address            String?
+  city               String?
+  state              String?
+  gstNumber          String?
+  logoUrl            String?
+  supplierType       String   @default("DISTRIBUTOR") // MANUFACTURER | OEM | DISTRIBUTOR | AFTERMARKET_SUPPLIER
+  categories         String[] @default([])
+  supportedVehicles  String[] @default([])
+  verificationStatus String   @default("VERIFIED")
+  isDemo             Boolean  @default(true)
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  inventories   SupplierInventory[]
+  inventories        SupplierInventory[]
+  catalogItems       SupplierCatalogItem[]
+  purchaseOrders     PurchaseOrder[]
 
   @@map("suppliers")
 }
@@ -505,8 +524,11 @@ model Product {
   supplierStock   SupplierInventory[]
   orderItems      OrderItem[]
   cartItems       CartItem[]
-  reviews         Review[]
-  usedPartListings UsedPartListing[]
+  reviews              Review[]
+  usedPartListings     UsedPartListing[]
+  supplierCatalogItems SupplierCatalogItem[]
+  purchaseOrderItems   PurchaseOrderItem[]
+  goodsReceiptItems    GoodsReceiptItem[]
 
   @@index([categoryId, status])
   @@index([brandId])
@@ -1434,4 +1456,218 @@ model Coupon {
   createdAt     DateTime  @default(now())
 
   @@map("coupons")
+}
+
+// ============================================================
+// 21. BULK PROCUREMENT & SUPPLIER PO ENGINE
+// ============================================================
+
+model SupplierCatalogItem {
+  id               String          @id @default(uuid())
+  supplierId       String
+  supplier         Supplier        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  productId        String?
+  product          Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  partName         String
+  partNumber       String
+  categoryName     String
+  categoryId       String?
+  category         Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  brandId          String?
+  brand            Brand?          @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  brandName        String
+  vehicleMakeId    String?
+  vehicleMake      VehicleMake?    @relation(fields: [vehicleMakeId], references: [id], onDelete: SetNull)
+  vehicleMakeName  String
+  vehicleModelId   String?
+  vehicleModel     VehicleModel?   @relation(fields: [vehicleModelId], references: [id], onDelete: SetNull)
+  vehicleModelName String
+  vehicleVariantId String?
+  vehicleVariant   VehicleVariant? @relation(fields: [vehicleVariantId], references: [id], onDelete: SetNull)
+  variantName      String?
+  year             Int?
+  condition        String          @default("GENUINE_NEW")
+  unitPrice        Decimal         @db.Decimal(10, 2)
+  bulkPrice        Decimal         @db.Decimal(10, 2)
+  moq              Int             @default(10)
+  stockQuantity    Int             @default(500)
+  warranty         String?         @default("12 Months Manufacturer Warranty")
+  leadTime         String?         @default("3–5 days")
+  leadTimeDays     Int             @default(3)
+  isAvailable      Boolean         @default(true)
+  imageUrl         String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  bulkPriceTiers   BulkPriceTier[]
+  cartItems        ProcurementCartItem[]
+  poItems          PurchaseOrderItem[]
+
+  @@index([supplierId])
+  @@index([productId])
+  @@index([brandId])
+  @@index([vehicleMakeId])
+  @@index([categoryName])
+  @@map("supplier_catalog_items")
+}
+
+model BulkPriceTier {
+  id              String              @id @default(uuid())
+  catalogItemId   String
+  catalogItem     SupplierCatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+  minQuantity     Int
+  maxQuantity     Int?
+  unitPrice       Decimal             @db.Decimal(10, 2)
+  discountPercent Decimal?            @db.Decimal(5, 2)
+  createdAt       DateTime            @default(now())
+
+  @@index([catalogItemId, minQuantity])
+  @@map("bulk_price_tiers")
+}
+
+model ProcurementCart {
+  id        String                @id @default(uuid())
+  adminId   String                @unique
+  adminUser User                  @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  notes     String?
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  items     ProcurementCartItem[]
+
+  @@map("procurement_carts")
+}
+
+model ProcurementCartItem {
+  id            String              @id @default(uuid())
+  cartId        String
+  cart          ProcurementCart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  catalogItemId String
+  catalogItem   SupplierCatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+  quantity      Int                 @default(10)
+  unitPrice     Decimal             @db.Decimal(10, 2)
+  bulkDiscount  Decimal             @default(0) @db.Decimal(10, 2)
+  subtotal      Decimal             @db.Decimal(10, 2)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@unique([cartId, catalogItemId])
+  @@index([cartId])
+  @@index([catalogItemId])
+  @@map("procurement_cart_items")
+}
+
+model PurchaseOrder {
+  id               String               @id @default(uuid())
+  poNumber         String               @unique // PO-PNX-2026-0001
+  supplierId       String
+  supplier         Supplier             @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  adminId          String?
+  adminUser        User?                @relation("AdminCreatedPOs", fields: [adminId], references: [id], onDelete: SetNull)
+  status           String               @default("DRAFT") // DRAFT, SUBMITTED, SUPPLIER_CONFIRMED, PROCESSING, SHIPPED, IN_TRANSIT, PARTIALLY_RECEIVED, RECEIVED, COMPLETED, CANCELLED
+  subtotal         Decimal              @db.Decimal(10, 2)
+  bulkDiscount     Decimal              @default(0) @db.Decimal(10, 2)
+  tax              Decimal              @default(0) @db.Decimal(10, 2)
+  shipping         Decimal              @default(0) @db.Decimal(10, 2)
+  handling         Decimal              @default(0) @db.Decimal(10, 2)
+  otherFees        Decimal              @default(0) @db.Decimal(10, 2)
+  totalCost        Decimal              @db.Decimal(10, 2)
+  paymentMethod    String               @default("DEMO_PAYMENT") // BANK_TRANSFER, UPI, CREDIT_TERMS, DEMO_PAYMENT
+  paymentStatus    String               @default("PENDING") // PENDING, PAID, PARTIAL, FAILED
+  supplierInvoice  String?
+  paymentReference String?
+  expectedDelivery DateTime?
+  receivedAt       DateTime?
+  notes            String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  items            PurchaseOrderItem[]
+  goodsReceipts    GoodsReceipt[]
+  payments         ProcurementPayment[]
+
+  @@index([supplierId, status])
+  @@index([poNumber])
+  @@index([createdAt])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id                   String               @id @default(uuid())
+  purchaseOrderId      String
+  purchaseOrder        PurchaseOrder        @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  catalogItemId        String?
+  catalogItem          SupplierCatalogItem? @relation(fields: [catalogItemId], references: [id], onDelete: SetNull)
+  productId            String?
+  product              Product?             @relation(fields: [productId], references: [id], onDelete: SetNull)
+  partName             String
+  partNumber           String
+  brandName            String
+  vehicleCompatibility String?
+  orderedQuantity      Int
+  receivedQuantity     Int                  @default(0)
+  unitPrice            Decimal              @db.Decimal(10, 2)
+  bulkDiscount         Decimal              @default(0) @db.Decimal(10, 2)
+  totalCost            Decimal              @db.Decimal(10, 2)
+  createdAt            DateTime             @default(now())
+
+  receiptItems         GoodsReceiptItem[]
+
+  @@index([purchaseOrderId])
+  @@index([productId])
+  @@index([catalogItemId])
+  @@map("purchase_order_items")
+}
+
+model GoodsReceipt {
+  id                String             @id @default(uuid())
+  receiptNumber     String             @unique // GRN-2026-0001
+  purchaseOrderId   String
+  purchaseOrder     PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  receivedByAdminId String?
+  carrier           String?
+  trackingNumber    String?
+  receivedDate      DateTime           @default(now())
+  notes             String?
+  createdAt         DateTime           @default(now())
+
+  items             GoodsReceiptItem[]
+
+  @@index([purchaseOrderId])
+  @@index([receiptNumber])
+  @@map("goods_receipts")
+}
+
+model GoodsReceiptItem {
+  id               String            @id @default(uuid())
+  receiptId        String
+  receipt          GoodsReceipt      @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  poItemId         String
+  poItem           PurchaseOrderItem @relation(fields: [poItemId], references: [id], onDelete: Cascade)
+  productId        String?
+  product          Product?          @relation(fields: [productId], references: [id], onDelete: SetNull)
+  quantityReceived Int
+  createdAt        DateTime          @default(now())
+
+  @@index([receiptId])
+  @@index([poItemId])
+  @@index([productId])
+  @@map("goods_receipt_items")
+}
+
+model ProcurementPayment {
+  id              String        @id @default(uuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  amount          Decimal       @db.Decimal(10, 2)
+  paymentMethod   String        @default("DEMO_PAYMENT")
+  paymentStatus   String        @default("PENDING")
+  reference       String?
+  invoiceNumber   String?
+  paidAt          DateTime?
+  notes           String?
+  createdAt       DateTime      @default(now())
+
+  @@index([purchaseOrderId])
+  @@map("procurement_payments")
 }

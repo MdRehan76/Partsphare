@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 
 const navItems = [
   { path: '/admin', label: 'Overview Dashboard', icon: '📊', end: true },
+  { path: '/admin/procurement', label: 'Bulk Procurement', icon: '🏭' },
   { path: '/admin/orders', label: 'Orders & DIFM', icon: '📑' },
   { path: '/admin/customers', label: 'Customers', icon: '👥' },
   { path: '/admin/shops', label: 'Mechanical Workshops', icon: '🔧' },
