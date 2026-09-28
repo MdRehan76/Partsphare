@@ -119,7 +119,7 @@ const CheckoutPage = () => {
     } finally {
       setIsQuoteLoading(false);
     }
-  }, [user, cart?.items, selectedAddressId, difmOption, selectedShopId, appliedCoupon, customerLocationCoords, selectedShopObj]);
+  }, [user, cart?.items, selectedAddressId, difmOption, selectedShopId, appliedCoupon, customerLocationCoords]);
 
   // Recalculate quote immediately whenever option, address, shop, or coupon changes
   useEffect(() => {

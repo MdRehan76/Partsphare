@@ -3,11 +3,12 @@ import { createPortal } from 'react-dom';
 import './RazorpayModal.css';
 
 /**
- * Computes the client-side sandbox HMAC-SHA256 signature matching backend verification:
- * HMAC_SHA256(orderId + "|" + paymentId, secret)
+ * Computes the client-side sandbox HMAC-SHA256 for the payment simulation.
+ * Uses a fixed demo constant — this is intentionally a simulation only.
+ * REAL authoritative signature verification happens on the backend (/api/payments/verify).
  */
-async function computeSandboxHmac(orderId, paymentId, customSecret) {
-  const secret = customSecret || 'partsphere_rzp_secret_key_demo_32chars';
+async function computeSandboxHmac(orderId, paymentId) {
+  const secret = 'partsphere_rzp_secret_key_demo_32chars';
   const encoder = new TextEncoder();
   const keyData = encoder.encode(secret);
   const messageData = encoder.encode(`${orderId}|${paymentId}`);
@@ -112,7 +113,6 @@ const RazorpayModal = ({ isOpen, paymentData, onSuccess, onFailure, onCancel }) 
     amountInPaise,
     currency = 'INR',
     customer,
-    demoSecretKey,
   } = paymentData;
 
   // Resolve display amount in Rupees:
@@ -141,7 +141,7 @@ const RazorpayModal = ({ isOpen, paymentData, onSuccess, onFailure, onCancel }) 
 
     try {
       const paymentId = `pay_rzp_demo_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      const signature = await computeSandboxHmac(razorpayOrderId, paymentId, demoSecretKey);
+      const signature = await computeSandboxHmac(razorpayOrderId, paymentId);
 
       // Stage 1 -> Stage 2 (Authorizing Bank) after 850ms
       setTimeout(() => {
@@ -229,7 +229,7 @@ const RazorpayModal = ({ isOpen, paymentData, onSuccess, onFailure, onCancel }) 
 
           <div className="rzp-amount-row">
             <div>
-              <div className="rzp-merchant-name">PartSphere Technologies</div>
+              <div className="rzp-merchant-name">PartNexa Auto Parts</div>
               <div className="rzp-order-ref">
                 Order #{orderNumber} · ID: <code>{razorpayOrderId}</code>
               </div>

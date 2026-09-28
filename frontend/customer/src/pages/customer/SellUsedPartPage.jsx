@@ -672,7 +672,7 @@ const SellUsedPartPage = () => {
                       {formData.images.map((imgUrl, idx) => (
                         <div key={idx} className="photo-thumb-card">
                           <img
-                            src={imgUrl.startsWith('http') ? imgUrl : `http://localhost:5000${imgUrl}`}
+                            src={imgUrl.startsWith('http') ? imgUrl : `${import.meta.env.VITE_API_URL?.replace('/api','') || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://partnexa-api.onrender.com')}${imgUrl}`}
                             alt={`Part photo ${idx + 1}`}
                             className="thumb-img"
                             onError={(e) => {
@@ -973,7 +973,7 @@ const SellUsedPartPage = () => {
                     Array.isArray(listing.images) && listing.images.length > 0
                       ? listing.images[0].startsWith('http')
                         ? listing.images[0]
-                        : `http://localhost:5000${listing.images[0]}`
+                        : `${import.meta.env.VITE_API_URL?.replace('/api','') || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://partnexa-api.onrender.com')}${listing.images[0]}`
                       : 'https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?w=600&auto=format&fit=crop&q=80';
 
                   const canCancel = ['SUBMITTED', 'VERIFICATION_PENDING', 'DRAFT'].includes(listing.status);
@@ -1148,7 +1148,7 @@ const SellUsedPartPage = () => {
                     Array.isArray(item.images) && item.images.length > 0
                       ? item.images[0].startsWith('http')
                         ? item.images[0]
-                        : `http://localhost:5000${item.images[0]}`
+                        : `${import.meta.env.VITE_API_URL?.replace('/api','') || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://partnexa-api.onrender.com')}${item.images[0]}`
                       : 'https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?w=600&auto=format&fit=crop&q=80';
 
                   const price = item.finalValuation || item.expectedPrice || item.askingPrice || item.price || 2500;

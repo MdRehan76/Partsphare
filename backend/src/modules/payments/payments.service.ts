@@ -96,7 +96,9 @@ export const createRazorpayPaymentOrder = async (userId: string, orderId: string
     currency: 'INR',
     keyId: DEMO_RAZORPAY_KEY_ID,
     isDemoMode,
-    demoSecretKey: isDemoMode ? DEMO_RAZORPAY_SECRET : undefined,
+    // demoSecretKey intentionally NOT returned — the secret stays server-side only.
+    // The frontend sends the payment result to /api/payments/verify and the backend
+    // computes + validates the expected signature authoritatively.
     customer: {
       name: `${order.user?.firstName || ''} ${order.user?.lastName || ''}`.trim() || 'Customer',
       email: order.user?.email || 'customer@partsphere.in',
