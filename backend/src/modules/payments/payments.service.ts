@@ -3,6 +3,7 @@ import prisma from '../../config/prisma';
 import config from '../../config/env';
 import AppError from '../../utils/AppError';
 import { OrderStatus, PaymentMethod, PaymentStatus, DIFMStatus } from '@prisma/client';
+import { propagateOrderConfirmed } from '../orders/orderPropagation.service';
 
 const DEMO_RAZORPAY_KEY_ID = config.razorpay?.keyId && !config.razorpay.keyId.includes('placeholder')
   ? config.razorpay.keyId
@@ -282,39 +283,12 @@ export const verifyRazorpayPayment = async (
     });
   }
 
-  // Update delivery assignment for this order (payment captured, cod not applicable)
+  // Authoritative Order Lifecycle Propagation:
+  // Propagates order across Delivery (DeliveryAssignment), Workshop (ShopJob, ShopDelivery, CommissionLedger), and Admin
   try {
-    const existingDelivery = await prisma.deliveryAssignment.findFirst({ where: { orderId: order.id } });
-    if (existingDelivery) {
-      await prisma.deliveryAssignment.update({
-        where: { id: existingDelivery.id },
-        data: {
-          paymentStatus: 'CAPTURED',
-          paymentMethod: 'RAZORPAY',
-          codAmountToCollect: 0,
-          codStatus: 'NOT_APPLICABLE',
-          updatedAt: new Date(),
-        },
-      });
-    }
-  } catch (delErr) {
-    console.warn('Delivery assignment sync warning:', delErr);
-  }
-
-  // Update commission ledger if applicable
-  try {
-    const comm = await prisma.commissionLedger.findFirst({ where: { orderId: order.id } });
-    if (comm) {
-      await prisma.commissionLedger.update({
-        where: { id: comm.id },
-        data: {
-          paymentStatus: 'PAID',
-          updatedAt: new Date(),
-        },
-      });
-    }
-  } catch (commErr) {
-    console.warn('Commission ledger sync warning:', commErr);
+    await propagateOrderConfirmed(order.id);
+  } catch (propErr) {
+    console.warn('Order propagation warning on payment capture:', propErr);
   }
 
   // Append tracking entry

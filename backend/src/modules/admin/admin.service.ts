@@ -474,11 +474,12 @@ export const assignOrderDelivery = async (id: string, deliveryPartnerId: string)
   return prisma.deliveryAssignment.create({
     data: {
       orderId: id,
-      orderNumber: order.orderNumber,
       deliveryPartnerId,
-      type: 'CUSTOMER_DELIVERY',
       status: 'ACCEPTED',
       assignedAt: new Date(),
+      distanceKm: 4.2,
+      deliveryFee: Number(order.deliveryFee || 50),
+      notes: `Order #${order.orderNumber}. Assigned by Admin.`,
     },
   });
 };
@@ -1097,14 +1098,13 @@ export const listDeliveries = async (filters: { status?: string; partnerId?: str
   if (filters.status && filters.status !== 'ALL') where.status = filters.status;
   if (filters.partnerId) where.deliveryPartnerId = filters.partnerId;
 
-  return prisma.deliveryAssignment.findMany({
+  const raw = await prisma.deliveryAssignment.findMany({
     where,
-    include: {
-      order: true,
-      deliveryPartner: { include: { user: true } },
-    },
+    include: deliveryService.assignmentInclude,
     orderBy: { createdAt: 'desc' },
   });
+
+  return raw.map(deliveryService.formatDeliveryAssignment);
 };
 
 export const reassignDelivery = async (id: string, deliveryPartnerId: string) => {

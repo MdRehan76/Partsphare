@@ -10,6 +10,7 @@ import {
   LocationPoint,
 } from './difmEngine';
 import { InventorySyncEngine } from '../inventory/inventorySync.service';
+import { propagateOrderConfirmed } from './orderPropagation.service';
 
 export const listCustomerOrders = async (userId: string) => {
   return prisma.order.findMany({
@@ -344,6 +345,7 @@ export const createOrderDraft = async (
   });
 
   const orderNumber = generateOrderNumber();
+  const isOnlinePayment = data.paymentMethod === PaymentMethod.RAZORPAY;
 
   const newOrder = await prisma.$transaction(async (tx: any) => {
     // Deduct stock atomically in database with concurrency safety
@@ -372,7 +374,6 @@ export const createOrderDraft = async (
       });
     }
 
-    const isOnlinePayment = data.paymentMethod === PaymentMethod.RAZORPAY;
     const initialOrderStatus = isOnlinePayment ? OrderStatus.PENDING : OrderStatus.CONFIRMED;
     const initialPaymentStatus = PaymentStatus.PENDING;
     const razorpayOrderId = isOnlinePayment
@@ -473,6 +474,15 @@ export const createOrderDraft = async (
       newOrder.id,
       userId
     );
+  }
+
+  // Trigger real-time platform propagation for immediately confirmed COD orders
+  if (!isOnlinePayment) {
+    try {
+      await propagateOrderConfirmed(newOrder.id);
+    } catch (propErr) {
+      console.warn('Order propagation warning for COD order:', propErr);
+    }
   }
 
   return getOrderById(userId, newOrder.id);
