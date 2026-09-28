@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { catalogService, vehiclesService } from '../../services';
 import ProductCard, { ProductCardSkeleton } from '../../components/product/ProductCard';
+import CustomerTestimonials from '../../components/home/CustomerTestimonials';
 import './HomePage.css';
 
 // ---- Vehicle Search Widget ----
@@ -317,6 +318,9 @@ const HomePage = () => {
           )}
         </div>
       </section>
+
+      {/* Customer Feedback / Stories */}
+      <CustomerTestimonials />
 
       {/* DIFM CTA Banner */}
       <section className="difm-banner">
