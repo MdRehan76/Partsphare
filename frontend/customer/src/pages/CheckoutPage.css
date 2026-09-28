@@ -1197,3 +1197,39 @@
   margin: 0;
 }
 
+/* Selected Shop Info Card in Order Summary */
+.selected-shop-summary-card {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: rgba(13, 148, 136, 0.08);
+  border: 1px solid rgba(13, 148, 136, 0.25);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.selected-shop-summary-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0D9488;
+}
+
+.selected-shop-summary-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.selected-shop-summary-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+

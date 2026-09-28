@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { usersService, ordersService, paymentsService } from '../../services';
 import { Button, Input } from '../../components/ui';
 import RazorpayModal from '../../components/checkout/RazorpayModal';
+import NearbyShopsMap from '../../components/checkout/NearbyShopsMap';
 import toast from 'react-hot-toast';
 import './CheckoutPage.css';
 
@@ -32,11 +33,13 @@ const CheckoutPage = () => {
   });
 
   // DIFM Options State
-  // OPTION A: HOME_INSTALLATION (Mechanic comes to customer's home)
-  // OPTION B: SHOP_INSTALLATION (Customer visits partnered local shop)
+  // OPTION A: SHOP_INSTALLATION (Customer visits nearby partnered mechanical shop)
+  // OPTION B: HOME_INSTALLATION (Mechanic comes to customer's doorstep)
   // OPTION C: NO_INSTALLATION (No installation / Delivery only)
-  const [difmOption, setDifmOption] = useState('HOME_INSTALLATION');
+  const [difmOption, setDifmOption] = useState('SHOP_INSTALLATION');
   const [selectedShopId, setSelectedShopId] = useState(null);
+  const [selectedShopObj, setSelectedShopObj] = useState(null);
+  const [customerLocationCoords, setCustomerLocationCoords] = useState(null);
 
   // Coupons & Pricing Quote State
   const [couponInput, setCouponInput] = useState('');
@@ -96,6 +99,8 @@ const CheckoutPage = () => {
         difmType: difmOption,
         shopId: selectedShopId,
         couponCode: appliedCoupon,
+        customerLatitude: customerLocationCoords?.lat,
+        customerLongitude: customerLocationCoords?.lng,
       });
 
       const quoteData = res.data?.data;
@@ -111,7 +116,7 @@ const CheckoutPage = () => {
     } finally {
       setIsQuoteLoading(false);
     }
-  }, [user, cart?.items, selectedAddressId, difmOption, selectedShopId, appliedCoupon]);
+  }, [user, cart?.items, selectedAddressId, difmOption, selectedShopId, appliedCoupon, customerLocationCoords]);
 
   // Recalculate quote immediately whenever option, address, shop, or coupon changes
   useEffect(() => {
@@ -175,6 +180,12 @@ const CheckoutPage = () => {
       return;
     }
 
+    // Require mechanical shop selection for Option A (Mechanical Shop Installation)
+    if (difmOption === 'SHOP_INSTALLATION' && !selectedShopId) {
+      toast.error('Please select a nearby mechanical shop from the map before placing your order.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const payload = {
@@ -184,6 +195,8 @@ const CheckoutPage = () => {
         paymentMethod: paymentMethod === 'COD' ? 'CASH_ON_DELIVERY' : 'RAZORPAY',
         couponCode: appliedCoupon || undefined,
         notes: orderNotes || undefined,
+        customerLatitude: customerLocationCoords?.lat,
+        customerLongitude: customerLocationCoords?.lng,
       };
 
       const res = await ordersService.createOrder(payload);
@@ -734,16 +747,16 @@ const CheckoutPage = () => {
               <div className="checkout-section-header">
                 <span className="checkout-step-number">2</span>
                 <div>
-                  <h2 className="checkout-section-title">DIFM (Do-It-For-Me) Installation Selection</h2>
-                  <p className="checkout-step-sub">Choose how you want your parts to be fitted onto your vehicle</p>
+                  <h2 className="checkout-section-title">Delivery / Installation Preference</h2>
+                  <p className="checkout-step-sub">Choose how you want your parts delivered and fitted</p>
                 </div>
               </div>
 
               <div className="difm-options-grid">
                 {/* OPTION A */}
                 <div
-                  className={`difm-option-card ${difmOption === 'HOME_INSTALLATION' ? 'selected' : ''}`}
-                  onClick={() => setDifmOption('HOME_INSTALLATION')}
+                  className={`difm-option-card ${difmOption === 'SHOP_INSTALLATION' ? 'selected' : ''}`}
+                  onClick={() => setDifmOption('SHOP_INSTALLATION')}
                   id="difm-option-a"
                 >
                   <div className="difm-radio-indicator">
@@ -753,22 +766,22 @@ const CheckoutPage = () => {
                     <div className="difm-option-header-row">
                       <div className="difm-option-title-group">
                         <span className="difm-badge-code">OPTION A</span>
-                        <h3 className="difm-option-title">Mechanic Comes to Customer's Home</h3>
+                        <h3 className="difm-option-title">Mechanical Shop Installation</h3>
                       </div>
                       <div className="difm-price-pill" id="option-a-price-pill">
-                        +₹{(pricing.baseInstallationFee + (pricing.homeVisitSurcharge || 0))}
+                        +₹{pricing.baseInstallationFee || 250}
                       </div>
                     </div>
                     <p className="difm-option-desc">
-                      Certified technician from partner workshop arrives at your doorstep with tools and fitment rig.
+                      Drive to a verified partner workshop near you. PartNexa detects your location and shows nearby garages with ramp bay & master mechanic service.
                     </p>
                     <div className="difm-formula-badge">
                       <span>Formula:</span>
-                      <code>Base Service Fee (₹{pricing.baseInstallationFee}) + Home Visit Surcharge (₹{pricing.homeVisitSurcharge || 135})</code>
+                      <code>Workshop Fitment Fee (₹{pricing.baseInstallationFee || 250}) + Zero Home Surcharge</code>
                     </div>
-                    {difmOption === 'HOME_INSTALLATION' && (
+                    {difmOption === 'SHOP_INSTALLATION' && (
                       <div className="difm-subdetails">
-                        📍 Distance to nearest hub: <strong>{distanceKm} km</strong> (~{durationMinutes} mins away)
+                        📍 Select your preferred nearby garage on the interactive map below
                       </div>
                     )}
                   </div>
@@ -776,8 +789,8 @@ const CheckoutPage = () => {
 
                 {/* OPTION B */}
                 <div
-                  className={`difm-option-card ${difmOption === 'SHOP_INSTALLATION' ? 'selected' : ''}`}
-                  onClick={() => setDifmOption('SHOP_INSTALLATION')}
+                  className={`difm-option-card ${difmOption === 'HOME_INSTALLATION' ? 'selected' : ''}`}
+                  onClick={() => setDifmOption('HOME_INSTALLATION')}
                   id="difm-option-b"
                 >
                   <div className="difm-radio-indicator">
@@ -787,22 +800,22 @@ const CheckoutPage = () => {
                     <div className="difm-option-header-row">
                       <div className="difm-option-title-group">
                         <span className="difm-badge-code">OPTION B</span>
-                        <h3 className="difm-option-title">Customer Visits Partnered Local Shop</h3>
+                        <h3 className="difm-option-title">Home / DIFM Doorstep Installation</h3>
                       </div>
                       <div className="difm-price-pill" id="option-b-price-pill">
-                        +₹{pricing.baseInstallationFee}
+                        +₹{(pricing.baseInstallationFee + (pricing.homeVisitSurcharge || 0))}
                       </div>
                     </div>
                     <p className="difm-option-desc">
-                      Drive to your selected partnered workshop. Includes reserved ramp bay, hoist lifting & master technician labor.
+                      Certified doorstep mechanic arrives at your address with tools and fitment rig to install parts right at your home or office.
                     </p>
                     <div className="difm-formula-badge">
                       <span>Formula:</span>
-                      <code>Base Service Fee (₹{pricing.baseInstallationFee}) + Home Visit Surcharge (₹0)</code>
+                      <code>Base Fee (₹{pricing.baseInstallationFee}) + Home Visit Distance Surcharge (₹{pricing.homeVisitSurcharge || 135})</code>
                     </div>
-                    {difmOption === 'SHOP_INSTALLATION' && (
+                    {difmOption === 'HOME_INSTALLATION' && (
                       <div className="difm-subdetails">
-                        🏬 Priority bay reservation at your selected garage
+                        📍 Technician dispatched from nearest certified hub: <strong>{distanceKm} km</strong> (~{durationMinutes} mins)
                       </div>
                     )}
                   </div>
@@ -828,32 +841,52 @@ const CheckoutPage = () => {
                       </div>
                     </div>
                     <p className="difm-option-desc">
-                      Standard delivery of genuine parts in tamper-evident sealed packaging. You install yourself or with your mechanic.
+                      Standard secure delivery of genuine parts in tamper-evident sealed packaging. You install yourself or at your personal garage.
                     </p>
                     <div className="difm-formula-badge">
                       <span>Formula:</span>
-                      <code>Installation Fee = ₹0</code>
+                      <code>Installation Fee = ₹0 · No Shop Required</code>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Step 3: Partnered Workshop Selection (For Option A or Option B) */}
-            {difmOption !== 'NO_INSTALLATION' && (
+            {/* Step 3: Mechanical Shop Map (Option A) OR Doorstep Hub (Option B) */}
+            {difmOption === 'SHOP_INSTALLATION' && (
+              <div className="checkout-section" id="step-shop-map-selection">
+                <div className="checkout-section-header">
+                  <span className="checkout-step-number">3</span>
+                  <div>
+                    <h2 className="checkout-section-title">Select Nearby Mechanical Shop</h2>
+                    <p className="checkout-step-sub">
+                      PartNexa detects your location to find eligible partner workshops for professional installation.
+                    </p>
+                  </div>
+                </div>
+
+                <NearbyShopsMap
+                  selectedShopId={selectedShopId}
+                  onSelectShop={(shop) => {
+                    setSelectedShopId(shop.id);
+                    setSelectedShopObj(shop);
+                    toast.success(`Selected ${shop.name} for installation!`);
+                  }}
+                  onLocationChange={(loc) => {
+                    setCustomerLocationCoords(loc);
+                  }}
+                />
+              </div>
+            )}
+
+            {difmOption === 'HOME_INSTALLATION' && (
               <div className="checkout-section" id="step-workshop-selection">
                 <div className="checkout-section-header">
                   <span className="checkout-step-number">3</span>
                   <div>
-                    <h2 className="checkout-section-title">
-                      {difmOption === 'HOME_INSTALLATION'
-                        ? 'Assigned Workshop & Doorstep Mechanic Hub'
-                        : 'Select Your Partnered Local Workshop'}
-                    </h2>
+                    <h2 className="checkout-section-title">Assigned Doorstep Mechanic Hub</h2>
                     <p className="checkout-step-sub">
-                      {difmOption === 'HOME_INSTALLATION'
-                        ? 'Technician dispatched from this certified local partner hub'
-                        : 'Choose the garage you will drive to for priority installation'}
+                      Technician dispatched from this certified local partner hub to your address
                     </p>
                   </div>
                 </div>
@@ -863,7 +896,10 @@ const CheckoutPage = () => {
                     <div
                       key={shop.id}
                       className={`workshop-card ${selectedShopId === shop.id ? 'selected' : ''}`}
-                      onClick={() => setSelectedShopId(shop.id)}
+                      onClick={() => {
+                        setSelectedShopId(shop.id);
+                        setSelectedShopObj(shop);
+                      }}
                       id={`workshop-${shop.id}`}
                     >
                       <div className="workshop-card-top">
@@ -873,11 +909,11 @@ const CheckoutPage = () => {
                             {shop.isVerified && <span className="verified-badge">✓ Verified Hub</span>}
                           </div>
                           <div className="workshop-address">{shop.address}</div>
-                          <div className="workshop-hours">🕒 {shop.operatingHours} · 📞 {shop.phone}</div>
+                          <div className="workshop-hours">🕒 {shop.operatingHours || '9:00 AM - 8:00 PM'} · 📞 {shop.phone || '+91 98765 43210'}</div>
                         </div>
 
                         <div className="workshop-metrics">
-                          <div className="workshop-rating">★ {shop.rating}</div>
+                          <div className="workshop-rating">★ {shop.rating || '4.8'}</div>
                           <div className="workshop-distance" id={`shop-dist-${shop.id}`}>
                             {shop.distanceKm} km away
                           </div>
@@ -1088,10 +1124,25 @@ const CheckoutPage = () => {
                 </div>
               </div>
 
+              {/* Selected Shop Info Card */}
+              {difmOption === 'SHOP_INSTALLATION' && (selectedShopObj || selectedShopId) && (
+                <div className="selected-shop-summary-card">
+                  <div className="selected-shop-summary-badge">🔧 Selected Installation Shop</div>
+                  <div className="selected-shop-summary-name">
+                    {selectedShopObj?.name || assignedShop?.name || 'Partner Garage'}
+                  </div>
+                  <div className="selected-shop-summary-meta">
+                    <span>📍 {selectedShopObj?.distanceKm ? `${selectedShopObj.distanceKm} km away` : `${distanceKm} km away`}</span>
+                    <span>★ {selectedShopObj?.rating || assignedShop?.rating || '4.8'}</span>
+                    <span>₹{selectedShopObj?.installationFee || pricing.baseInstallationFee || 250} Fitment Fee</span>
+                  </div>
+                </div>
+              )}
+
               {/* DIFM Active Summary Badge */}
               <div className="difm-status-pill">
-                {difmOption === 'HOME_INSTALLATION' && '🏡 Option A: Doorstep Mechanic Visit'}
-                {difmOption === 'SHOP_INSTALLATION' && '🏬 Option B: Partnered Workshop Fitment'}
+                {difmOption === 'SHOP_INSTALLATION' && '🏬 Option A: Partnered Workshop Fitment'}
+                {difmOption === 'HOME_INSTALLATION' && '🏡 Option B: Doorstep Mechanic Visit'}
                 {difmOption === 'NO_INSTALLATION' && '📦 Option C: Parts Only (No Installation)'}
               </div>
 

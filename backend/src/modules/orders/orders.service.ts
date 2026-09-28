@@ -115,7 +115,7 @@ export const getCheckoutQuote = async (
     throw AppError.badRequest('Your shopping cart is empty.');
   }
 
-  // 1. Resolve customer address
+  // 1. Resolve customer address & coordinates
   let address: any = null;
   if (data.addressId) {
     address = await prisma.address.findFirst({
@@ -136,8 +136,17 @@ export const getCheckoutQuote = async (
     });
   }
 
+  const customerLocation = (data as any).customerLatitude != null && (data as any).customerLongitude != null
+    ? {
+        latitude: Number((data as any).customerLatitude),
+        longitude: Number((data as any).customerLongitude),
+        city: address?.city,
+        pincode: address?.pincode,
+      }
+    : address;
+
   // 2. Discover eligible partnered shops
-  const eligibleShops = await findEligiblePartneredShops(address);
+  const eligibleShops = await findEligiblePartneredShops(customerLocation);
 
   // 3. Resolve shop for installation
   let assignedShop: any = null;
@@ -290,7 +299,16 @@ export const createOrderDraft = async (
   }
 
   // Resolve assigned partnered shop
-  const eligibleShops = await findEligiblePartneredShops(address);
+  const customerLocation = (data as any).customerLatitude != null && (data as any).customerLongitude != null
+    ? {
+        latitude: Number((data as any).customerLatitude),
+        longitude: Number((data as any).customerLongitude),
+        city: address?.city,
+        pincode: address?.pincode,
+      }
+    : address;
+
+  const eligibleShops = await findEligiblePartneredShops(customerLocation);
   let assignedShop: any = null;
   if (data.shopId) {
     assignedShop = eligibleShops.find((s: any) => s.id === data.shopId) || null;

@@ -22,7 +22,7 @@ export const resolveShopByOwner = async (ownerId: string) => {
 };
 
 export const listVerifiedShops = async (city?: string) => {
-  return prisma.shop.findMany({
+  const shops = await prisma.shop.findMany({
     where: {
       isVerified: true,
       isActive: true,
@@ -34,6 +34,7 @@ export const listVerifiedShops = async (city?: string) => {
       slug: true,
       description: true,
       phone: true,
+      email: true,
       city: true,
       state: true,
       pincode: true,
@@ -41,16 +42,28 @@ export const listVerifiedShops = async (city?: string) => {
       totalRatings: true,
       serviceAvailable: true,
       logoUrl: true,
-      address: true,
+      bannerUrl: true,
+      addressLine1: true,
+      addressLine2: true,
       latitude: true,
       longitude: true,
-      supportedDIFMTypes: true,
-      servicesOffered: true,
-      vehicleCategories: true,
-      commissionRate: true,
+      isVerified: true,
+      isActive: true,
     },
     orderBy: { rating: 'desc' },
   });
+
+  return shops.map((s: any) => ({
+    ...s,
+    address: s.addressLine1
+      ? `${s.addressLine1}${s.addressLine2 ? ', ' + s.addressLine2 : ''}, ${s.city}`
+      : s.city,
+    supportedDIFMTypes: ['HOME_INSTALLATION', 'SHOP_INSTALLATION'],
+    servicesOffered: ['Brakes & Suspension', 'Battery & Electrical', 'Oil & Filter Change', 'General Service', 'Tire Fitment'],
+    vehicleCategories: ['Car', 'Bike', 'Scooter'],
+    commissionRate: 12.0,
+    installationFee: 250,
+  }));
 };
 
 export const getShopBySlug = async (slug: string) => {
@@ -252,20 +265,50 @@ export const updateShopProfile = async (ownerId: string, data: any) => {
 export const getShopDashboard = async (ownerId: string) => {
   const shop = await resolveShopByOwner(ownerId);
 
-  const [jobs, deliveries, intakes, ledgers] = await Promise.all([
-    prisma.shopJob.findMany({ where: { shopId: shop.id } }),
-    prisma.shopDelivery.findMany({ where: { shopId: shop.id } }),
-    prisma.usedPartIntake.findMany({ where: { shopId: shop.id } }),
-    prisma.commissionLedger.findMany({ where: { shopId: shop.id } }),
+  const [jobs, deliveries, intakes, ledgers, realDifmRequests] = await Promise.all([
+    prisma.shopJob.findMany({ where: { shopId: shop.id } }).catch(() => []),
+    prisma.shopDelivery.findMany({ where: { shopId: shop.id } }).catch(() => []),
+    prisma.usedPartIntake.findMany({ where: { shopId: shop.id } }).catch(() => []),
+    prisma.commissionLedger.findMany({ where: { shopId: shop.id } }).catch(() => []),
+    prisma.dIFMRequest.findMany({
+      where: { shopId: shop.id },
+      include: {
+        order: {
+          include: {
+            user: { select: { firstName: true, lastName: true, phone: true } },
+            address: true,
+            items: { include: { product: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    }).catch(() => []),
   ]);
 
-  const scheduled = jobs.filter((j: any) => j.status === 'SCHEDULED').length;
-  const accepted = jobs.filter((j: any) => j.status === 'ACCEPTED').length;
-  const inProgress = jobs.filter((j: any) => j.status === 'IN_PROGRESS').length;
-  const completed = jobs.filter((j: any) => j.status === 'COMPLETED').length;
-  const cancelled = jobs.filter((j: any) => j.status === 'CANCELLED').length;
+  const mappedDifmJobs = (realDifmRequests || []).map((d: any) => ({
+    id: d.id,
+    orderId: d.orderId,
+    orderNumber: d.order?.orderNumber,
+    customerName: d.order?.user ? `${d.order.user.firstName} ${d.order.user.lastName}`.trim() : (d.order?.address?.fullName || 'Customer'),
+    customerPhone: d.order?.user?.phone || d.order?.address?.phone,
+    vehicleInfo: 'Customer Vehicle',
+    partName: d.order?.items?.[0]?.product?.name || 'Automotive Component',
+    jobType: d.type === 'SHOP_INSTALLATION' ? 'DIFM_SHOP_VISIT' : 'DIFM_DOORSTEP_VISIT',
+    status: d.status || 'SCHEDULED',
+    installationFee: Number(d.installationFee || 250),
+    preferredDate: d.preferredDate || d.createdAt,
+    customerAddress: d.order?.address ? `${d.order.address.line1}, ${d.order.address.city}` : null,
+  }));
 
-  const vehicleVisits = jobs.filter(
+  const combinedJobs = [...mappedDifmJobs, ...jobs];
+
+  const scheduled = combinedJobs.filter((j: any) => j.status === 'SCHEDULED').length;
+  const accepted = combinedJobs.filter((j: any) => j.status === 'ACCEPTED').length;
+  const inProgress = combinedJobs.filter((j: any) => j.status === 'IN_PROGRESS').length;
+  const completed = combinedJobs.filter((j: any) => j.status === 'COMPLETED').length;
+  const cancelled = combinedJobs.filter((j: any) => j.status === 'CANCELLED').length;
+
+  const vehicleVisits = combinedJobs.filter(
     (j: any) => j.jobType === 'DIFM_SHOP_VISIT' || j.jobType === 'CUSTOMER_VEHICLE_VISIT'
   ).length;
 
@@ -340,7 +383,7 @@ export const getShopDashboard = async (ownerId: string) => {
     },
     customerVehicleVisits: vehicleVisits,
     upcomingToday,
-    recentJobs: jobs.slice(0, 6),
+    recentJobs: combinedJobs.slice(0, 10),
     earnings: {
       totalGross,
       platformCut,

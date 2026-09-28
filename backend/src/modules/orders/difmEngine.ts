@@ -364,15 +364,23 @@ export async function findEligiblePartneredShops(customerLocation?: LocationPoin
         id: shop.id,
         name: shop.name,
         city: shop.city,
-        address: shop.address || `${shop.name}, ${shop.city}`,
+        address: shop.addressLine1
+          ? `${shop.addressLine1}${shop.addressLine2 ? ', ' + shop.addressLine2 : ''}, ${shop.city}`
+          : (shop.address || `${shop.name}, ${shop.city}`),
         pincode: shop.pincode || '560038',
         phone: shop.phone || '+91 98450 12345',
         rating: Number(shop.rating) || 4.8,
+        totalRatings: Number(shop.totalRatings) || 24,
         isVerified: Boolean(shop.isVerified),
+        latitude: shop.latitude != null ? Number(shop.latitude) : null,
+        longitude: shop.longitude != null ? Number(shop.longitude) : null,
         distanceKm,
         durationMinutes,
+        installationFee: 250,
+        available: shop.serviceAvailable !== false,
         operatingHours: shop.operatingHours || '09:00 AM - 08:00 PM',
-        servicesOffered: shop.servicesOffered || ['Brakes', 'Electrical', 'Tune-up'],
+        servicesOffered: shop.servicesOffered || ['Spare Parts Installation', 'Brakes & Suspension', 'Diagnostics', 'Tire & Battery'],
+        vehicleTypes: ['Car', 'Bike', 'Scooter'],
       };
     })
   );
