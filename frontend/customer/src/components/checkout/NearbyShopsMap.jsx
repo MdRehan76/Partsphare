@@ -124,7 +124,16 @@ export const NearbyShopsMap = ({
   const [loadingShops, setLoadingShops] = useState(true);
 
   // 4. Map Engine state: 'google' | 'leaflet'
-  const [mapEngine, setMapEngine] = useState('google');
+  // Google Maps Platform API keys strictly start with 'AIza' (e.g. AIzaSy...)
+  const isGoogleKeyFormatValid = useMemo(() => {
+    return (
+      typeof GOOGLE_MAPS_API_KEY === 'string' &&
+      GOOGLE_MAPS_API_KEY.trim().startsWith('AIza') &&
+      GOOGLE_MAPS_API_KEY.trim().length >= 35
+    );
+  }, []);
+
+  const [mapEngine, setMapEngine] = useState(() => (isGoogleKeyFormatValid ? 'google' : 'leaflet'));
 
   // Google Maps Refs
   const googleMapContainerRef = useRef(null);
@@ -138,9 +147,22 @@ export const NearbyShopsMap = ({
   const leafletMapInstanceRef = useRef(null);
   const leafletMarkersLayerRef = useRef(null);
 
-  // Try loading Google Maps on mount; fallback to Leaflet on error
+  // Try loading Google Maps on mount if key format is valid; fallback to Leaflet on error or auth failure
   useEffect(() => {
+    if (!isGoogleKeyFormatValid) {
+      setMapEngine('leaflet');
+      return;
+    }
+
     let isCancelled = false;
+
+    // Global Google Maps authentication failure hook
+    window.gm_authFailure = () => {
+      console.warn('[GoogleMaps] Authentication failed for provided key. Auto-switching to high-definition interactive map layer.');
+      if (!isCancelled) {
+        setMapEngine('leaflet');
+      }
+    };
 
     loadGoogleMapsSDK(GOOGLE_MAPS_API_KEY)
       .then(() => {
@@ -158,7 +180,7 @@ export const NearbyShopsMap = ({
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [isGoogleKeyFormatValid]);
 
   // Fetch shops from backend API
   useEffect(() => {
@@ -458,9 +480,11 @@ export const NearbyShopsMap = ({
         scrollWheelZoom: false,
       });
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
+      // Modern high-definition map tiles with crisp roads, landmarks, and parks
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20,
       }).addTo(map);
 
       const markersGroup = L.layerGroup().addTo(map);
@@ -795,7 +819,7 @@ export const NearbyShopsMap = ({
         {/* Right Column: Interactive Map (Google Maps / Leaflet) */}
         <div className="interactive-map-column" style={{ position: 'relative' }}>
           <div className="map-engine-badge" id="map-engine-badge">
-            <span>{mapEngine === 'google' ? '🗺️ Google Maps' : '📍 OpenStreetMap'}</span>
+            <span>{mapEngine === 'google' ? '🗺️ Google Maps' : '🗺️ Interactive Map'}</span>
             <span style={{ color: '#10B981', fontSize: '10px' }}>● Live</span>
           </div>
 
