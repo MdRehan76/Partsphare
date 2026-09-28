@@ -2,7 +2,7 @@ import rateLimit from 'express-rate-limit';
 
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // limit each IP to 300 requests per windowMs
+  max: process.env.NODE_ENV === 'development' ? 10000 : 1000, // High limit in development to prevent 429 during testing
   standardHeaders: true,
   legacyHeaders: false,
   message: {
