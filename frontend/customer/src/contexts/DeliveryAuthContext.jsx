@@ -6,18 +6,42 @@ const DeliveryAuthContext = createContext(null);
 
 export const DeliveryAuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('partnexa_user') || localStorage.getItem('partsphere_delivery_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('partnexa_user') || localStorage.getItem('partsphere_delivery_user');
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      return parsed.role === 'DELIVERY_PARTNER' ? parsed : null;
+    } catch {
+      return null;
+    }
   });
 
   const [partner, setPartner] = useState(() => {
-    const saved = localStorage.getItem('partsphere_delivery_partner');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const savedUser = localStorage.getItem('partnexa_user') || localStorage.getItem('partsphere_delivery_user');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.role !== 'DELIVERY_PARTNER') return null;
+      }
+      const saved = localStorage.getItem('partsphere_delivery_partner');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
 
-  const [token, setToken] = useState(
-    () => localStorage.getItem('partnexa_access_token') || localStorage.getItem('partsphere_delivery_token') || null
-  );
+  const [token, setToken] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('partnexa_user') || localStorage.getItem('partsphere_delivery_user');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.role === 'DELIVERY_PARTNER') {
+          return localStorage.getItem('partnexa_access_token') || localStorage.getItem('partsphere_delivery_token') || null;
+        }
+      }
+    } catch {}
+    return null;
+  });
 
   const [kyc, setKyc] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -46,17 +70,25 @@ export const DeliveryAuthProvider = ({ children }) => {
   // Synchronize with global auth events
   useEffect(() => {
     const handleAuthLogin = () => {
-      const savedToken = localStorage.getItem('partnexa_access_token') || localStorage.getItem('partsphere_delivery_token');
-      const savedUser = localStorage.getItem('partnexa_user') || localStorage.getItem('partsphere_delivery_user');
-      const savedPartner = localStorage.getItem('partsphere_delivery_partner');
-      if (savedToken) {
+      const savedUserStr = localStorage.getItem('partnexa_user') || localStorage.getItem('partsphere_delivery_user');
+      let parsed = null;
+      try { parsed = savedUserStr ? JSON.parse(savedUserStr) : null; } catch {}
+
+      if (parsed && parsed.role === 'DELIVERY_PARTNER') {
+        const savedToken = localStorage.getItem('partnexa_access_token') || localStorage.getItem('partsphere_delivery_token');
+        const savedPartner = localStorage.getItem('partsphere_delivery_partner');
         setToken(savedToken);
-        if (savedUser) {
-          try { setUser(JSON.parse(savedUser)); } catch {}
-        }
+        setUser(parsed);
         if (savedPartner) {
           try { setPartner(JSON.parse(savedPartner)); } catch {}
         }
+        refreshProfile();
+      } else {
+        // Current session is not for Delivery portal — stay idle
+        setUser(null);
+        setPartner(null);
+        setKyc(null);
+        setToken(null);
       }
     };
     const handleAuthLogout = () => {
@@ -73,8 +105,18 @@ export const DeliveryAuthProvider = ({ children }) => {
     };
   }, []);
 
-  // Restore session
+  // Restore session ONLY if the active user is a DELIVERY_PARTNER
   useEffect(() => {
+    const savedUserStr = localStorage.getItem('partnexa_user') || localStorage.getItem('partsphere_delivery_user');
+    let parsedUser = null;
+    try { parsedUser = savedUserStr ? JSON.parse(savedUserStr) : null; } catch {}
+
+    // Keep passive if current user is not a DELIVERY_PARTNER
+    if (!parsedUser || parsedUser.role !== 'DELIVERY_PARTNER') {
+      setLoading(false);
+      return;
+    }
+
     const activeToken = localStorage.getItem('partnexa_access_token') || localStorage.getItem('partsphere_delivery_token');
     if (activeToken) {
       setToken(activeToken);
@@ -94,12 +136,12 @@ export const DeliveryAuthProvider = ({ children }) => {
         setKyc(profile.kyc || null);
         localStorage.setItem('partsphere_delivery_partner', JSON.stringify(profile));
         if (profile.user) {
-          localStorage.setItem('partnexa_user', JSON.stringify(profile.user));
           localStorage.setItem('partsphere_delivery_user', JSON.stringify(profile.user));
         }
       }
     } catch (err) {
-      console.warn('Could not refresh delivery profile:', err);
+      console.warn('[DeliveryAuth] Could not refresh delivery profile:', err.message);
+      // Do NOT wipe shared user session or dispatch global logout
     } finally {
       setLoading(false);
     }
@@ -146,9 +188,6 @@ export const DeliveryAuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('partnexa_access_token');
-    localStorage.removeItem('partnexa_refresh_token');
-    localStorage.removeItem('partnexa_user');
     localStorage.removeItem('partsphere_delivery_token');
     localStorage.removeItem('partsphere_delivery_user');
     localStorage.removeItem('partsphere_delivery_partner');
@@ -156,7 +195,17 @@ export const DeliveryAuthProvider = ({ children }) => {
     setPartner(null);
     setKyc(null);
     setToken(null);
-    window.dispatchEvent(new Event('auth:logout'));
+
+    // Only remove global tokens and dispatch logout if user was currently a DELIVERY_PARTNER
+    const savedUserStr = localStorage.getItem('partnexa_user');
+    let parsed = null;
+    try { parsed = savedUserStr ? JSON.parse(savedUserStr) : null; } catch {}
+    if (parsed && parsed.role === 'DELIVERY_PARTNER') {
+      localStorage.removeItem('partnexa_access_token');
+      localStorage.removeItem('partnexa_refresh_token');
+      localStorage.removeItem('partnexa_user');
+      window.dispatchEvent(new Event('auth:logout'));
+    }
     toast.success('Logged out successfully.');
   };
 

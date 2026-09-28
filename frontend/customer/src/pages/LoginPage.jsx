@@ -443,7 +443,7 @@ export const LoginPage = () => {
           >
             <span style={{ fontSize: '1.1rem' }}>⛔</span>
             <div>
-              <strong>Access Denied:</strong> {authError}
+              <strong>{authError.toLowerCase().includes('access denied') ? '' : 'Authentication Error: '}</strong>{authError}
             </div>
           </div>
         )}

@@ -5,16 +5,40 @@ const ShopAuthContext = createContext(null);
 
 export const ShopAuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('partnexa_user') || localStorage.getItem('shop_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('partnexa_user') || localStorage.getItem('shop_user');
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      return parsed.role === 'SHOP_OWNER' ? parsed : null;
+    } catch {
+      return null;
+    }
   });
   const [shop, setShop] = useState(() => {
-    const saved = localStorage.getItem('shop_data');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const savedUser = localStorage.getItem('partnexa_user') || localStorage.getItem('shop_user');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.role !== 'SHOP_OWNER') return null;
+      }
+      const saved = localStorage.getItem('shop_data');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
-  const [token, setToken] = useState(
-    () => localStorage.getItem('partnexa_access_token') || localStorage.getItem('shop_token') || null
-  );
+  const [token, setToken] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('partnexa_user') || localStorage.getItem('shop_user');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.role === 'SHOP_OWNER') {
+          return localStorage.getItem('partnexa_access_token') || localStorage.getItem('shop_token') || null;
+        }
+      }
+    } catch {}
+    return null;
+  });
   const [theme, setTheme] = useState(() => localStorage.getItem('partnexa_theme') || localStorage.getItem('shop_theme') || 'light');
   const [loading, setLoading] = useState(true);
 
@@ -35,9 +59,19 @@ export const ShopAuthProvider = ({ children }) => {
     window.dispatchEvent(new CustomEvent('theme:change', { detail: nextTheme }));
   };
 
-  // Verify and refresh profile on mount if token exists
+  // Verify and refresh profile on mount ONLY if the authenticated user is a SHOP_OWNER
   useEffect(() => {
     const checkAuth = async () => {
+      const savedUserStr = localStorage.getItem('partnexa_user') || localStorage.getItem('shop_user');
+      let parsedUser = null;
+      try { parsedUser = savedUserStr ? JSON.parse(savedUserStr) : null; } catch {}
+
+      // Keep passive if current user is not a SHOP_OWNER
+      if (!parsedUser || parsedUser.role !== 'SHOP_OWNER') {
+        setLoading(false);
+        return;
+      }
+
       const activeToken = localStorage.getItem('partnexa_access_token') || token;
       if (activeToken) {
         try {
@@ -47,13 +81,13 @@ export const ShopAuthProvider = ({ children }) => {
             localStorage.setItem('shop_data', JSON.stringify(profile.data));
             if (profile.data.owner) {
               setUser(profile.data.owner);
-              localStorage.setItem('partnexa_user', JSON.stringify(profile.data.owner));
               localStorage.setItem('shop_user', JSON.stringify(profile.data.owner));
             }
           }
         } catch (err) {
-          console.warn('Session verification failed, logging out.', err);
-          logout();
+          console.warn('[ShopAuth] Could not load shop profile:', err.message);
+          // Do NOT wipe shared user session or dispatch global logout
+          setShop(null);
         }
       }
       setLoading(false);
@@ -64,13 +98,28 @@ export const ShopAuthProvider = ({ children }) => {
   // Synchronize with global auth events
   useEffect(() => {
     const handleAuthLogin = () => {
-      const savedToken = localStorage.getItem('partnexa_access_token') || localStorage.getItem('shop_token');
-      const savedUser = localStorage.getItem('partnexa_user') || localStorage.getItem('shop_user');
-      if (savedToken) {
+      const savedUserStr = localStorage.getItem('partnexa_user') || localStorage.getItem('shop_user');
+      let parsed = null;
+      try { parsed = savedUserStr ? JSON.parse(savedUserStr) : null; } catch {}
+
+      if (parsed && parsed.role === 'SHOP_OWNER') {
+        const savedToken = localStorage.getItem('partnexa_access_token') || localStorage.getItem('shop_token');
         setToken(savedToken);
-        if (savedUser) {
-          try { setUser(JSON.parse(savedUser)); } catch {}
-        }
+        setUser(parsed);
+        // Load profile for shop owner in background
+        shopService.getProfile().then((res) => {
+          if (res?.data) {
+            setShop(res.data);
+            localStorage.setItem('shop_data', JSON.stringify(res.data));
+          }
+        }).catch((err) => {
+          console.warn('[ShopAuth] Background shop profile fetch:', err.message);
+        });
+      } else {
+        // Current session is not for Shop portal — stay idle
+        setUser(null);
+        setShop(null);
+        setToken(null);
       }
     };
     const handleAuthLogout = () => {
@@ -122,13 +171,20 @@ export const ShopAuthProvider = ({ children }) => {
     setUser(null);
     setShop(null);
     setToken(null);
-    localStorage.removeItem('partnexa_access_token');
-    localStorage.removeItem('partnexa_refresh_token');
-    localStorage.removeItem('partnexa_user');
     localStorage.removeItem('shop_user');
     localStorage.removeItem('shop_data');
     localStorage.removeItem('shop_token');
-    window.dispatchEvent(new Event('auth:logout'));
+
+    // Only clear global session if the current user was actually a SHOP_OWNER
+    const savedUserStr = localStorage.getItem('partnexa_user');
+    let parsed = null;
+    try { parsed = savedUserStr ? JSON.parse(savedUserStr) : null; } catch {}
+    if (parsed && parsed.role === 'SHOP_OWNER') {
+      localStorage.removeItem('partnexa_access_token');
+      localStorage.removeItem('partnexa_refresh_token');
+      localStorage.removeItem('partnexa_user');
+      window.dispatchEvent(new Event('auth:logout'));
+    }
   };
 
   const refreshProfile = async () => {

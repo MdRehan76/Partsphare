@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const getBaseURL = () => {
+export const getBaseURL = () => {
   const envUrl = import.meta.env.VITE_API_URL;
   if (envUrl && typeof envUrl === 'string') {
     const trimmed = envUrl.trim().replace(/\/+$/, '');
@@ -10,6 +10,13 @@ const getBaseURL = () => {
 };
 
 const api = axios.create({
+  baseURL: getBaseURL(),
+  headers: { 'Content-Type': 'application/json' },
+  withCredentials: false,
+});
+
+// Dedicated client for token refresh to avoid triggering the 401 response interceptor recursively
+const refreshClient = axios.create({
   baseURL: getBaseURL(),
   headers: { 'Content-Type': 'application/json' },
   withCredentials: false,
@@ -75,6 +82,7 @@ api.interceptors.response.use(
 
       if (!refreshToken) {
         // No refresh token — clear unified auth storage and notify
+        console.warn('[AuthInterceptor] 401 with no refresh token available for:', originalRequest.url);
         localStorage.removeItem('partnexa_access_token');
         localStorage.removeItem('partnexa_refresh_token');
         localStorage.removeItem('partnexa_user');
@@ -85,10 +93,15 @@ api.interceptors.response.use(
       }
 
       try {
-        const { data } = await axios.post('/api/auth/refresh', { refreshToken });
+        console.log('[AuthInterceptor] Refreshing token via backend client:', `${getBaseURL()}/auth/refresh`);
+        const { data } = await refreshClient.post('/auth/refresh', { refreshToken });
         const resData = data.data || data;
         const accessToken = resData.accessToken || resData.token;
         const newRefreshToken = resData.refreshToken || refreshToken;
+
+        if (!accessToken) {
+          throw new Error('Refresh response missing accessToken');
+        }
 
         localStorage.setItem('partnexa_access_token', accessToken);
         localStorage.setItem('partnexa_refresh_token', newRefreshToken);
@@ -102,6 +115,7 @@ api.interceptors.response.use(
         processQueue(null, accessToken);
         return api(originalRequest);
       } catch (refreshError) {
+        console.error('[AuthInterceptor] Token refresh failed:', refreshError.response?.status || refreshError.message);
         processQueue(refreshError, null);
         localStorage.removeItem('partnexa_access_token');
         localStorage.removeItem('partnexa_refresh_token');

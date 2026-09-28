@@ -42,7 +42,10 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (e.g. curl, postman, mobile)
       if (!origin) return callback(null, true);
-      if (config.cors.allowedOrigins.includes(origin)) return callback(null, true);
+      const normalizedOrigin = origin.replace(/\/+$/, '');
+      if (config.cors.allowedOrigins.some((allowed) => allowed.replace(/\/+$/, '') === normalizedOrigin)) {
+        return callback(null, true);
+      }
       callback(new Error(`CORS: Origin ${origin} not allowed.`));
     },
     credentials: true,

@@ -86,8 +86,23 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('partnexa_user', JSON.stringify(verifiedUser));
         localStorage.setItem('partnexa_access_token', token);
       } catch (err) {
-        console.warn('Session restoration failed or token expired:', err.message);
-        logout();
+        console.warn('Session restoration verification warning:', err.message);
+        // Only force logout if the backend explicitly rejected the token with 401/403
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          logout();
+        } else {
+          // Transient network blip: fall back to cached user if available
+          const savedUserStr = localStorage.getItem('partnexa_user');
+          if (savedUserStr) {
+            try {
+              setUser(JSON.parse(savedUserStr));
+            } catch {
+              logout();
+            }
+          } else {
+            logout();
+          }
+        }
       } finally {
         setLoading(false);
       }

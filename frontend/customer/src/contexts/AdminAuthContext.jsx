@@ -6,13 +6,27 @@ const AdminAuthContext = createContext(null);
 
 export const AdminAuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('partnexa_user') || localStorage.getItem('partnexa_admin_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('partnexa_user') || localStorage.getItem('partnexa_admin_user');
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      return (parsed.role === 'ADMIN' || parsed.role === 'SUPER_ADMIN') ? parsed : null;
+    } catch {
+      return null;
+    }
   });
 
-  const [token, setToken] = useState(
-    () => localStorage.getItem('partnexa_access_token') || localStorage.getItem('partnexa_admin_token') || null
-  );
+  const [token, setToken] = useState(() => {
+    const saved = localStorage.getItem('partnexa_user') || localStorage.getItem('partnexa_admin_user');
+    if (!saved) return null;
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed.role === 'ADMIN' || parsed.role === 'SUPER_ADMIN') {
+        return localStorage.getItem('partnexa_access_token') || localStorage.getItem('partnexa_admin_token') || null;
+      }
+    } catch {}
+    return null;
+  });
   const [loading, setLoading] = useState(false);
 
   // Theme Management (Light / Dark)
@@ -39,17 +53,21 @@ export const AdminAuthProvider = ({ children }) => {
   // Synchronize with global auth events
   useEffect(() => {
     const handleAuthLogin = () => {
-      const savedToken = localStorage.getItem('partnexa_access_token') || localStorage.getItem('accessToken');
-      const savedUser = localStorage.getItem('partnexa_user') || localStorage.getItem('user');
-      if (savedToken) setToken(savedToken);
+      const savedUser = localStorage.getItem('partnexa_user') || localStorage.getItem('partnexa_admin_user');
       if (savedUser) {
         try {
           const parsed = JSON.parse(savedUser);
           if (parsed.role === 'ADMIN' || parsed.role === 'SUPER_ADMIN') {
+            const savedToken = localStorage.getItem('partnexa_access_token') || localStorage.getItem('partnexa_admin_token');
+            setToken(savedToken);
             setUser(parsed);
+            return;
           }
         } catch {}
       }
+      // Non-admin session logged in — keep admin context idle
+      setUser(null);
+      setToken(null);
     };
     const handleAuthLogout = () => {
       setUser(null);
@@ -98,13 +116,19 @@ export const AdminAuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem('partnexa_access_token');
-    localStorage.removeItem('partnexa_refresh_token');
-    localStorage.removeItem('partnexa_user');
     localStorage.removeItem('partnexa_admin_token');
     localStorage.removeItem('partnexa_admin_user');
     localStorage.removeItem('partnexa_admin_refresh');
-    window.dispatchEvent(new Event('auth:logout'));
+
+    const savedUserStr = localStorage.getItem('partnexa_user');
+    let parsed = null;
+    try { parsed = savedUserStr ? JSON.parse(savedUserStr) : null; } catch {}
+    if (parsed && (parsed.role === 'ADMIN' || parsed.role === 'SUPER_ADMIN')) {
+      localStorage.removeItem('partnexa_access_token');
+      localStorage.removeItem('partnexa_refresh_token');
+      localStorage.removeItem('partnexa_user');
+      window.dispatchEvent(new Event('auth:logout'));
+    }
     toast.success('Signed out from Admin Console.');
   };
 
