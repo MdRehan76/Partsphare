@@ -206,6 +206,11 @@ export const NearbyShopsMap = ({
     };
   }, []);
 
+  const onLocationChangeRef = useRef(onLocationChange);
+  onLocationChangeRef.current = onLocationChange;
+  const onSelectShopRef = useRef(onSelectShop);
+  onSelectShopRef.current = onSelectShop;
+
   // Request browser geolocation
   const detectBrowserLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -225,7 +230,7 @@ export const NearbyShopsMap = ({
         };
         setCustomerCoords(coords);
         setIsLocating(false);
-        if (onLocationChange) onLocationChange(coords);
+        if (onLocationChangeRef.current) onLocationChangeRef.current(coords);
       },
       (err) => {
         console.warn('Geolocation denied or unavailable:', err.message);
@@ -234,7 +239,7 @@ export const NearbyShopsMap = ({
       },
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
     );
-  }, [onLocationChange]);
+  }, []);
 
   // Detect location on mount
   useEffect(() => {
@@ -249,7 +254,7 @@ export const NearbyShopsMap = ({
     setManualCityInput(cityName);
     setShowManualInput(false);
     setLocationDenied(false);
-    if (onLocationChange) onLocationChange(updated);
+    if (onLocationChangeRef.current) onLocationChangeRef.current(updated);
   };
 
   // Annotate shops with computed distance and estimated duration
@@ -278,9 +283,9 @@ export const NearbyShopsMap = ({
         vehicleCategories: shop.vehicleCategories || ['Car', 'Bike', 'Scooter'],
       };
     });
-  }, [shops, customerCoords]);
+  }, [shops, customerCoords.lat, customerCoords.lng]);
 
-  // Filter and auto-expand radius
+  // Filter and auto-expand radius (pure computation without setState during render)
   const filteredShops = useMemo(() => {
     let result = annotatedShops;
 
@@ -294,27 +299,18 @@ export const NearbyShopsMap = ({
     // Check if any shop matches within current radius
     let inRadius = result.filter((s) => s.distanceKm <= radiusKm);
 
-    // Auto-expansion if none found in initial 5km
+    // Pure fallback if none found in initial 5km
     if (inRadius.length === 0 && radiusKm === 5) {
       const within10 = result.filter((s) => s.distanceKm <= 10);
       if (within10.length > 0) {
-        setAutoExpanded(true);
-        setRadiusKm(10);
         inRadius = within10;
       } else {
         const within15 = result.filter((s) => s.distanceKm <= 15);
         if (within15.length > 0) {
-          setAutoExpanded(true);
-          setRadiusKm(15);
           inRadius = within15;
         } else {
-          // If still none, show all available shops
           inRadius = result;
         }
-      }
-    } else {
-      if (inRadius.length > 0 && autoExpanded) {
-        setAutoExpanded(false);
       }
     }
 
@@ -329,14 +325,14 @@ export const NearbyShopsMap = ({
     }
 
     return sorted;
-  }, [annotatedShops, vehicleFilter, radiusKm, autoExpanded, sortBy]);
+  }, [annotatedShops, vehicleFilter, radiusKm, sortBy]);
 
   // Auto-select nearest shop if none selected
   useEffect(() => {
-    if (!selectedShopId && filteredShops.length > 0) {
-      onSelectShop(filteredShops[0]);
+    if (!selectedShopId && filteredShops.length > 0 && onSelectShopRef.current) {
+      onSelectShopRef.current(filteredShops[0]);
     }
-  }, [selectedShopId, filteredShops, onSelectShop]);
+  }, [selectedShopId, filteredShops.length]);
 
   // Currently selected shop object
   const currentSelectedShop = useMemo(() => {

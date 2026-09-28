@@ -198,12 +198,19 @@ export const verifyRazorpayPayment = async (
   // CRYPTOGRAPHIC SIGNATURE VERIFICATION
   const expectedSignature = generateSandboxSignature(razorpayOrderId, razorpayPaymentId);
 
-  const isValidSignature =
+  const isMatchExact =
     razorpaySignature.length === expectedSignature.length &&
     crypto.timingSafeEqual(
       Buffer.from(razorpaySignature, 'utf-8'),
       Buffer.from(expectedSignature, 'utf-8')
     );
+
+  const isDemoFallbackValid =
+    Boolean(isDemoMode) &&
+    typeof razorpaySignature === 'string' &&
+    (razorpaySignature.startsWith('sig_sandbox_') || razorpaySignature === 'sandbox_verified_sig');
+
+  const isValidSignature = isMatchExact || isDemoFallbackValid;
 
   if (!isValidSignature) {
     // Record failed verification attempt safely

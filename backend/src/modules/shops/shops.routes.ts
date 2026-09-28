@@ -1,8 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import * as shopsService from './shops.service';
 import { successResponse } from '../../utils/response';
-import { authenticate } from '../../middleware/auth.middleware';
+import { authenticate, authorize } from '../../middleware/auth.middleware';
 import { AuthenticatedRequest } from '../../types';
+import { UserRole } from '@prisma/client';
 
 const router = Router();
 
@@ -46,7 +47,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
 // ============================================================================
 
 // Shop profile
-router.get('/portal/profile', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.get('/portal/profile', authenticate, authorize(UserRole.SHOP_OWNER), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const profile = await shopsService.getShopProfile(req.user!.id);
     return successResponse(res, profile);
@@ -55,7 +56,7 @@ router.get('/portal/profile', authenticate, async (req: AuthenticatedRequest, re
   }
 });
 
-router.put('/portal/profile', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.put('/portal/profile', authenticate, authorize(UserRole.SHOP_OWNER), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const updated = await shopsService.updateShopProfile(req.user!.id, req.body);
     return successResponse(res, updated, 'Shop profile updated successfully.');
@@ -65,7 +66,7 @@ router.put('/portal/profile', authenticate, async (req: AuthenticatedRequest, re
 });
 
 // Shop dashboard KPI metrics
-router.get('/portal/dashboard', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.get('/portal/dashboard', authenticate, authorize(UserRole.SHOP_OWNER), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const dashboard = await shopsService.getShopDashboard(req.user!.id);
     return successResponse(res, dashboard);
@@ -75,7 +76,7 @@ router.get('/portal/dashboard', authenticate, async (req: AuthenticatedRequest, 
 });
 
 // Service calendar & jobs schedule
-router.get('/portal/calendar', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.get('/portal/calendar', authenticate, authorize(UserRole.SHOP_OWNER), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const jobs = await shopsService.getServiceCalendar(req.user!.id, {
       status: req.query.status as string,
@@ -89,7 +90,7 @@ router.get('/portal/calendar', authenticate, async (req: AuthenticatedRequest, r
 });
 
 // Update service job status (SCHEDULED -> ACCEPTED -> IN_PROGRESS -> COMPLETED -> CANCELLED)
-router.patch('/portal/jobs/:id/status', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.patch('/portal/jobs/:id/status', authenticate, authorize(UserRole.SHOP_OWNER), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const result = await shopsService.updateJobStatus(
       req.user!.id,
@@ -104,7 +105,7 @@ router.patch('/portal/jobs/:id/status', authenticate, async (req: AuthenticatedR
 });
 
 // Commission ledger & earnings
-router.get('/portal/commission', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.get('/portal/commission', authenticate, authorize(UserRole.SHOP_OWNER), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const ledger = await shopsService.getCommissionLedger(req.user!.id);
     return successResponse(res, ledger);
@@ -114,7 +115,7 @@ router.get('/portal/commission', authenticate, async (req: AuthenticatedRequest,
 });
 
 // Request commission payout
-router.post('/portal/commission/payout', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/portal/commission/payout', authenticate, authorize(UserRole.SHOP_OWNER), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const payout = await shopsService.requestCommissionPayout(req.user!.id);
     return successResponse(res, payout, payout.message);
@@ -124,7 +125,7 @@ router.post('/portal/commission/payout', authenticate, async (req: Authenticated
 });
 
 // Incoming parts deliveries
-router.get('/portal/deliveries', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.get('/portal/deliveries', authenticate, authorize(UserRole.SHOP_OWNER), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const deliveries = await shopsService.listIncomingDeliveries(req.user!.id);
     return successResponse(res, deliveries);
@@ -134,7 +135,7 @@ router.get('/portal/deliveries', authenticate, async (req: AuthenticatedRequest,
 });
 
 // Mark delivery as received
-router.patch('/portal/deliveries/:id/receive', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.patch('/portal/deliveries/:id/receive', authenticate, authorize(UserRole.SHOP_OWNER), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const delivery = await shopsService.receiveDelivery(
       req.user!.id,
@@ -148,7 +149,7 @@ router.patch('/portal/deliveries/:id/receive', authenticate, async (req: Authent
 });
 
 // Shop inventory listing
-router.get('/portal/inventory', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.get('/portal/inventory', authenticate, authorize(UserRole.SHOP_OWNER), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const inventory = await shopsService.getShopInventory(req.user!.id);
     return successResponse(res, inventory);
@@ -158,7 +159,7 @@ router.get('/portal/inventory', authenticate, async (req: AuthenticatedRequest, 
 });
 
 // Shop stock adjustment
-router.patch('/portal/inventory/:id/stock', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.patch('/portal/inventory/:id/stock', authenticate, authorize(UserRole.SHOP_OWNER), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const updated = await shopsService.updateShopStock(
       req.user!.id,
@@ -173,7 +174,7 @@ router.patch('/portal/inventory/:id/stock', authenticate, async (req: Authentica
 });
 
 // Used-part intake queue
-router.get('/portal/used-parts', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.get('/portal/used-parts', authenticate, authorize(UserRole.SHOP_OWNER), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const intakes = await shopsService.listUsedPartIntakes(req.user!.id);
     return successResponse(res, intakes);
@@ -183,7 +184,7 @@ router.get('/portal/used-parts', authenticate, async (req: AuthenticatedRequest,
 });
 
 // Record used-part inspection & testing
-router.post('/portal/used-parts', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/portal/used-parts', authenticate, authorize(UserRole.SHOP_OWNER), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const intake = await shopsService.recordUsedPartIntake(req.user!.id, req.body);
     return successResponse(res, intake, 'Used part intake registered successfully.', 201);
@@ -193,7 +194,7 @@ router.post('/portal/used-parts', authenticate, async (req: AuthenticatedRequest
 });
 
 // Support tickets
-router.get('/portal/tickets', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.get('/portal/tickets', authenticate, authorize(UserRole.SHOP_OWNER), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const tickets = await shopsService.listShopTickets(req.user!.id);
     return successResponse(res, tickets);
@@ -202,7 +203,7 @@ router.get('/portal/tickets', authenticate, async (req: AuthenticatedRequest, re
   }
 });
 
-router.post('/portal/tickets', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/portal/tickets', authenticate, authorize(UserRole.SHOP_OWNER), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const ticket = await shopsService.createShopTicket(req.user!.id, req.body);
     return successResponse(res, ticket, 'Support ticket submitted successfully.', 201);
@@ -211,7 +212,7 @@ router.post('/portal/tickets', authenticate, async (req: AuthenticatedRequest, r
   }
 });
 
-router.post('/portal/tickets/:id/messages', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/portal/tickets/:id/messages', authenticate, authorize(UserRole.SHOP_OWNER), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const updated = await shopsService.addTicketMessage(
       req.user!.id,

@@ -143,18 +143,18 @@ const RazorpayModal = ({ isOpen, paymentData, onSuccess, onFailure, onCancel }) 
       const paymentId = `pay_rzp_demo_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const signature = await computeSandboxHmac(razorpayOrderId, paymentId);
 
-      // Stage 1 -> Stage 2 (Authorizing Bank) after 850ms
+      // Stage 1 -> Stage 2 (Authorizing Bank) after 500ms
       setTimeout(() => {
         setProcessingStage(2);
-      }, 850);
+      }, 500);
 
-      // Stage 2 -> Stage 3 (Success Celebration Animation + Chime) after 1800ms
+      // Stage 2 -> Stage 3 (Success Celebration Animation + Chime) after 1100ms
       setTimeout(() => {
         setCompletedPaymentId(paymentId);
         setAnimState('success');
         playPaymentChime();
 
-        // Allow user to view and enjoy the success animation before completing
+        // Complete and handoff to verified state after 1200ms
         setTimeout(() => {
           onSuccess({
             orderId,
@@ -163,8 +163,8 @@ const RazorpayModal = ({ isOpen, paymentData, onSuccess, onFailure, onCancel }) 
             razorpaySignature: signature,
           });
           setAnimState('idle');
-        }, 2200);
-      }, 1800);
+        }, 1200);
+      }, 1100);
     } catch (err) {
       console.error('Payment simulation error:', err);
       setAnimState('idle');

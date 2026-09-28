@@ -90,10 +90,10 @@ export const ShopDashboardPage = () => {
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <Link to="/calendar" className="btn btn-secondary">
+          <Link to="/shop/calendar" className="btn btn-secondary">
             📅 View Calendar
           </Link>
-          <Link to="/commission" className="btn btn-primary">
+          <Link to="/shop/commission" className="btn btn-primary">
             💰 Commission Ledger (₹{earnings?.releasedForPayout?.toLocaleString('en-IN') || 0} Released)
           </Link>
         </div>
@@ -179,7 +179,7 @@ export const ShopDashboardPage = () => {
                   Customer jobs assigned to your workshop. Update status through the service lifecycle.
                 </p>
               </div>
-              <Link to="/calendar" className="btn btn-outline btn-sm">
+              <Link to="/shop/calendar" className="btn btn-outline btn-sm">
                 Full Schedule ↗
               </Link>
             </div>
@@ -337,7 +337,7 @@ export const ShopDashboardPage = () => {
           <div className="card">
             <div className="card-header">
               <h3 style={{ fontSize: '1.05rem' }}>Incoming Deliveries</h3>
-              <Link to="/deliveries" className="btn btn-outline btn-sm">
+              <Link to="/shop/deliveries" className="btn btn-outline btn-sm">
                 View All
               </Link>
             </div>
@@ -384,7 +384,7 @@ export const ShopDashboardPage = () => {
           <div className="card">
             <div className="card-header">
               <h3 style={{ fontSize: '1.05rem' }}>Used-Part Intake</h3>
-              <Link to="/used-parts" className="btn btn-outline btn-sm">
+              <Link to="/shop/used-parts" className="btn btn-outline btn-sm">
                 Queue ↗
               </Link>
             </div>
@@ -435,7 +435,7 @@ export const ShopDashboardPage = () => {
                   ₹{earnings?.releasedForPayout?.toLocaleString('en-IN') || 0}
                 </div>
               </div>
-              <Link to="/commission" className="btn btn-primary btn-sm">
+              <Link to="/shop/commission" className="btn btn-primary btn-sm">
                 Open Ledger
               </Link>
             </div>

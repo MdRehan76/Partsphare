@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useCart } from '../../contexts/CartContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { usersService, ordersService, paymentsService } from '../../services';
-import { Button, Input } from '../../components/ui';
-import RazorpayModal from '../../components/checkout/RazorpayModal';
-import NearbyShopsMap from '../../components/checkout/NearbyShopsMap';
+import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
+import { usersService, ordersService, paymentsService } from '../services';
+import { Button, Input } from '../components/ui';
+import RazorpayModal from '../components/checkout/RazorpayModal';
+import NearbyShopsMap from '../components/checkout/NearbyShopsMap';
 import toast from 'react-hot-toast';
 import './CheckoutPage.css';
 
@@ -87,6 +87,10 @@ const CheckoutPage = () => {
     }
   }, [user]);
 
+  const cartItemKey = cart?.items?.map((it) => `${it.id || it.productId}-${it.quantity}-${it.priceSnapshot || it.unitPrice || 0}`).join('|') || '';
+  const coordsLat = customerLocationCoords?.lat;
+  const coordsLng = customerLocationCoords?.lng;
+
   // Authoritative Backend Quote Fetcher
   const fetchCheckoutQuote = useCallback(async () => {
     if (!user) return;
@@ -99,8 +103,8 @@ const CheckoutPage = () => {
         difmType: difmOption,
         shopId: selectedShopId,
         couponCode: appliedCoupon,
-        customerLatitude: customerLocationCoords?.lat,
-        customerLongitude: customerLocationCoords?.lng,
+        customerLatitude: coordsLat,
+        customerLongitude: coordsLng,
       });
 
       const quoteData = res.data?.data;
@@ -109,6 +113,9 @@ const CheckoutPage = () => {
         // If shop is not explicitly selected yet, default to the assigned shop from backend
         if (!selectedShopId && quoteData.difm?.assignedShop?.id) {
           setSelectedShopId(quoteData.difm.assignedShop.id);
+          setSelectedShopObj(quoteData.difm.assignedShop);
+        } else if (quoteData.difm?.assignedShop && !selectedShopObj) {
+          setSelectedShopObj(quoteData.difm.assignedShop);
         }
       }
     } catch (err) {
@@ -116,7 +123,7 @@ const CheckoutPage = () => {
     } finally {
       setIsQuoteLoading(false);
     }
-  }, [user, cart?.items, selectedAddressId, difmOption, selectedShopId, appliedCoupon, customerLocationCoords]);
+  }, [user?.id, cartItemKey, selectedAddressId, difmOption, selectedShopId, appliedCoupon, coordsLat, coordsLng]);
 
   // Recalculate quote immediately whenever option, address, shop, or coupon changes
   useEffect(() => {
@@ -125,22 +132,38 @@ const CheckoutPage = () => {
 
   // Handle address creation
   const handleCreateAddress = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!newAddress.fullName || !newAddress.phone || !newAddress.line1 || !newAddress.city || !newAddress.pincode) {
       toast.error('Please fill in all mandatory address fields');
-      return;
+      return null;
     }
 
     setIsSavingAddress(true);
     try {
-      const { data } = await usersService.createAddress(newAddress);
+      const payload = {
+        fullName: newAddress.fullName.trim(),
+        phone: newAddress.phone.trim(),
+        line1: newAddress.line1.trim(),
+        line2: (newAddress.line2 || '').trim() || undefined,
+        city: newAddress.city.trim(),
+        state: newAddress.state.trim(),
+        pincode: newAddress.pincode.trim(),
+        landmark: (newAddress.landmark || '').trim() || undefined,
+        label: newAddress.label || 'Home',
+        isDefault: Boolean(newAddress.isDefault),
+      };
+
+      const { data } = await usersService.createAddress(payload);
       const saved = data.data;
       setAddresses((prev) => [saved, ...prev]);
       setSelectedAddressId(saved.id);
       setShowNewAddressForm(false);
       toast.success('Delivery address saved successfully');
+      return saved;
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to save address');
+      const fieldError = err.response?.data?.errors?.[0]?.message;
+      toast.error(fieldError || err.response?.data?.message || 'Failed to save address');
+      return null;
     } finally {
       setIsSavingAddress(false);
     }
@@ -161,10 +184,45 @@ const CheckoutPage = () => {
     toast.success('Coupon removed');
   };
 
+  const handleSelectShop = useCallback((shop) => {
+    if (!shop?.id) return;
+    setSelectedShopId(shop.id);
+    setSelectedShopObj(shop);
+  }, []);
+
+  const handleLocationChange = useCallback((coords) => {
+    if (!coords) return;
+    setCustomerLocationCoords((prev) => {
+      if (prev?.lat === coords.lat && prev?.lng === coords.lng) return prev;
+      return coords;
+    });
+  }, []);
+
   // Handle Order Placement
   const handlePlaceOrder = async () => {
-    if (!selectedAddressId) {
+    let activeAddressId = selectedAddressId;
+
+    // Seamless auto-save: If user filled in the new address form, save it automatically
+    if (!activeAddressId && showNewAddressForm) {
+      if (newAddress.fullName && newAddress.phone && newAddress.line1 && newAddress.city && newAddress.pincode) {
+        const saved = await handleCreateAddress();
+        if (saved?.id) {
+          activeAddressId = saved.id;
+        } else {
+          return;
+        }
+      } else {
+        toast.error('Please complete all mandatory address fields to proceed.');
+        const el = document.getElementById('step-address-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+    }
+
+    if (!activeAddressId) {
       toast.error('Please select or add a delivery address to proceed.');
+      const el = document.getElementById('step-address-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
       return;
     }
 
@@ -180,23 +238,25 @@ const CheckoutPage = () => {
       return;
     }
 
-    // Require mechanical shop selection for Option A (Mechanical Shop Installation)
+    // When mechanical shop installation is chosen, shop selection is mandatory!
     if (difmOption === 'SHOP_INSTALLATION' && !selectedShopId) {
-      toast.error('Please select a nearby mechanical shop from the map before placing your order.');
+      toast.error('Please select a mechanical shop on the map to proceed with installation.');
+      const el = document.getElementById('step-workshop-selection');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
       return;
     }
 
     setIsSubmitting(true);
     try {
       const payload = {
-        addressId: selectedAddressId,
+        addressId: activeAddressId,
         difmType: difmOption,
         shopId: selectedShopId,
+        customerLatitude: customerLocationCoords?.lat,
+        customerLongitude: customerLocationCoords?.lng,
         paymentMethod: paymentMethod === 'COD' ? 'CASH_ON_DELIVERY' : 'RAZORPAY',
         couponCode: appliedCoupon || undefined,
         notes: orderNotes || undefined,
-        customerLatitude: customerLocationCoords?.lat,
-        customerLongitude: customerLocationCoords?.lng,
       };
 
       const res = await ordersService.createOrder(payload);
@@ -354,14 +414,25 @@ const CheckoutPage = () => {
   const hasDifficultParts = Boolean(quote?.cartSummary?.hasDifficultParts);
 
   // Extract authoritative pricing breakdown from backend quote
+  const partSubtotalEst = items.reduce((s, it) => {
+    const p = Number(it.priceSnapshot) || Number(it.unitPrice) || Number(it.product?.basePrice) || Number(it.product?.sellingPrice) || 0;
+    const q = Number(it.quantity) || 1;
+    return s + p * q;
+  }, 0);
+
   const pricing = quote?.pricing || {
-    partSubtotal: items.reduce((s, it) => s + Number(it.priceSnapshot || 0) * it.quantity, 0),
-    deliveryFee: items.length > 0 ? 0 : 0,
-    baseInstallationFee: difmOption === 'NO_INSTALLATION' ? 0 : 499,
+    partSubtotal: partSubtotalEst,
+    deliveryFee: partSubtotalEst >= 999 || partSubtotalEst === 0 ? 0 : 49,
+    installationFee: difmOption === 'NO_INSTALLATION' ? 0 : 299,
     homeVisitSurcharge: difmOption === 'HOME_INSTALLATION' ? 135 : 0,
-    installationFee: difmOption === 'HOME_INSTALLATION' ? 634 : difmOption === 'SHOP_INSTALLATION' ? 499 : 0,
     discount: 0,
-    grandTotal: 0,
+    grandTotal: Math.max(
+      partSubtotalEst > 0 ? 1 : 0,
+      partSubtotalEst +
+        (partSubtotalEst >= 999 || partSubtotalEst === 0 ? 0 : 49) +
+        (difmOption === 'NO_INSTALLATION' ? 0 : 299) +
+        (difmOption === 'HOME_INSTALLATION' ? 135 : 0)
+    ),
   };
 
   const eligibleShops = quote?.eligibleShops || [];
@@ -747,13 +818,13 @@ const CheckoutPage = () => {
               <div className="checkout-section-header">
                 <span className="checkout-step-number">2</span>
                 <div>
-                  <h2 className="checkout-section-title">Delivery / Installation Preference</h2>
-                  <p className="checkout-step-sub">Choose how you want your parts delivered and fitted</p>
+                  <h2 className="checkout-section-title">DIFM (Do-It-For-Me) Installation Selection</h2>
+                  <p className="checkout-step-sub">Choose how you want your parts to be fitted onto your vehicle</p>
                 </div>
               </div>
 
               <div className="difm-options-grid">
-                {/* OPTION A */}
+                {/* OPTION A: SHOP_INSTALLATION */}
                 <div
                   className={`difm-option-card ${difmOption === 'SHOP_INSTALLATION' ? 'selected' : ''}`}
                   onClick={() => setDifmOption('SHOP_INSTALLATION')}
@@ -769,25 +840,25 @@ const CheckoutPage = () => {
                         <h3 className="difm-option-title">Mechanical Shop Installation</h3>
                       </div>
                       <div className="difm-price-pill" id="option-a-price-pill">
-                        +₹{pricing.baseInstallationFee || 250}
+                        +₹{pricing.installationFee || 250}
                       </div>
                     </div>
                     <p className="difm-option-desc">
-                      Drive to a verified partner workshop near you. PartNexa detects your location and shows nearby garages with ramp bay & master mechanic service.
+                      Drive to your selected partnered workshop. Includes reserved ramp bay, hoist lifting & certified technician labor.
                     </p>
                     <div className="difm-formula-badge">
                       <span>Formula:</span>
-                      <code>Workshop Fitment Fee (₹{pricing.baseInstallationFee || 250}) + Zero Home Surcharge</code>
+                      <code>Installation Fee (₹{pricing.installationFee || 250}) + Home Visit Surcharge (₹0)</code>
                     </div>
                     {difmOption === 'SHOP_INSTALLATION' && (
                       <div className="difm-subdetails">
-                        📍 Select your preferred nearby garage on the interactive map below
+                        🗺️ Interactive map & location-based garage picker active below
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* OPTION B */}
+                {/* OPTION B: HOME_INSTALLATION */}
                 <div
                   className={`difm-option-card ${difmOption === 'HOME_INSTALLATION' ? 'selected' : ''}`}
                   onClick={() => setDifmOption('HOME_INSTALLATION')}
@@ -800,28 +871,28 @@ const CheckoutPage = () => {
                     <div className="difm-option-header-row">
                       <div className="difm-option-title-group">
                         <span className="difm-badge-code">OPTION B</span>
-                        <h3 className="difm-option-title">Home / DIFM Doorstep Installation</h3>
+                        <h3 className="difm-option-title">Home / Doorstep DIFM Installation</h3>
                       </div>
                       <div className="difm-price-pill" id="option-b-price-pill">
-                        +₹{(pricing.baseInstallationFee + (pricing.homeVisitSurcharge || 0))}
+                        +₹{(Number(pricing.installationFee || 0) + Number(pricing.homeVisitSurcharge || 0))}
                       </div>
                     </div>
                     <p className="difm-option-desc">
-                      Certified doorstep mechanic arrives at your address with tools and fitment rig to install parts right at your home or office.
+                      Certified technician from nearest partner workshop arrives at your doorstep with tools and fitment rig.
                     </p>
                     <div className="difm-formula-badge">
                       <span>Formula:</span>
-                      <code>Base Fee (₹{pricing.baseInstallationFee}) + Home Visit Distance Surcharge (₹{pricing.homeVisitSurcharge || 135})</code>
+                      <code>Installation Fee (₹{pricing.installationFee || 0}) + Home Visit Surcharge (₹{pricing.homeVisitSurcharge || 0})</code>
                     </div>
                     {difmOption === 'HOME_INSTALLATION' && (
                       <div className="difm-subdetails">
-                        📍 Technician dispatched from nearest certified hub: <strong>{distanceKm} km</strong> (~{durationMinutes} mins)
+                        📍 Distance to nearest hub: <strong>{distanceKm} km</strong> (~{durationMinutes} mins away)
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* OPTION C */}
+                {/* OPTION C: NO_INSTALLATION */}
                 <div
                   className={`difm-option-card ${difmOption === 'NO_INSTALLATION' ? 'selected' : ''}`}
                   onClick={() => setDifmOption('NO_INSTALLATION')}
@@ -841,44 +912,44 @@ const CheckoutPage = () => {
                       </div>
                     </div>
                     <p className="difm-option-desc">
-                      Standard secure delivery of genuine parts in tamper-evident sealed packaging. You install yourself or at your personal garage.
+                      Standard delivery of genuine parts in tamper-evident sealed packaging. You install yourself or with your mechanic.
                     </p>
                     <div className="difm-formula-badge">
                       <span>Formula:</span>
-                      <code>Installation Fee = ₹0 · No Shop Required</code>
+                      <code>Installation Fee = ₹0</code>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Step 3: Mechanical Shop Map (Option A) OR Doorstep Hub (Option B) */}
+            {/* Step 3: Nearby Mechanical Shops on Interactive Map (OPTION A) */}
             {difmOption === 'SHOP_INSTALLATION' && (
-              <div className="checkout-section" id="step-shop-map-selection">
+              <div className="checkout-section" id="step-workshop-selection">
                 <div className="checkout-section-header">
                   <span className="checkout-step-number">3</span>
                   <div>
-                    <h2 className="checkout-section-title">Select Nearby Mechanical Shop</h2>
+                    <h2 className="checkout-section-title">Nearby Mechanical Shops Map & Selection</h2>
                     <p className="checkout-step-sub">
-                      PartNexa detects your location to find eligible partner workshops for professional installation.
+                      Detect your location and select an authorized PartNexa partner garage for priority bay installation
                     </p>
                   </div>
                 </div>
 
                 <NearbyShopsMap
                   selectedShopId={selectedShopId}
-                  onSelectShop={(shop) => {
-                    setSelectedShopId(shop.id);
-                    setSelectedShopObj(shop);
-                    toast.success(`Selected ${shop.name} for installation!`);
-                  }}
-                  onLocationChange={(loc) => {
-                    setCustomerLocationCoords(loc);
+                  onSelectShop={handleSelectShop}
+                  customerAddress={addresses.find((a) => a.id === selectedAddressId) || addresses[0]}
+                  onLocationChange={handleLocationChange}
+                  onContinueToReview={() => {
+                    const el = document.getElementById('step-payment');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
                   }}
                 />
               </div>
             )}
 
+            {/* Step 3: Assigned Doorstep Mechanic Hub (OPTION B) */}
             {difmOption === 'HOME_INSTALLATION' && (
               <div className="checkout-section" id="step-workshop-selection">
                 <div className="checkout-section-header">
@@ -909,11 +980,11 @@ const CheckoutPage = () => {
                             {shop.isVerified && <span className="verified-badge">✓ Verified Hub</span>}
                           </div>
                           <div className="workshop-address">{shop.address}</div>
-                          <div className="workshop-hours">🕒 {shop.operatingHours || '9:00 AM - 8:00 PM'} · 📞 {shop.phone || '+91 98765 43210'}</div>
+                          <div className="workshop-hours">🕒 {shop.operatingHours} · 📞 {shop.phone}</div>
                         </div>
 
                         <div className="workshop-metrics">
-                          <div className="workshop-rating">★ {shop.rating || '4.8'}</div>
+                          <div className="workshop-rating">★ {shop.rating}</div>
                           <div className="workshop-distance" id={`shop-dist-${shop.id}`}>
                             {shop.distanceKm} km away
                           </div>
@@ -1003,17 +1074,21 @@ const CheckoutPage = () => {
 
               {/* Items in Cart mini-list */}
               <div className="summary-items-list">
-                {items.map((it) => (
-                  <div key={it.id} className="summary-item-row">
-                    <div className="summary-item-meta">
-                      <span className="summary-item-name">{it.product?.name}</span>
-                      <span className="summary-item-qty">Qty: {it.quantity}</span>
+                {items.map((it) => {
+                  const itemPrice = Number(it.priceSnapshot) || Number(it.unitPrice) || Number(it.product?.basePrice) || Number(it.product?.sellingPrice) || 0;
+                  const itemQty = Number(it.quantity) || 1;
+                  return (
+                    <div key={it.id} className="summary-item-row">
+                      <div className="summary-item-meta">
+                        <span className="summary-item-name">{it.product?.name}</span>
+                        <span className="summary-item-qty">Qty: {itemQty}</span>
+                      </div>
+                      <span className="summary-item-price">
+                        ₹{(itemPrice * itemQty).toLocaleString('en-IN')}
+                      </span>
                     </div>
-                    <span className="summary-item-price">
-                      ₹{(Number(it.priceSnapshot) * it.quantity).toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Coupon Code Box */}
@@ -1053,17 +1128,17 @@ const CheckoutPage = () => {
               <div className="price-breakdown-table" id="pricing-breakdown-box">
                 {/* 1. Part subtotal */}
                 <div className="breakdown-row" id="row-part-subtotal">
-                  <span className="row-label">Part subtotal</span>
+                  <span className="row-label">Product Subtotal</span>
                   <span className="row-value" id="val-part-subtotal">
-                    ₹{pricing.partSubtotal.toLocaleString('en-IN')}
+                    ₹{Number(pricing.partSubtotal || 0).toLocaleString('en-IN')}
                   </span>
                 </div>
 
                 {/* 2. Delivery fee */}
                 <div className="breakdown-row" id="row-delivery-fee">
-                  <span className="row-label">Delivery fee</span>
+                  <span className="row-label">Delivery Fee</span>
                   <span className="row-value" id="val-delivery-fee">
-                    {pricing.deliveryFee === 0 ? (
+                    {Number(pricing.deliveryFee || 0) === 0 ? (
                       <span className="text-free">FREE</span>
                     ) : (
                       `₹${pricing.deliveryFee}`
@@ -1074,16 +1149,16 @@ const CheckoutPage = () => {
                 {/* 3. Installation fee */}
                 <div className="breakdown-row" id="row-installation-fee">
                   <span className="row-label">
-                    Installation fee
+                    Installation Fee
                     {difmOption === 'HOME_INSTALLATION' && (
                       <span className="fee-subnote"> (Base service fee)</span>
                     )}
                   </span>
                   <span className="row-value" id="val-installation-fee">
-                    {difmOption === 'NO_INSTALLATION' || pricing.baseInstallationFee === 0 ? (
+                    {difmOption === 'NO_INSTALLATION' || Number(pricing.installationFee || 0) === 0 ? (
                       <span className="text-free">₹0</span>
                     ) : (
-                      `₹${pricing.baseInstallationFee}`
+                      `₹${pricing.installationFee}`
                     )}
                   </span>
                 </div>
@@ -1091,13 +1166,13 @@ const CheckoutPage = () => {
                 {/* 4. Home-visit fee */}
                 <div className="breakdown-row" id="row-home-visit-fee">
                   <span className="row-label">
-                    Home-visit fee
+                    Home Visit Surcharge
                     {difmOption === 'HOME_INSTALLATION' && (
                       <span className="fee-subnote"> ({distanceKm} km surcharge)</span>
                     )}
                   </span>
                   <span className="row-value" id="val-home-visit-fee">
-                    {difmOption === 'HOME_INSTALLATION' && pricing.homeVisitSurcharge > 0 ? (
+                    {difmOption === 'HOME_INSTALLATION' && Number(pricing.homeVisitSurcharge || 0) > 0 ? (
                       `₹${pricing.homeVisitSurcharge}`
                     ) : (
                       '₹0'
@@ -1109,7 +1184,7 @@ const CheckoutPage = () => {
                 <div className="breakdown-row discount-row" id="row-discount">
                   <span className="row-label">Discount</span>
                   <span className="row-value text-discount" id="val-discount">
-                    {pricing.discount > 0 ? `-₹${pricing.discount}` : '₹0'}
+                    {Number(pricing.discount || 0) > 0 ? `-₹${pricing.discount}` : '₹0'}
                   </span>
                 </div>
 
@@ -1117,34 +1192,30 @@ const CheckoutPage = () => {
 
                 {/* 6. Grand total */}
                 <div className="breakdown-row grand-total-row" id="row-grand-total">
-                  <span className="grand-label">Grand total</span>
+                  <span className="grand-label">Grand Total</span>
                   <span className="grand-value" id="val-grand-total">
-                    {isQuoteLoading ? 'Calculating...' : `₹${pricing.grandTotal.toLocaleString('en-IN')}`}
+                    {isQuoteLoading && !quote ? 'Calculating...' : `₹${Number(pricing.grandTotal || 0).toLocaleString('en-IN')}`}
                   </span>
                 </div>
               </div>
 
-              {/* Selected Shop Info Card */}
-              {difmOption === 'SHOP_INSTALLATION' && (selectedShopObj || selectedShopId) && (
-                <div className="selected-shop-summary-card">
-                  <div className="selected-shop-summary-badge">🔧 Selected Installation Shop</div>
-                  <div className="selected-shop-summary-name">
-                    {selectedShopObj?.name || assignedShop?.name || 'Partner Garage'}
-                  </div>
-                  <div className="selected-shop-summary-meta">
-                    <span>📍 {selectedShopObj?.distanceKm ? `${selectedShopObj.distanceKm} km away` : `${distanceKm} km away`}</span>
-                    <span>★ {selectedShopObj?.rating || assignedShop?.rating || '4.8'}</span>
-                    <span>₹{selectedShopObj?.installationFee || pricing.baseInstallationFee || 250} Fitment Fee</span>
-                  </div>
-                </div>
-              )}
-
               {/* DIFM Active Summary Badge */}
               <div className="difm-status-pill">
-                {difmOption === 'SHOP_INSTALLATION' && '🏬 Option A: Partnered Workshop Fitment'}
+                {difmOption === 'SHOP_INSTALLATION' && '🏬 Option A: Mechanical Shop Installation'}
                 {difmOption === 'HOME_INSTALLATION' && '🏡 Option B: Doorstep Mechanic Visit'}
                 {difmOption === 'NO_INSTALLATION' && '📦 Option C: Parts Only (No Installation)'}
               </div>
+
+              {/* Selected Installation Shop Summary */}
+              {difmOption === 'SHOP_INSTALLATION' && selectedShopObj && (
+                <div className="selected-shop-summary-card" id="summary-selected-shop-card">
+                  <div className="summary-shop-title">🔧 Selected Installation Garage:</div>
+                  <div className="summary-shop-name">{selectedShopObj.name}</div>
+                  <div className="summary-shop-meta">
+                    📍 {selectedShopObj.distanceKm ? `${selectedShopObj.distanceKm} km away` : (selectedShopObj.city || 'Partner Workshop')} · ★ {selectedShopObj.rating || 4.8}
+                  </div>
+                </div>
+              )}
 
               {/* Place Order CTA */}
               <Button

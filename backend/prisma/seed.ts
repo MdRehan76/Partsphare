@@ -811,6 +811,393 @@ async function main() {
     },
   });
 
+  // ------------------------------------------------------------ 
+  // WORKSHOP SEED DATA — ShopJobs, Deliveries, UsedParts, Tickets, Commission
+  // ------------------------------------------------------------
+  console.log('🔧 Seeding workshop operational data for Apex Auto Care...');
+
+  // Get the shop1 record (Apex Auto Care) — we need its actual DB id
+  const apexShop = await prisma.shop.findUnique({ where: { slug: 'apex-auto-care-bangalore' } });
+
+  if (apexShop) {
+    // SHOP JOBS — 6 realistic DIFM jobs
+    const jobDefs = [
+      {
+        id: 'job-apex-001',
+        orderNumber: 'PN-2024-001001',
+        customerName: 'Aarav Sharma',
+        customerPhone: '+919876500002',
+        vehicleInfo: 'Maruti Swift 2021 Petrol',
+        vehicleNumber: 'KA-01-AB-1234',
+        serviceName: 'Front Brake Pad Replacement',
+        jobType: 'DIFM_SHOP_VISIT',
+        locationType: 'SHOP',
+        status: 'COMPLETED' as const,
+        totalServiceAmount: 2400,
+        serviceFee: 250,
+        scheduledDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        scheduledSlot: '10:00 AM - 12:00 PM',
+        completedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      },
+      {
+        id: 'job-apex-002',
+        orderNumber: 'PN-2024-001002',
+        customerName: 'Priya Nair',
+        customerPhone: '+919876501234',
+        vehicleInfo: 'Hyundai Creta 2022 Diesel',
+        vehicleNumber: 'KA-05-CD-5678',
+        serviceName: 'Battery Replacement (Exide 60Ah)',
+        jobType: 'DIFM_DOORSTEP_VISIT',
+        locationType: 'DOORSTEP',
+        status: 'COMPLETED' as const,
+        totalServiceAmount: 5800,
+        serviceFee: 250,
+        scheduledDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+        scheduledSlot: '2:00 PM - 4:00 PM',
+        completedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      },
+      {
+        id: 'job-apex-003',
+        orderNumber: 'PN-2024-001003',
+        customerName: 'Vikram Mehta',
+        customerPhone: '+919876502345',
+        vehicleInfo: 'Tata Nexon 2020 Petrol',
+        vehicleNumber: 'MH-01-EF-9012',
+        serviceName: 'Engine Oil & Filter Change (Mobil 10W-40)',
+        jobType: 'DIFM_SHOP_VISIT',
+        locationType: 'SHOP',
+        status: 'IN_PROGRESS' as const,
+        totalServiceAmount: 3200,
+        serviceFee: 250,
+        scheduledDate: new Date(),
+        scheduledSlot: '11:00 AM - 1:00 PM',
+        startedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      },
+      {
+        id: 'job-apex-004',
+        orderNumber: 'PN-2024-001004',
+        customerName: 'Deepa Krishnan',
+        customerPhone: '+919876503456',
+        vehicleInfo: 'Honda City 2019 Petrol',
+        vehicleNumber: 'KA-03-GH-3456',
+        serviceName: 'Spark Plug Set Replacement (NGK)',
+        jobType: 'DIFM_SHOP_VISIT',
+        locationType: 'SHOP',
+        status: 'ACCEPTED' as const,
+        totalServiceAmount: 1800,
+        serviceFee: 250,
+        scheduledDate: new Date(Date.now() + 2 * 60 * 60 * 1000),
+        scheduledSlot: '3:00 PM - 5:00 PM',
+      },
+      {
+        id: 'job-apex-005',
+        orderNumber: 'PN-2024-001005',
+        customerName: 'Rajan Pillai',
+        customerPhone: '+919876504567',
+        vehicleInfo: 'Maruti Baleno 2023 Petrol',
+        vehicleNumber: 'KA-09-IJ-7890',
+        serviceName: 'Wiper Blade Replacement & Washer Fluid',
+        jobType: 'DIFM_DOORSTEP_VISIT',
+        locationType: 'DOORSTEP',
+        status: 'SCHEDULED' as const,
+        totalServiceAmount: 900,
+        serviceFee: 250,
+        scheduledDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        scheduledSlot: '9:00 AM - 11:00 AM',
+      },
+      {
+        id: 'job-apex-006',
+        orderNumber: 'PN-2024-001006',
+        customerName: 'Anita Shetty',
+        customerPhone: '+919876505678',
+        vehicleInfo: 'Kia Seltos 2022 Diesel',
+        vehicleNumber: 'KA-41-KL-2345',
+        serviceName: 'Air Filter & Cabin Filter Replacement',
+        jobType: 'DIFM_SHOP_VISIT',
+        locationType: 'SHOP',
+        status: 'SCHEDULED' as const,
+        totalServiceAmount: 2100,
+        serviceFee: 250,
+        scheduledDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+        scheduledSlot: '1:00 PM - 3:00 PM',
+      },
+    ];
+
+    for (const job of jobDefs) {
+      await prisma.shopJob.upsert({
+        where: { id: job.id },
+        update: {},
+        create: {
+          id: job.id,
+          shopId: apexShop.id,
+          orderNumber: job.orderNumber,
+          customerName: job.customerName,
+          customerPhone: job.customerPhone,
+          vehicleInfo: job.vehicleInfo,
+          vehicleNumber: job.vehicleNumber,
+          serviceName: job.serviceName,
+          jobType: job.jobType,
+          locationType: job.locationType,
+          status: job.status,
+          totalServiceAmount: job.totalServiceAmount,
+          serviceFee: job.serviceFee,
+          scheduledDate: job.scheduledDate,
+          scheduledSlot: job.scheduledSlot || null,
+          startedAt: (job as any).startedAt || null,
+          completedAt: (job as any).completedAt || null,
+        },
+      });
+    }
+
+    // SHOP DELIVERIES — 3 incoming parts shipments
+    const deliveryDefs = [
+      {
+        id: 'del-apex-001',
+        trackingNumber: 'PN-DEL-KA-78901',
+        status: 'DELIVERED',
+        eta: 'Received on Sep 22, 2024',
+        items: JSON.stringify([{ productName: 'Bosch Front Brake Pads (Toyota Innova)', qty: 2 }]),
+      },
+      {
+        id: 'del-apex-002',
+        trackingNumber: 'PN-DEL-KA-78902',
+        status: 'OUT_FOR_DELIVERY',
+        eta: 'Today by 5:00 PM',
+        items: JSON.stringify([{ productName: 'NGK Spark Plug Set (Honda City 1.5L)', qty: 4 }]),
+      },
+      {
+        id: 'del-apex-003',
+        trackingNumber: 'PN-DEL-KA-78903',
+        status: 'IN_TRANSIT',
+        eta: 'Tomorrow by 2:00 PM',
+        items: JSON.stringify([{ productName: 'Motul 10W-40 Engine Oil 4L + Mahle Oil Filter', qty: 1 }]),
+      },
+    ];
+
+    for (const del of deliveryDefs) {
+      await prisma.shopDelivery.upsert({
+        where: { id: del.id },
+        update: {},
+        create: {
+          id: del.id,
+          shopId: apexShop.id,
+          trackingNumber: del.trackingNumber,
+          status: del.status,
+          eta: del.eta,
+          items: JSON.parse(del.items),
+          receivedAt: del.status === 'DELIVERED' ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) : null,
+          receivedBy: del.status === 'DELIVERED' ? 'Ramesh Gowda (Shop Counter)' : null,
+        },
+      });
+    }
+
+    // USED PART INTAKES — 3 records
+    const intakeDefs = [
+      {
+        id: 'intake-apex-001',
+        partTitle: 'Maruti Swift 2018 Front Shock Absorber (Driver Side)',
+        sellerName: 'Customer Walk-In: Rajesh Kumar',
+        vehicleModel: 'Maruti Swift 2018',
+        physicalCondition: 'GOOD',
+        technicalTestStatus: 'PASSED',
+        technicianNotes: 'Bench tested — damping within spec. No oil leak. Approved for listing.',
+        status: 'VERIFIED_ACCEPTED',
+      },
+      {
+        id: 'intake-apex-002',
+        partTitle: 'Honda City 2016 Radiator Assembly',
+        sellerName: 'Customer Walk-In: Priya Menon',
+        vehicleModel: 'Honda City 2016',
+        physicalCondition: 'FAIR',
+        technicalTestStatus: 'NEEDS_TESTING',
+        technicianNotes: 'Minor dents on fins. Pressure test pending.',
+        status: 'PENDING_INSPECTION',
+      },
+      {
+        id: 'intake-apex-003',
+        partTitle: 'Hyundai i20 2019 Left Rear Tail Lamp Assembly',
+        sellerName: 'Customer Walk-In: Suresh Naidu',
+        vehicleModel: 'Hyundai i20 2019',
+        physicalCondition: 'GOOD',
+        technicalTestStatus: 'PASSED',
+        technicianNotes: 'All LEDs functional. Housing intact with no cracks.',
+        status: 'VERIFIED_ACCEPTED',
+      },
+    ];
+
+    for (const intake of intakeDefs) {
+      await prisma.usedPartIntake.upsert({
+        where: { id: intake.id },
+        update: {},
+        create: {
+          id: intake.id,
+          shopId: apexShop.id,
+          partTitle: intake.partTitle,
+          sellerName: intake.sellerName,
+          vehicleModel: intake.vehicleModel,
+          physicalCondition: intake.physicalCondition,
+          technicalTestStatus: intake.technicalTestStatus,
+          technicianNotes: intake.technicianNotes,
+          status: intake.status,
+        },
+      });
+    }
+
+    // SHOP TICKETS — 2 support tickets
+    await prisma.shopTicket.upsert({
+      where: { id: 'ticket-apex-001' },
+      update: {},
+      create: {
+        id: 'ticket-apex-001',
+        shopId: apexShop.id,
+        category: 'COMMISSION',
+        subject: 'Commission payout delay for September',
+        priority: 'MEDIUM',
+        status: 'IN_PROGRESS',
+        messages: [
+          {
+            id: 'msg-001',
+            senderName: 'Ramesh Gowda',
+            senderRole: 'SHOP_OWNER',
+            message: 'The September commission payout has not been credited yet. Please check.',
+            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+          },
+          {
+            id: 'msg-002',
+            senderName: 'PartNexa Support',
+            senderRole: 'ADMIN',
+            message: 'Hi Ramesh, we have escalated this to our finance team. Expected resolution within 48 hours.',
+            createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+          },
+        ],
+      },
+    });
+
+    await prisma.shopTicket.upsert({
+      where: { id: 'ticket-apex-002' },
+      update: {},
+      create: {
+        id: 'ticket-apex-002',
+        shopId: apexShop.id,
+        category: 'TECHNICAL',
+        subject: 'Used part inspection tool calibration needed',
+        priority: 'LOW',
+        status: 'OPEN',
+        messages: [
+          {
+            id: 'msg-003',
+            senderName: 'Ramesh Gowda',
+            senderRole: 'SHOP_OWNER',
+            message: 'Our bench testing equipment needs calibration. Can PartNexa assist with a certified technician?',
+            createdAt: new Date(),
+          },
+        ],
+      },
+    });
+
+    // COMMISSION LEDGER — 5 records (for completed jobs with real order data)
+    const commLedgers = [
+      {
+        id: 'comm-apex-001',
+        grossAmount: 2400,
+        commissionRate: 12,
+        commissionAmount: 288,
+        platformCut: 288,
+        shopPayout: 2112,
+        serviceStatus: 'COMPLETED',
+        paymentStatus: 'CAPTURED',
+        releaseStatus: 'RELEASED',
+        payoutStatus: 'RELEASED',
+        jobId: 'job-apex-001',
+      },
+      {
+        id: 'comm-apex-002',
+        grossAmount: 5800,
+        commissionRate: 12,
+        commissionAmount: 696,
+        platformCut: 696,
+        shopPayout: 5104,
+        serviceStatus: 'COMPLETED',
+        paymentStatus: 'CAPTURED',
+        releaseStatus: 'RELEASED',
+        payoutStatus: 'RELEASED',
+        jobId: 'job-apex-002',
+      },
+      {
+        id: 'comm-apex-003',
+        grossAmount: 3200,
+        commissionRate: 12,
+        commissionAmount: 384,
+        platformCut: 384,
+        shopPayout: 2816,
+        serviceStatus: 'PENDING',
+        paymentStatus: 'CAPTURED',
+        releaseStatus: 'LOCKED_PENDING_COMPLETION',
+        payoutStatus: 'PENDING',
+        jobId: 'job-apex-003',
+      },
+      {
+        id: 'comm-apex-004',
+        grossAmount: 1800,
+        commissionRate: 12,
+        commissionAmount: 216,
+        platformCut: 216,
+        shopPayout: 1584,
+        serviceStatus: 'PENDING',
+        paymentStatus: 'PENDING',
+        releaseStatus: 'LOCKED_PENDING_COMPLETION',
+        payoutStatus: 'PENDING',
+        jobId: 'job-apex-004',
+      },
+      {
+        id: 'comm-apex-005',
+        grossAmount: 900,
+        commissionRate: 12,
+        commissionAmount: 108,
+        platformCut: 108,
+        shopPayout: 792,
+        serviceStatus: 'PENDING',
+        paymentStatus: 'PENDING',
+        releaseStatus: 'LOCKED_PENDING_COMPLETION',
+        payoutStatus: 'PENDING',
+        jobId: 'job-apex-005',
+      },
+    ];
+
+    // Commission ledger records need a valid orderId — use a placeholder approach
+    // We use findFirst to find any existing order, or skip if none
+    const anyOrder = await prisma.order.findFirst();
+    if (anyOrder) {
+      for (const ledger of commLedgers) {
+        await prisma.commissionLedger.upsert({
+          where: { id: ledger.id },
+          update: {},
+          create: {
+            id: ledger.id,
+            orderId: anyOrder.id,
+            shopId: apexShop.id,
+            jobId: ledger.jobId,
+            grossAmount: ledger.grossAmount,
+            commissionRate: ledger.commissionRate,
+            commissionAmount: ledger.commissionAmount,
+            platformCut: ledger.platformCut,
+            shopPayout: ledger.shopPayout,
+            serviceStatus: ledger.serviceStatus,
+            paymentStatus: ledger.paymentStatus,
+            releaseStatus: ledger.releaseStatus,
+            payoutStatus: ledger.payoutStatus,
+          },
+        });
+      }
+    }
+
+    console.log('✅ Workshop seed data created for Apex Auto Care!');
+    console.log(`   Shop ID: ${apexShop.id}`);
+    console.log(`   Jobs: ${jobDefs.length} | Deliveries: ${deliveryDefs.length} | Intakes: ${intakeDefs.length}`);
+  } else {
+    console.log('⚠️  Apex Auto Care shop not found — skipping workshop seed data');
+  }
+
   console.log('✅ Seed completed successfully!');
   console.log('---------------------------------------------------------');
   console.log('Demo Credentials:');

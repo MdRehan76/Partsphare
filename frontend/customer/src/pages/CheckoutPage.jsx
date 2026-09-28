@@ -87,6 +87,10 @@ const CheckoutPage = () => {
     }
   }, [user]);
 
+  const cartItemKey = cart?.items?.map((it) => `${it.id || it.productId}-${it.quantity}-${it.priceSnapshot || it.unitPrice || 0}`).join('|') || '';
+  const coordsLat = customerLocationCoords?.lat;
+  const coordsLng = customerLocationCoords?.lng;
+
   // Authoritative Backend Quote Fetcher
   const fetchCheckoutQuote = useCallback(async () => {
     if (!user) return;
@@ -99,8 +103,8 @@ const CheckoutPage = () => {
         difmType: difmOption,
         shopId: selectedShopId,
         couponCode: appliedCoupon,
-        customerLatitude: customerLocationCoords?.lat,
-        customerLongitude: customerLocationCoords?.lng,
+        customerLatitude: coordsLat,
+        customerLongitude: coordsLng,
       });
 
       const quoteData = res.data?.data;
@@ -119,7 +123,7 @@ const CheckoutPage = () => {
     } finally {
       setIsQuoteLoading(false);
     }
-  }, [user, cart?.items, selectedAddressId, difmOption, selectedShopId, appliedCoupon, customerLocationCoords]);
+  }, [user?.id, cartItemKey, selectedAddressId, difmOption, selectedShopId, appliedCoupon, coordsLat, coordsLng]);
 
   // Recalculate quote immediately whenever option, address, shop, or coupon changes
   useEffect(() => {
@@ -128,22 +132,38 @@ const CheckoutPage = () => {
 
   // Handle address creation
   const handleCreateAddress = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!newAddress.fullName || !newAddress.phone || !newAddress.line1 || !newAddress.city || !newAddress.pincode) {
       toast.error('Please fill in all mandatory address fields');
-      return;
+      return null;
     }
 
     setIsSavingAddress(true);
     try {
-      const { data } = await usersService.createAddress(newAddress);
+      const payload = {
+        fullName: newAddress.fullName.trim(),
+        phone: newAddress.phone.trim(),
+        line1: newAddress.line1.trim(),
+        line2: (newAddress.line2 || '').trim() || undefined,
+        city: newAddress.city.trim(),
+        state: newAddress.state.trim(),
+        pincode: newAddress.pincode.trim(),
+        landmark: (newAddress.landmark || '').trim() || undefined,
+        label: newAddress.label || 'Home',
+        isDefault: Boolean(newAddress.isDefault),
+      };
+
+      const { data } = await usersService.createAddress(payload);
       const saved = data.data;
       setAddresses((prev) => [saved, ...prev]);
       setSelectedAddressId(saved.id);
       setShowNewAddressForm(false);
       toast.success('Delivery address saved successfully');
+      return saved;
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to save address');
+      const fieldError = err.response?.data?.errors?.[0]?.message;
+      toast.error(fieldError || err.response?.data?.message || 'Failed to save address');
+      return null;
     } finally {
       setIsSavingAddress(false);
     }
@@ -164,10 +184,45 @@ const CheckoutPage = () => {
     toast.success('Coupon removed');
   };
 
+  const handleSelectShop = useCallback((shop) => {
+    if (!shop?.id) return;
+    setSelectedShopId(shop.id);
+    setSelectedShopObj(shop);
+  }, []);
+
+  const handleLocationChange = useCallback((coords) => {
+    if (!coords) return;
+    setCustomerLocationCoords((prev) => {
+      if (prev?.lat === coords.lat && prev?.lng === coords.lng) return prev;
+      return coords;
+    });
+  }, []);
+
   // Handle Order Placement
   const handlePlaceOrder = async () => {
-    if (!selectedAddressId) {
+    let activeAddressId = selectedAddressId;
+
+    // Seamless auto-save: If user filled in the new address form, save it automatically
+    if (!activeAddressId && showNewAddressForm) {
+      if (newAddress.fullName && newAddress.phone && newAddress.line1 && newAddress.city && newAddress.pincode) {
+        const saved = await handleCreateAddress();
+        if (saved?.id) {
+          activeAddressId = saved.id;
+        } else {
+          return;
+        }
+      } else {
+        toast.error('Please complete all mandatory address fields to proceed.');
+        const el = document.getElementById('step-address-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+    }
+
+    if (!activeAddressId) {
       toast.error('Please select or add a delivery address to proceed.');
+      const el = document.getElementById('step-address-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
       return;
     }
 
@@ -194,7 +249,7 @@ const CheckoutPage = () => {
     setIsSubmitting(true);
     try {
       const payload = {
-        addressId: selectedAddressId,
+        addressId: activeAddressId,
         difmType: difmOption,
         shopId: selectedShopId,
         customerLatitude: customerLocationCoords?.lat,
@@ -883,12 +938,9 @@ const CheckoutPage = () => {
 
                 <NearbyShopsMap
                   selectedShopId={selectedShopId}
-                  onSelectShop={(shop) => {
-                    setSelectedShopId(shop.id);
-                    setSelectedShopObj(shop);
-                  }}
+                  onSelectShop={handleSelectShop}
                   customerAddress={addresses.find((a) => a.id === selectedAddressId) || addresses[0]}
-                  onLocationChange={(coords) => setCustomerLocationCoords(coords)}
+                  onLocationChange={handleLocationChange}
                   onContinueToReview={() => {
                     const el = document.getElementById('step-payment');
                     if (el) el.scrollIntoView({ behavior: 'smooth' });

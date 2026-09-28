@@ -828,45 +828,59 @@ model Payment {
 // ============================================================
 
 model Shop {
-  id                 String    @id @default(uuid())
-  ownerId            String    @unique
-  owner              User      @relation(fields: [ownerId], references: [id], onDelete: Restrict)
-  name               String
-  slug               String    @unique
-  description        String?   @db.Text
-  phone              String
-  email              String?
-  gstNumber          String?
-  logoUrl            String?
-  bannerUrl          String?
+  id                   String    @id @default(uuid())
+  ownerId              String    @unique
+  owner                User      @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  name                 String
+  slug                 String    @unique
+  description          String?   @db.Text
+  phone                String
+  email                String?
+  gstNumber            String?
+  logoUrl              String?
+  bannerUrl            String?
+  ownerName            String?
 
   // Shop Physical Address & Geolocation
-  addressLine1       String
-  addressLine2       String?
-  city               String
-  state              String
-  pincode            String
-  latitude           Float?
-  longitude          Float?
+  address              String?   // Denormalized full address string
+  addressLine1         String
+  addressLine2         String?
+  city                 String
+  state                String
+  pincode              String
+  latitude             Float?
+  longitude            Float?
 
   // Verification & Status
-  isVerified         Boolean   @default(false)
-  isActive           Boolean   @default(true)
-  serviceAvailable   Boolean   @default(true)
-  rating             Float     @default(0)
-  totalRatings       Int       @default(0)
+  isVerified           Boolean   @default(false)
+  isActive             Boolean   @default(true)
+  serviceAvailable     Boolean   @default(true)
+  verificationStatus   String    @default("PENDING")
+  rating               Float     @default(0)
+  totalRatings         Int       @default(0)
 
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  // Workshop Configuration
+  commissionRate       Float     @default(12)
+  servicesOffered      String[]  @default([])
+  vehicleCategories    String[]  @default([])
+  supportedDIFMTypes   String[]  @default([])
+  operatingHours       String?
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   // Relations
-  inventories        Inventory[]
-  difmRequests       DIFMRequest[]
-  serviceBookings    ServiceBooking[]
-  commissionLedgers  CommissionLedger[]
-  orderItems         OrderItem[]
-  cartItems          CartItem[]
-  serviceRecords     VehicleServiceRecord[]
+  inventories          Inventory[]
+  difmRequests         DIFMRequest[]
+  serviceBookings      ServiceBooking[]
+  commissionLedgers    CommissionLedger[]
+  orderItems           OrderItem[]
+  cartItems            CartItem[]
+  serviceRecords       VehicleServiceRecord[]
+  shopJobs             ShopJob[]
+  shopDeliveries       ShopDelivery[]
+  usedPartIntakes      UsedPartIntake[]
+  shopTickets          ShopTicket[]
 
   @@index([city, isVerified, isActive])
   @@map("shops")
@@ -1116,12 +1130,18 @@ model CommissionLedger {
   order            Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
   shopId           String
   shop             Shop         @relation(fields: [shopId], references: [id], onDelete: Restrict)
+  jobId            String?      // Optional link to ShopJob
+  shopJob          ShopJob?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
   grossAmount      Decimal      @db.Decimal(10, 2)
   commissionRate   Decimal      @db.Decimal(5, 2)
   commissionAmount Decimal      @db.Decimal(10, 2)
   platformCut      Decimal      @db.Decimal(10, 2)
   shopPayout       Decimal      @db.Decimal(10, 2)
-  payoutStatus     PayoutStatus @default(PENDING)
+  // Legacy PayoutStatus for compatibility
+  payoutStatus     String       @default("PENDING")  // PENDING | RELEASED | PAID_OUT
+  releaseStatus    String       @default("LOCKED_PENDING_COMPLETION")  // LOCKED_PENDING_COMPLETION | LOCKED_PENDING_PAYMENT | RELEASED
+  serviceStatus    String       @default("PENDING")  // PENDING | COMPLETED
+  paymentStatus    String       @default("PENDING")  // PENDING | CAPTURED
   payoutRef        String?
   paidAt           DateTime?
 
@@ -1131,6 +1151,108 @@ model CommissionLedger {
   @@index([shopId, payoutStatus])
   @@index([orderId])
   @@map("commission_ledgers")
+}
+
+// ============================================================
+// 10b. WORKSHOP OPERATIONAL MODELS
+// ============================================================
+
+enum ShopJobStatus {
+  SCHEDULED
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model ShopJob {
+  id               String        @id @default(uuid())
+  shopId           String
+  shop             Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orderId          String?
+  difmRequestId    String?
+  orderNumber      String?
+  customerName     String?
+  customerPhone    String?
+  vehicleInfo      String?       // e.g. "Maruti Swift 2021"
+  vehicleNumber    String?       // Registration no.
+  serviceName      String?
+  jobType          String        @default("DIFM_SHOP_VISIT") // DIFM_SHOP_VISIT | DIFM_DOORSTEP_VISIT | CUSTOMER_VEHICLE_VISIT
+  locationType     String        @default("SHOP")  // SHOP | DOORSTEP
+  status           ShopJobStatus @default(SCHEDULED)
+  totalServiceAmount Decimal     @default(0) @db.Decimal(10, 2)
+  serviceFee       Decimal       @default(250) @db.Decimal(10, 2)
+  installationFee  Decimal       @default(0) @db.Decimal(10, 2)
+  scheduledDate    DateTime?
+  scheduledSlot    String?
+  notes            String?
+  startedAt        DateTime?
+  completedAt      DateTime?
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  commissionLedgers CommissionLedger[]
+
+  @@index([shopId, status])
+  @@index([orderId])
+  @@map("shop_jobs")
+}
+
+model ShopDelivery {
+  id              String    @id @default(uuid())
+  shopId          String
+  shop            Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orderId         String?
+  trackingNumber  String?
+  status          String    @default("IN_TRANSIT")  // IN_TRANSIT | OUT_FOR_DELIVERY | DELIVERED | FAILED
+  eta             String?
+  items           Json      @default("[]")
+  receivedAt      DateTime?
+  receivedBy      String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([shopId, status])
+  @@map("shop_deliveries")
+}
+
+model UsedPartIntake {
+  id                  String    @id @default(uuid())
+  shopId              String
+  shop                Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  listingId           String?   // Optional link to UsedPartListing
+  partTitle           String
+  sellerName          String?
+  vehicleModel        String?
+  physicalCondition   String    @default("GOOD")    // GOOD | FAIR | DAMAGED
+  technicalTestStatus String    @default("NEEDS_TESTING")  // NEEDS_TESTING | PASSED | FAILED
+  technicianNotes     String?
+  status              String    @default("PENDING_INSPECTION")  // PENDING_INSPECTION | VERIFIED_ACCEPTED | REJECTED
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([shopId, status])
+  @@map("used_part_intakes")
+}
+
+model ShopTicket {
+  id       String  @id @default(uuid())
+  shopId   String
+  shop     Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  category String
+  subject  String
+  priority String  @default("MEDIUM")  // LOW | MEDIUM | HIGH | URGENT
+  status   String  @default("OPEN")    // OPEN | IN_PROGRESS | RESOLVED | CLOSED
+  messages Json    @default("[]")      // Array of message objects
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([shopId, status])
+  @@map("shop_tickets")
 }
 
 // ============================================================

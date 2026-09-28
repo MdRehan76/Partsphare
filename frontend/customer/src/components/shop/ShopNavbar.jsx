@@ -42,7 +42,7 @@ export const ShopNavbar = () => {
           </div>
           <div>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.15rem', color: 'var(--color-text-primary)', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-              PartSphere <span style={{ color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem' }}>PARTNER</span>
+              PartNexa <span style={{ color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem' }}>WORKSHOP</span>
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
               Mechanical Workshop Console

@@ -4,8 +4,8 @@ import { useShopAuth } from '../../contexts/ShopAuthContext';
 import toast from 'react-hot-toast';
 
 export const ShopLoginPage = () => {
-  const [email, setEmail] = useState('apex.auto@partsphare.test');
-  const [password, setPassword] = useState('Password@123');
+  const [email, setEmail] = useState('apex.shop@partsphere.in');
+  const [password, setPassword] = useState('Shop@1234');
   const [loading, setLoading] = useState(false);
 
   const { login, theme, toggleTheme } = useShopAuth();
@@ -20,8 +20,8 @@ export const ShopLoginPage = () => {
     setLoading(true);
     try {
       await login({ email, password });
-      toast.success('Welcome back to PartSphere Partner Console!');
-      navigate('/');
+      toast.success('Welcome back to PartNexa Workshop Console!');
+      navigate('/shop');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed. Please check credentials.');
     } finally {
@@ -30,9 +30,9 @@ export const ShopLoginPage = () => {
   };
 
   const handleFillDemo = () => {
-    setEmail('apex.auto@partsphare.test');
-    setPassword('Password@123');
-    toast.success('Pre-filled demo credentials for Apex Auto Care');
+    setEmail('apex.shop@partsphere.in');
+    setPassword('Shop@1234');
+    toast.success('Pre-filled demo credentials for Apex Auto Care (Bengaluru)');
   };
 
   return (
@@ -111,7 +111,7 @@ export const ShopLoginPage = () => {
               Demo Partner Account
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
-              Apex Auto Care & Spares (Bengaluru)
+              Apex Auto Care & Spares — apex.shop@partsphere.in / Shop@1234
             </div>
           </div>
           <button

@@ -6,20 +6,15 @@ import { InventorySyncEngine } from '../inventory/inventorySync.service';
 
 // Helper to resolve shop from authenticated owner
 export const resolveShopByOwner = async (ownerId: string) => {
-  let shop = await prisma.shop.findFirst({
+  const shop = await prisma.shop.findFirst({
     where: { ownerId },
   });
   if (!shop) {
-    // If demo account fallback
-    shop = await prisma.shop.findFirst({
-      where: { id: 'shop-1' },
-    });
-  }
-  if (!shop) {
-    throw AppError.notFound('No shop associated with this owner account.');
+    throw AppError.notFound('No workshop is associated with this account. Please register your workshop first or contact support.');
   }
   return shop;
 };
+
 
 export const listVerifiedShops = async (city?: string) => {
   const shops = await prisma.shop.findMany({
@@ -196,10 +191,10 @@ export const loginShop = async (data: { email: string; password: string }) => {
 
   const shop = await prisma.shop.findFirst({
     where: { ownerId: user.id },
-  }) || (user.role === 'SHOP_OWNER' ? await prisma.shop.findFirst({ where: { id: 'shop-1' } }) : null);
+  });
 
   if (!shop) {
-    throw AppError.forbidden('No mechanical shop is registered for this account.');
+    throw AppError.forbidden('No mechanical shop is registered for this account. Please register your workshop at /shop/register.');
   }
 
   const token = generateAccessToken({
@@ -479,7 +474,7 @@ export const updateJobStatus = async (
         await prisma.orderTracking.create({
           data: {
             orderId: job.orderId,
-            status: 'DIFM_IN_PROGRESS',
+            status: 'PROCESSING',
             message: `Workshop technician at ${shop.name} has started part installation.`,
           },
         });
@@ -487,7 +482,7 @@ export const updateJobStatus = async (
         await prisma.orderTracking.create({
           data: {
             orderId: job.orderId,
-            status: 'DIFM_COMPLETED',
+            status: 'DELIVERED',
             message: `DIFM professional part installation completed and tested by ${shop.name}.`,
           },
         });
@@ -499,6 +494,22 @@ export const updateJobStatus = async (
   const commissionEntry = await prisma.commissionLedger.findFirst({
     where: { jobId },
   });
+
+  // Auto-update job commission release if conditions met
+  if (status === 'COMPLETED' && commissionEntry && commissionEntry.releaseStatus !== 'RELEASED') {
+    await prisma.commissionLedger.update({
+      where: { id: commissionEntry.id },
+      data: { serviceStatus: 'COMPLETED' },
+    });
+    // Check if payment is also cleared - if so, release commission
+    const updatedLedger = await prisma.commissionLedger.findUnique({ where: { id: commissionEntry.id } });
+    if (updatedLedger && updatedLedger.paymentStatus === 'CAPTURED') {
+      await prisma.commissionLedger.update({
+        where: { id: commissionEntry.id },
+        data: { releaseStatus: 'RELEASED', payoutStatus: 'RELEASED' },
+      });
+    }
+  }
 
   return {
     job: updatedJob,
