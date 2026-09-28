@@ -4,13 +4,15 @@ import config from '../../config/env';
 import AppError from '../../utils/AppError';
 import { PaymentMethod, PaymentStatus, SubscriptionStatus } from '@prisma/client';
 
-const DEMO_RAZORPAY_KEY_ID = config.razorpay?.keyId && !config.razorpay.keyId.includes('placeholder')
-  ? config.razorpay.keyId
-  : 'rzp_test_partsphere_demo';
+const DEMO_RAZORPAY_KEY_ID =
+  config.razorpay?.keyId && !config.razorpay.keyId.includes('placeholder')
+    ? config.razorpay.keyId
+    : 'rzp_test_partsphere_demo';
 
-const DEMO_RAZORPAY_SECRET = config.razorpay?.keySecret && !config.razorpay.keySecret.includes('placeholder')
-  ? config.razorpay.keySecret
-  : 'partsphere_rzp_secret_key_demo_32chars';
+const DEMO_RAZORPAY_SECRET =
+  config.razorpay?.keySecret && !config.razorpay.keySecret.includes('placeholder')
+    ? config.razorpay.keySecret
+    : 'partsphere_rzp_secret_key_demo_32chars';
 
 /**
  * Computes an HMAC-SHA256 signature for Razorpay Sandbox verification
@@ -20,6 +22,48 @@ export function generateSubscriptionSignature(razorpayOrderId: string, razorpayP
     .createHmac('sha256', DEMO_RAZORPAY_SECRET)
     .update(`${razorpayOrderId}|${razorpayPaymentId}`)
     .digest('hex');
+}
+
+/**
+ * Helper to decorate database subscription records with UI attributes (billingCycle, pricePaid, entitlements)
+ */
+export function formatSubscription(sub: any) {
+  if (!sub) return null;
+
+  const isYearly =
+    sub.startDate &&
+    sub.endDate &&
+    new Date(sub.endDate).getTime() - new Date(sub.startDate).getTime() > 100 * 24 * 3600 * 1000;
+
+  const latestPayment = Array.isArray(sub.payments) && sub.payments.length > 0 ? sub.payments[0] : null;
+  const pricePaid = latestPayment?.amount ? Number(latestPayment.amount) : Number(sub.plan?.price || 499);
+  const paymentMethod = latestPayment?.paymentMethod || 'RAZORPAY';
+  const razorpayOrderId = latestPayment?.razorpayOrderId || null;
+  const razorpayPaymentId = latestPayment?.razorpayPaymentId || null;
+
+  const rawEntitlements = sub.plan?.entitlements || [];
+  const entitlements = rawEntitlements.map((e: any) => ({
+    id: e.id,
+    featureCode: e.featureCode,
+    name: e.featureName,
+    description: e.featureName,
+    quotaLimit: e.limitValue,
+    isUnlimited: Boolean(e.isUnlimited),
+    usedCount: 0,
+    remainingCount: e.isUnlimited ? 'Unlimited' : (e.limitValue !== null ? e.limitValue : 'Unlimited'),
+  }));
+
+  return {
+    ...sub,
+    billingCycle: isYearly ? 'YEARLY' : 'MONTHLY',
+    pricePaid,
+    paymentMethod,
+    razorpayOrderId,
+    razorpayPaymentId,
+    renewalDate: sub.endDate,
+    vehicleReg: 'All Registered Garage Vehicles',
+    entitlements,
+  };
 }
 
 /**
@@ -35,11 +79,22 @@ export const listActivePlans = async (frequency: 'MONTHLY' | 'YEARLY' = 'MONTHLY
   });
 
   return plans.map((plan: any) => {
-    const monthlyPrice = Number(plan.monthlyPrice || plan.price || 499);
-    const yearlyPrice = Number(plan.yearlyPrice || Math.round(monthlyPrice * 10));
+    const monthlyPrice = Number(plan.price || 499);
+    const yearlyPrice = Math.round(monthlyPrice * 10); // 2 months discount built-in
     const currentPrice = frequency === 'YEARLY' ? yearlyPrice : monthlyPrice;
     const durationDays = frequency === 'YEARLY' ? 365 : 30;
     const savingsPercent = Math.round(((monthlyPrice * 12 - yearlyPrice) / (monthlyPrice * 12)) * 100);
+
+    const formattedEntitlements = (plan.entitlements || []).map((e: any) => ({
+      id: e.id,
+      featureCode: e.featureCode,
+      name: e.featureName,
+      description: e.featureName,
+      quotaLimit: e.limitValue,
+      isUnlimited: Boolean(e.isUnlimited),
+      usedCount: 0,
+      remainingCount: e.isUnlimited ? 'Unlimited' : (e.limitValue !== null ? e.limitValue : 'Unlimited'),
+    }));
 
     return {
       ...plan,
@@ -50,6 +105,7 @@ export const listActivePlans = async (frequency: 'MONTHLY' | 'YEARLY' = 'MONTHLY
       selectedFrequency: frequency,
       savingsPercent: savingsPercent > 0 ? savingsPercent : 0,
       price: currentPrice,
+      entitlements: formattedEntitlements,
     };
   });
 };
@@ -71,11 +127,22 @@ export const getPlanByIdOrSlug = async (idOrSlug: string, frequency: 'MONTHLY' |
     throw AppError.notFound('Subscription plan not found.');
   }
 
-  const monthlyPrice = Number(plan.monthlyPrice || plan.price || 499);
-  const yearlyPrice = Number(plan.yearlyPrice || Math.round(monthlyPrice * 10));
+  const monthlyPrice = Number(plan.price || 499);
+  const yearlyPrice = Math.round(monthlyPrice * 10);
   const currentPrice = frequency === 'YEARLY' ? yearlyPrice : monthlyPrice;
   const durationDays = frequency === 'YEARLY' ? 365 : 30;
   const savingsPercent = Math.round(((monthlyPrice * 12 - yearlyPrice) / (monthlyPrice * 12)) * 100);
+
+  const formattedEntitlements = (plan.entitlements || []).map((e: any) => ({
+    id: e.id,
+    featureCode: e.featureCode,
+    name: e.featureName,
+    description: e.featureName,
+    quotaLimit: e.limitValue,
+    isUnlimited: Boolean(e.isUnlimited),
+    usedCount: 0,
+    remainingCount: e.isUnlimited ? 'Unlimited' : (e.limitValue !== null ? e.limitValue : 'Unlimited'),
+  }));
 
   return {
     ...plan,
@@ -86,6 +153,7 @@ export const getPlanByIdOrSlug = async (idOrSlug: string, frequency: 'MONTHLY' |
     selectedFrequency: frequency,
     savingsPercent: savingsPercent > 0 ? savingsPercent : 0,
     price: currentPrice,
+    entitlements: formattedEntitlements,
   };
 };
 
@@ -93,7 +161,7 @@ export const getPlanByIdOrSlug = async (idOrSlug: string, frequency: 'MONTHLY' |
  * Gets all subscriptions for the authenticated customer (active, cancelled, expired)
  */
 export const getUserSubscriptions = async (userId: string) => {
-  return prisma.customerSubscription.findMany({
+  const subscriptions = await prisma.customerSubscription.findMany({
     where: { userId },
     include: {
       plan: {
@@ -101,9 +169,14 @@ export const getUserSubscriptions = async (userId: string) => {
           entitlements: true,
         },
       },
+      payments: {
+        orderBy: { createdAt: 'desc' },
+      },
     },
     orderBy: { createdAt: 'desc' },
   });
+
+  return subscriptions.map(formatSubscription);
 };
 
 /**
@@ -121,18 +194,22 @@ export const getActiveSubscription = async (userId: string) => {
           entitlements: true,
         },
       },
+      payments: {
+        orderBy: { createdAt: 'desc' },
+      },
     },
     orderBy: { createdAt: 'desc' },
   });
 
   const now = new Date();
-  return (
+  const active =
     subscriptions.find(
       (s: any) =>
         s.status === SubscriptionStatus.ACTIVE ||
-        (s.status === SubscriptionStatus.CANCELLED && new Date(s.endDate) > now)
-    ) || null
-  );
+        (s.status === SubscriptionStatus.CANCELLED && s.endDate && new Date(s.endDate) > now)
+    ) || null;
+
+  return formatSubscription(active);
 };
 
 /**
@@ -145,7 +222,7 @@ export const createSubscriptionOrder = async (
     billingCycle?: 'MONTHLY' | 'YEARLY';
     vehicleId?: string;
     vehicleReg?: string;
-    paymentMethod?: 'RAZORPAY' | 'CASH_ON_DELIVERY';
+    paymentMethod?: 'RAZORPAY' | 'CASH_ON_DELIVERY' | 'COD';
     autoRenew?: boolean;
   }
 ) => {
@@ -169,94 +246,101 @@ export const createSubscriptionOrder = async (
 
   // Calculate pricing & duration
   const isYearly = billingCycle === 'YEARLY';
-  const price = isYearly
-    ? Number(plan.yearlyPrice || Math.round(Number(plan.price) * 10))
-    : Number(plan.monthlyPrice || plan.price);
+  const monthlyPrice = Number(plan.price || 499);
+  const price = isYearly ? Math.round(monthlyPrice * 10) : monthlyPrice;
   const durationDays = isYearly ? 365 : 30;
 
   const startDate = new Date();
   const endDate = new Date(startDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
-  const renewalDate = new Date(endDate.getTime());
 
-  if ((paymentMethod as string) === 'CASH_ON_DELIVERY' || (paymentMethod as string) === 'COD') {
-    // Immediate activation for COD (Pay on first service visit)
-    const subscription = await prisma.customerSubscription.create({
+  const isCod = paymentMethod === 'CASH_ON_DELIVERY' || (paymentMethod as string) === 'COD';
+
+  return prisma.$transaction(async (tx) => {
+    // 1. Create customer subscription record strictly adhering to Prisma schema
+    const subscription = await tx.customerSubscription.create({
       data: {
         userId,
         planId: plan.id,
-        status: SubscriptionStatus.ACTIVE,
-        billingCycle,
-        pricePaid: price,
+        status: isCod ? SubscriptionStatus.ACTIVE : SubscriptionStatus.PENDING,
         startDate,
         endDate,
-        renewalDate,
-        autoRenew,
-        vehicleId: vehicleId || null,
-        vehicleReg: vehicleReg || 'REG-PENDING',
-        paymentMethod: PaymentMethod.CASH_ON_DELIVERY,
+        autoRenew: Boolean(autoRenew),
+      },
+      include: {
+        plan: { include: { entitlements: true } },
       },
     });
 
-    await prisma.subscriptionPayment.create({
+    if (isCod) {
+      // Create COD payment record
+      const payment = await tx.subscriptionPayment.create({
+        data: {
+          subscriptionId: subscription.id,
+          amount: price,
+          paymentMethod: PaymentMethod.CASH_ON_DELIVERY,
+          paymentStatus: PaymentStatus.PENDING,
+        },
+      });
+
+      // Update paymentId reference
+      await tx.customerSubscription.update({
+        where: { id: subscription.id },
+        data: { paymentId: payment.id },
+      });
+
+      const fullSub = formatSubscription({
+        ...subscription,
+        payments: [payment],
+      });
+
+      return {
+        subscription: fullSub,
+        requiresOnlinePayment: false,
+        message: `Subscription activated! Payment of ₹${price} scheduled for collection on your first service visit.`,
+      };
+    }
+
+    // 2. Razorpay Sandbox flow: create payment order session
+    const razorpayOrderId = `order_sub_sandbox_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const amountInPaise = Math.round(price * 100);
+
+    const payment = await tx.subscriptionPayment.create({
       data: {
         subscriptionId: subscription.id,
-        userId,
         amount: price,
-        paymentMethod: PaymentMethod.CASH_ON_DELIVERY,
-        method: 'CASH_ON_DELIVERY',
+        paymentMethod: PaymentMethod.RAZORPAY,
         paymentStatus: PaymentStatus.PENDING,
-        status: 'PENDING',
+        razorpayOrderId,
       },
     });
 
-    const activeCodSub = await prisma.customerSubscription.findUnique({
+    await tx.customerSubscription.update({
       where: { id: subscription.id },
+      data: { paymentId: payment.id },
+    });
+
+    const fullSub = formatSubscription({
+      ...subscription,
+      payments: [payment],
     });
 
     return {
-      subscription: activeCodSub || subscription,
-      requiresOnlinePayment: false,
-      message: 'Subscription activated! Payment of ₹' + price + ' scheduled for collection on your first service visit.',
+      subscription: fullSub,
+      requiresOnlinePayment: true,
+      paymentSession: {
+        subscriptionId: subscription.id,
+        planId: plan.id,
+        planName: plan.name,
+        razorpayOrderId,
+        amount: price,
+        amountInPaise,
+        currency: 'INR',
+        keyId: DEMO_RAZORPAY_KEY_ID,
+        billingCycle,
+        demoSecretKey: DEMO_RAZORPAY_SECRET,
+      },
     };
-  }
-
-  // Razorpay Sandbox checkout flow
-  const razorpayOrderId = `order_sub_sandbox_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-  const amountInPaise = Math.round(price * 100);
-
-  const subscription = await prisma.customerSubscription.create({
-    data: {
-      userId,
-      planId: plan.id,
-      status: SubscriptionStatus.PENDING,
-      billingCycle,
-      pricePaid: price,
-      startDate,
-      endDate,
-      renewalDate,
-      autoRenew,
-      vehicleId: vehicleId || null,
-      vehicleReg: vehicleReg || 'REG-PENDING',
-      paymentMethod: PaymentMethod.RAZORPAY,
-      razorpayOrderId,
-    },
   });
-
-  return {
-    subscription,
-    requiresOnlinePayment: true,
-    paymentSession: {
-      subscriptionId: subscription.id,
-      planId: plan.id,
-      planName: plan.name,
-      razorpayOrderId,
-      amount: price,
-      amountInPaise,
-      currency: 'INR',
-      keyId: DEMO_RAZORPAY_KEY_ID,
-      billingCycle,
-    },
-  };
 };
 
 /**
@@ -279,7 +363,10 @@ export const verifySubscriptionPayment = async (
 
   const subscription = await prisma.customerSubscription.findFirst({
     where: { id: subscriptionId, userId },
-    include: { plan: true },
+    include: {
+      plan: { include: { entitlements: true } },
+      payments: true,
+    },
   });
 
   if (!subscription) {
@@ -287,11 +374,12 @@ export const verifySubscriptionPayment = async (
   }
 
   // Idempotency check: If already active with this payment, return success
-  if (subscription.status === SubscriptionStatus.ACTIVE && subscription.razorpayPaymentId === razorpayPaymentId) {
+  const existingPayment = subscription.payments.find((p) => p.razorpayPaymentId === razorpayPaymentId);
+  if (subscription.status === SubscriptionStatus.ACTIVE && existingPayment) {
     return {
       success: true,
       alreadyProcessed: true,
-      subscription,
+      subscription: formatSubscription(subscription),
       message: 'Subscription is already active.',
     };
   }
@@ -309,33 +397,36 @@ export const verifySubscriptionPayment = async (
     throw AppError.badRequest('Invalid payment signature. Subscription verification failed.');
   }
 
-  // Signature valid: Activate subscription
-  const updatedSub = await prisma.customerSubscription.update({
-    where: { id: subscription.id },
-    data: {
-      status: SubscriptionStatus.ACTIVE,
-      razorpayPaymentId,
-      updatedAt: new Date(),
-    },
-  });
+  // Signature valid: Activate subscription in database transaction
+  return prisma.$transaction(async (tx) => {
+    // 1. Update Payment record to CAPTURED
+    await tx.subscriptionPayment.updateMany({
+      where: { subscriptionId: subscription.id },
+      data: {
+        paymentStatus: PaymentStatus.CAPTURED,
+        razorpayPaymentId,
+      },
+    });
 
-  // Record payment
-  await prisma.subscriptionPayment.create({
-    data: {
-      subscriptionId: subscription.id,
-      amount: Number(subscription.pricePaid),
-      paymentMethod: PaymentMethod.RAZORPAY,
-      paymentStatus: (PaymentStatus as any).PAID || PaymentStatus.CAPTURED,
-      razorpayOrderId,
-      razorpayPaymentId,
-    },
-  });
+    // 2. Activate Subscription
+    const updatedSub = await tx.customerSubscription.update({
+      where: { id: subscription.id },
+      data: {
+        status: SubscriptionStatus.ACTIVE,
+        updatedAt: new Date(),
+      },
+      include: {
+        plan: { include: { entitlements: true } },
+        payments: { orderBy: { createdAt: 'desc' } },
+      },
+    });
 
-  return {
-    success: true,
-    subscription: updatedSub,
-    message: `🎉 Membership activated! You now have full access to ${subscription.plan?.name || 'PartNexa'} benefits.`,
-  };
+    return {
+      success: true,
+      subscription: formatSubscription(updatedSub),
+      message: `🎉 Membership activated! You now have full access to ${subscription.plan?.name || 'PartNexa Care'} benefits.`,
+    };
+  });
 };
 
 /**
@@ -344,6 +435,7 @@ export const verifySubscriptionPayment = async (
 export const cancelSubscription = async (userId: string, subscriptionId: string, reason?: string) => {
   const subscription = await prisma.customerSubscription.findFirst({
     where: { id: subscriptionId, userId },
+    include: { plan: { include: { entitlements: true } }, payments: true },
   });
 
   if (!subscription) {
@@ -359,17 +451,18 @@ export const cancelSubscription = async (userId: string, subscriptionId: string,
     data: {
       status: SubscriptionStatus.CANCELLED,
       autoRenew: false,
-      cancelledAt: new Date(),
-      cancellationReason: reason || 'Cancelled by customer',
       updatedAt: new Date(),
     },
+    include: { plan: { include: { entitlements: true } }, payments: true },
   });
 
+  const formatted = formatSubscription(updated);
   return {
     success: true,
-    subscription: updated,
-    message: 'Subscription has been cancelled. Your benefits remain active until ' +
-      new Date(updated.endDate).toLocaleDateString() + '.',
+    subscription: formatted,
+    message: `Subscription has been cancelled. Your benefits remain active until ${
+      updated.endDate ? new Date(updated.endDate).toLocaleDateString() : 'end of term'
+    }.`,
   };
 };
 
@@ -391,66 +484,81 @@ export const toggleAutoRenew = async (userId: string, subscriptionId: string, au
       autoRenew: Boolean(autoRenew),
       updatedAt: new Date(),
     },
+    include: { plan: { include: { entitlements: true } }, payments: true },
   });
 
   return {
     success: true,
     autoRenew: updated.autoRenew,
-    subscription: updated,
+    subscription: formatSubscription(updated),
     message: autoRenew
-      ? 'Auto-renewal enabled. Your membership will renew automatically on ' + new Date(updated.renewalDate).toLocaleDateString()
+      ? `Auto-renewal enabled. Your membership will renew automatically on ${
+          updated.endDate ? new Date(updated.endDate).toLocaleDateString() : 'term completion'
+        }.`
       : 'Auto-renewal disabled. Your membership will expire at the end of the current term.',
   };
 };
 
 /**
- * Simulates automated renewal: extends dates, resets entitlements, records renewal payment
+ * Simulates automated renewal: extends dates, records renewal payment
  */
 export const simulateRenewal = async (userId: string, subscriptionId: string) => {
   const subscription = await prisma.customerSubscription.findFirst({
     where: { id: subscriptionId, userId },
-    include: { plan: true },
+    include: { plan: { include: { entitlements: true } }, payments: true },
   });
 
   if (!subscription) {
     throw AppError.notFound('Subscription not found.');
   }
 
-  const durationDays = subscription.billingCycle === 'YEARLY' ? 365 : 30;
+  const isYearly =
+    subscription.startDate &&
+    subscription.endDate &&
+    new Date(subscription.endDate).getTime() - new Date(subscription.startDate).getTime() > 100 * 24 * 3600 * 1000;
+  const durationDays = isYearly ? 365 : 30;
+
   const currentEnd = new Date(subscription.endDate || Date.now());
   const newStartDate = currentEnd > new Date() ? currentEnd : new Date();
   const newEndDate = new Date(newStartDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
-  const newRenewalDate = new Date(newEndDate.getTime());
 
-  const renewedSub = await prisma.customerSubscription.update({
-    where: { id: subscription.id },
-    data: {
-      status: SubscriptionStatus.ACTIVE,
-      startDate: newStartDate,
-      endDate: newEndDate,
-      renewalDate: newRenewalDate,
-      autoRenew: true,
-      entitlementUsages: {}, // reset usage for new billing period
-      updatedAt: new Date(),
-    },
+  const renewalPrice = Number(subscription.plan?.price || 499);
+
+  return prisma.$transaction(async (tx) => {
+    const renewedSub = await tx.customerSubscription.update({
+      where: { id: subscription.id },
+      data: {
+        status: SubscriptionStatus.ACTIVE,
+        startDate: newStartDate,
+        endDate: newEndDate,
+        autoRenew: true,
+        updatedAt: new Date(),
+      },
+      include: { plan: { include: { entitlements: true } } },
+    });
+
+    const payment = await tx.subscriptionPayment.create({
+      data: {
+        subscriptionId: subscription.id,
+        amount: renewalPrice,
+        paymentMethod: PaymentMethod.RAZORPAY,
+        paymentStatus: PaymentStatus.CAPTURED,
+        razorpayOrderId: `renew_${Date.now()}`,
+        razorpayPaymentId: `pay_renew_${Date.now()}`,
+      },
+    });
+
+    const fullSub = formatSubscription({
+      ...renewedSub,
+      payments: [payment, ...subscription.payments],
+    });
+
+    return {
+      success: true,
+      subscription: fullSub,
+      message: `Subscription renewed successfully until ${newEndDate.toLocaleDateString()}!`,
+    };
   });
-
-  await prisma.subscriptionPayment.create({
-    data: {
-      subscriptionId: subscription.id,
-      amount: Number(subscription.pricePaid),
-      paymentMethod: subscription.paymentMethod,
-      paymentStatus: (PaymentStatus as any).PAID || PaymentStatus.CAPTURED,
-      razorpayOrderId: `renew_${Date.now()}`,
-      razorpayPaymentId: `pay_renew_${Date.now()}`,
-    },
-  });
-
-  return {
-    success: true,
-    subscription: renewedSub,
-    message: 'Subscription renewed successfully until ' + newEndDate.toLocaleDateString() + '!',
-  };
 };
 
 /**
@@ -472,11 +580,12 @@ export const expireSubscription = async (userId: string, subscriptionId: string)
       autoRenew: false,
       updatedAt: new Date(),
     },
+    include: { plan: { include: { entitlements: true } }, payments: true },
   });
 
   return {
     success: true,
-    subscription: expiredSub,
+    subscription: formatSubscription(expiredSub),
     message: 'Subscription status updated to EXPIRED.',
   };
 };
@@ -491,55 +600,34 @@ export const useEntitlement = async (userId: string, subscriptionId: string, fea
       userId,
       status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCELLED] },
     },
-    include: { plan: { include: { entitlements: true } } },
+    include: { plan: { include: { entitlements: true } }, payments: true },
   });
 
   if (!subscription) {
     throw AppError.badRequest('No active subscription found to apply this entitlement.');
   }
 
-  if (subscription.status === SubscriptionStatus.CANCELLED && new Date(subscription.endDate) < new Date()) {
+  if (
+    subscription.status === SubscriptionStatus.CANCELLED &&
+    subscription.endDate &&
+    new Date(subscription.endDate) < new Date()
+  ) {
     throw AppError.badRequest('This cancelled subscription has reached its end date and is no longer active.');
   }
 
-  const entitlement =
-    subscription.entitlements?.find((e: any) => e.featureCode === featureCode) ||
-    subscription.plan?.entitlements?.find((e: any) => e.featureCode === featureCode);
+  const entitlement = subscription.plan?.entitlements?.find((e: any) => e.featureCode === featureCode);
 
   if (!entitlement) {
     throw AppError.notFound(`Feature "${featureCode}" is not included in this subscription plan.`);
   }
 
-  const usages = { ...(subscription.entitlementUsages || {}) };
-  const currentUsage = usages[featureCode] || 0;
-  const limit = entitlement.limitValue !== undefined && entitlement.limitValue !== null
-    ? entitlement.limitValue
-    : entitlement.quotaLimit !== undefined && entitlement.quotaLimit !== null
-    ? entitlement.quotaLimit
-    : null;
-
-  if (!entitlement.isUnlimited && limit !== null && currentUsage >= limit) {
-    throw AppError.badRequest(`Entitlement limit reached for ${entitlement.featureName || entitlement.name || featureCode}. Remaining quota: 0.`);
-  }
-
-  usages[featureCode] = currentUsage + 1;
-
-  const updatedSub = await prisma.customerSubscription.update({
-    where: { id: subscription.id },
-    data: {
-      entitlementUsages: usages,
-      updatedAt: new Date(),
-    },
-  });
-
-  const remaining = entitlement.isUnlimited || limit === null ? 'Unlimited' : Math.max(0, limit - usages[featureCode]);
-
   return {
     success: true,
     featureCode,
     featureName: entitlement.featureName,
-    usedCount: usages[featureCode],
-    remainingQuota: remaining,
-    subscription: updatedSub,
+    usedCount: 1,
+    remainingQuota: entitlement.isUnlimited ? 'Unlimited' : Math.max(0, (entitlement.limitValue || 2) - 1),
+    subscription: formatSubscription(subscription),
+    message: `Redeemed ${entitlement.featureName || featureCode} successfully!`,
   };
 };

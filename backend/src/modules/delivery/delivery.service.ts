@@ -12,7 +12,17 @@ export const resolvePartnerByUser = async (userId: string) => {
   let partner = await prisma.deliveryPartner.findUnique({
     where: { userId },
     include: {
-      user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          status: true,
+          kyc: true,
+        },
+      },
     },
   });
 
@@ -21,7 +31,17 @@ export const resolvePartnerByUser = async (userId: string) => {
     partner = await prisma.deliveryPartner.findFirst({
       where: { id: 'partner-1' },
       include: {
-        user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            status: true,
+            kyc: true,
+          },
+        },
       },
     });
   }
@@ -30,7 +50,13 @@ export const resolvePartnerByUser = async (userId: string) => {
     throw AppError.notFound('No delivery partner profile associated with this account.');
   }
 
-  return partner;
+  const isApproved = (partner.user as any)?.status === 'ACTIVE' && (partner.user as any)?.kyc?.status === 'APPROVED';
+
+  return {
+    ...partner,
+    isActivated: isApproved,
+    verificationStatus: (partner.user as any)?.kyc?.status || 'NOT_SUBMITTED',
+  };
 };
 
 // ============================================================================
@@ -81,13 +107,10 @@ export const registerDeliveryPartner = async (data: {
       vehicleNum: data.vehicleNum ? data.vehicleNum.toUpperCase() : null,
       licenseNumber: data.licenseNumber ? data.licenseNumber.toUpperCase() : null,
       isOnline: false,
-      isActivated: false,
-      verificationStatus: 'PENDING',
       currentLat: 12.9716,
       currentLng: 77.5946,
       rating: 5.0,
       totalDeliveries: 0,
-      cashInHand: 0,
     },
   });
 
@@ -268,10 +291,12 @@ export const submitKycForReview = async (userId: string) => {
     },
   });
 
-  await prisma.deliveryPartner.update({
-    where: { userId },
+  // Also update associated documents to PENDING verification
+  await prisma.kYCDocument.updateMany({
+    where: { kycId: kyc.id },
     data: {
       verificationStatus: 'PENDING',
+      rejectionReason: null,
     },
   });
 
@@ -288,29 +313,65 @@ export const adminVerifyKyc = async (
 
   const isApproved = data.status === 'APPROVED';
 
-  const updatedKyc = await prisma.kYC.update({
-    where: { userId },
-    data: {
-      status: data.status,
-      rejectionReason: isApproved ? null : data.rejectionReason || 'Documents did not meet criteria.',
-      reviewedAt: new Date(),
-      reviewedBy: 'admin-compliance-desk',
-    },
-  });
+  // Transaction-safe execution updating KYC, documents, User role status, and Partner duty
+  return prisma.$transaction(async (tx) => {
+    // 1. Update KYC container
+    const updatedKyc = await tx.kYC.update({
+      where: { userId },
+      data: {
+        status: data.status,
+        rejectionReason: isApproved ? null : data.rejectionReason || 'Documents did not meet criteria.',
+        reviewedAt: new Date(),
+        reviewedBy: 'admin-compliance-desk',
+      },
+      include: { documents: true },
+    });
 
-  // Activate or Deactivate partner
-  const updatedPartner = await prisma.deliveryPartner.update({
-    where: { userId },
-    data: {
-      isActivated: isApproved,
-      verificationStatus: data.status,
-    },
-  });
+    // 2. Update associated documents
+    await tx.kYCDocument.updateMany({
+      where: { kycId: updatedKyc.id },
+      data: {
+        verificationStatus: data.status,
+        rejectionReason: isApproved ? null : data.rejectionReason || 'Document rejected by compliance desk.',
+      },
+    });
 
-  return {
-    kyc: updatedKyc,
-    partner: updatedPartner,
-  };
+    // 3. Update User account status (ACTIVE if approved, PENDING_VERIFICATION if rejected)
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        status: isApproved ? 'ACTIVE' : 'PENDING_VERIFICATION',
+      },
+    });
+
+    // 4. Update Partner: If rejected, ensure partner cannot stay online
+    let partner = await tx.deliveryPartner.findUnique({
+      where: { userId },
+      include: { user: true },
+    });
+
+    if (partner && !isApproved) {
+      partner = await tx.deliveryPartner.update({
+        where: { userId },
+        data: {
+          isOnline: false,
+          updatedAt: new Date(),
+        },
+        include: { user: true },
+      });
+    }
+
+    return {
+      kyc: updatedKyc,
+      partner: partner
+        ? {
+            ...partner,
+            isActivated: isApproved,
+            verificationStatus: data.status,
+          }
+        : null,
+    };
+  });
 };
 
 // ============================================================================
@@ -358,7 +419,11 @@ export const toggleDutyStatus = async (userId: string, isOnline: boolean) => {
     data: { isOnline: Boolean(isOnline) },
   });
 
-  return updated;
+  return {
+    ...updated,
+    isActivated: partner.isActivated,
+    verificationStatus: partner.verificationStatus,
+  };
 };
 
 // ============================================================================

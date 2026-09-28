@@ -13,29 +13,33 @@ export const getAdminKPIs = async () => {
     // Batch 1: Core transactional tables
     const [orders, users, shops, deliveryPartners] = await Promise.all([
       prisma.order.findMany({
-        select: { id: true, status: true, totalAmount: true, installationFee: true, homeVisitSurcharge: true },
+        select: { id: true, status: true, total: true, installationFee: true, homeVisitSurcharge: true },
       }).catch(() => []),
       prisma.user.findMany({
         select: { id: true, role: true },
       }).catch(() => []),
       prisma.shop.findMany({
-        select: { id: true, name: true, verificationStatus: true, isActive: true },
+        select: { id: true, name: true, isVerified: true, isActive: true },
       }).catch(() => []),
       prisma.deliveryPartner.findMany({
-        select: { id: true, isActivated: true, isOnline: true, cashInHand: true },
+        select: {
+          id: true,
+          isOnline: true,
+          user: { select: { status: true, kyc: { select: { status: true } } } },
+        },
       }).catch(() => []),
     ]);
 
     // Batch 2: Auxiliary tables
     const [usedParts, subscriptions, ledgers, supportTicketsCount] = await Promise.all([
       prisma.usedPartListing.findMany({
-        select: { id: true, status: true, verificationStatus: true },
+        select: { id: true, status: true },
       }).catch(() => []),
       prisma.customerSubscription.findMany({
-        select: { id: true, status: true, price: true },
+        select: { id: true, status: true, plan: { select: { price: true } } },
       }).catch(() => []),
       prisma.commissionLedger.findMany({
-        select: { id: true, commissionAmount: true, releaseStatus: true, shopPayout: true },
+        select: { id: true, platformCut: true, payoutStatus: true, shopPayout: true },
       }).catch(() => []),
       prisma.supportTicket.count().catch(() => 0),
     ]);
@@ -43,13 +47,13 @@ export const getAdminKPIs = async () => {
     // Delivered orders & Sales
     const deliveredOrders = orders.filter((o: any) => o.status === 'DELIVERED');
     const validOrders = orders.filter((o: any) => o.status !== 'CANCELLED');
-    const deliveredSales = deliveredOrders.reduce((sum: number, o: any) => sum + Number(o.totalAmount || 0), 0);
-    const totalGMVOrders = validOrders.reduce((sum: number, o: any) => sum + Number(o.totalAmount || 0), 0);
+    const deliveredSales = deliveredOrders.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0);
+    const totalGMVOrders = validOrders.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0);
 
     // Subscriptions volume & active count
     const activeSubscriptionsList = subscriptions.filter((s: any) => s.status === 'ACTIVE');
     const activeSubscriptionsCount = activeSubscriptionsList.length;
-    const subRevenue = activeSubscriptionsList.reduce((sum: number, s: any) => sum + Number(s.price || 799), 0);
+    const subRevenue = activeSubscriptionsList.reduce((sum: number, s: any) => sum + Number(s.plan?.price || 499), 0);
 
     // Gross Merchandise Value (GMV)
     const totalGMV = totalGMVOrders + subRevenue;
@@ -71,19 +75,19 @@ export const getAdminKPIs = async () => {
     // Used Parts
     const usedPartTransactions = usedParts.length;
     const verifiedUsedParts = usedParts.filter(
-      (u: any) => u.verificationStatus === 'VERIFIED' || u.status === 'VALUED' || u.status === 'SOLD'
+      (u: any) => u.status === 'VERIFIED' || u.status === 'VALUED' || u.status === 'SOLD'
     ).length;
 
     // Shop Commissions & Ledgers
-    const totalShopCommissions = ledgers.reduce((sum: number, c: any) => sum + Number(c.commissionAmount || 0), 0);
+    const totalShopCommissions = ledgers.reduce((sum: number, c: any) => sum + Number(c.platformCut || 0), 0);
     const releasedShopPayouts = ledgers
-      .filter((c: any) => c.releaseStatus === 'RELEASED')
+      .filter((c: any) => c.payoutStatus === 'PAID')
       .reduce((sum: number, c: any) => sum + Number(c.shopPayout || 0), 0);
 
     // Delivery Fleet
-    const activeRiders = deliveryPartners.filter((dp: any) => dp.isActivated);
+    const activeRiders = deliveryPartners.filter((dp: any) => dp.user?.status === 'ACTIVE' && dp.user?.kyc?.status === 'APPROVED');
     const onlineRiders = activeRiders.filter((dp: any) => dp.isOnline).length;
-    const totalCashInHand = deliveryPartners.reduce((sum: number, dp: any) => sum + Number(dp.cashInHand || 0), 0);
+    const totalCashInHand = 0;
 
     return {
       kpis: {
@@ -152,7 +156,7 @@ export const getAdminCharts = async () => {
   try {
     const [orders, shops, usedParts, subscriptions, ledgers] = await Promise.all([
       prisma.order.findMany({
-        select: { id: true, status: true, totalAmount: true, createdAt: true },
+        select: { id: true, status: true, total: true, createdAt: true },
       }).catch(() => []),
       prisma.shop.findMany({
         select: { id: true, city: true },
@@ -161,10 +165,10 @@ export const getAdminCharts = async () => {
         select: { id: true, status: true },
       }).catch(() => []),
       prisma.customerSubscription.findMany({
-        select: { id: true, status: true, price: true },
+        select: { id: true, status: true, plan: { select: { price: true } } },
       }).catch(() => []),
       prisma.commissionLedger.findMany({
-        select: { id: true, commissionAmount: true },
+        select: { id: true, platformCut: true },
       }).catch(() => []),
     ]);
 
@@ -191,10 +195,10 @@ export const getAdminCharts = async () => {
     ];
 
     // 2. Revenue Breakdown (database-derived)
-    const deliveredSales = orders.filter((o: any) => o.status === 'DELIVERED').reduce((sum: number, o: any) => sum + Number(o.totalAmount || 0), 0);
+    const deliveredSales = orders.filter((o: any) => o.status === 'DELIVERED').reduce((sum: number, o: any) => sum + Number(o.total || 0), 0);
     const partsMargin = Math.round(deliveredSales * 0.15);
-    const shopCommissions = ledgers.reduce((sum: number, c: any) => sum + Number(c.commissionAmount || 0), 0);
-    const subRevenue = subscriptions.filter((s: any) => s.status === 'ACTIVE').reduce((sum: number, s: any) => sum + Number(s.price || 799), 0);
+    const shopCommissions = ledgers.reduce((sum: number, c: any) => sum + Number(c.platformCut || 0), 0);
+    const subRevenue = subscriptions.filter((s: any) => s.status === 'ACTIVE').reduce((sum: number, s: any) => sum + Number(s.plan?.price || 799), 0);
     const usedPartsMargin = usedParts.filter((u: any) => u.status === 'SOLD').reduce((sum: number, u: any) => sum + 1200, 0);
 
     const totalRev = Math.max(1, partsMargin + shopCommissions + subRevenue + usedPartsMargin);
@@ -222,7 +226,7 @@ export const getAdminCharts = async () => {
       const key = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
       if (monthMap[key]) {
         monthMap[key].orders += 1;
-        const amt = Number(o.totalAmount || 0);
+        const amt = Number(o.total || 0);
         monthMap[key].gmv += amt;
         if (o.status === 'DELIVERED') {
           monthMap[key].sales += amt;
@@ -737,13 +741,16 @@ export const listDeliveryPartners = async (filters: { status?: string; search?: 
     const docs = kyc?.documents || [];
     const jobs = p.assignments || [];
 
+    const isApproved = user?.status === 'ACTIVE' && kyc?.status === 'APPROVED';
+
     return {
       ...p,
       driverName: user ? `${user.firstName} ${user.lastName}`.trim() : 'Delivery Partner',
       driverEmail: user?.email || '',
       driverPhone: user?.phone || '',
-      kycStatus: kyc?.status || p.verificationStatus || 'PENDING',
+      kycStatus: kyc?.status || 'NOT_SUBMITTED',
       kycDocuments: docs,
+      isActivated: isApproved,
       activeTrips: jobs.filter((j: any) => j.status === 'IN_TRANSIT' || j.status === 'PICKED_UP').length,
       completedDeliveries: p.totalDeliveries || jobs.filter((j: any) => j.status === 'DELIVERED').length,
     };
@@ -763,7 +770,15 @@ export const getDeliveryPartnerById = async (id: string) => {
     },
   });
   if (!partner) throw AppError.notFound('Delivery partner not found.');
-  return partner;
+  const user = partner.user;
+  const kyc = user?.kyc;
+  const isApproved = user?.status === 'ACTIVE' && kyc?.status === 'APPROVED';
+
+  return {
+    ...partner,
+    isActivated: isApproved,
+    kycStatus: kyc?.status || 'NOT_SUBMITTED',
+  };
 };
 
 export const verifyDeliveryPartnerKyc = async (
@@ -783,19 +798,40 @@ export const verifyDeliveryPartnerKyc = async (
 };
 
 export const togglePartnerActivation = async (partnerId: string, isActivated: boolean) => {
-  const partner = await prisma.deliveryPartner.findUnique({ where: { id: partnerId } });
+  const partner = await prisma.deliveryPartner.findUnique({
+    where: { id: partnerId },
+    include: { user: true },
+  });
   if (!partner) {
     throw AppError.notFound('Delivery partner not found.');
   }
 
-  return prisma.deliveryPartner.update({
-    where: { id: partnerId },
+  // Update user account status
+  await prisma.user.update({
+    where: { id: partner.userId },
     data: {
-      isActivated,
-      ...((!isActivated) && { isOnline: false }),
+      status: isActivated ? 'ACTIVE' : 'SUSPENDED',
       updatedAt: new Date(),
     },
   });
+
+  const updated = await prisma.deliveryPartner.update({
+    where: { id: partnerId },
+    data: {
+      ...((!isActivated) && { isOnline: false }),
+      updatedAt: new Date(),
+    },
+    include: {
+      user: {
+        include: { kyc: true },
+      },
+    },
+  });
+
+  return {
+    ...updated,
+    isActivated,
+  };
 };
 
 // ============================================================================
