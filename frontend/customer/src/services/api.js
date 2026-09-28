@@ -2,9 +2,13 @@ import axios from 'axios';
 
 export const getBaseURL = () => {
   const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl && typeof envUrl === 'string') {
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
     const trimmed = envUrl.trim().replace(/\/+$/, '');
     return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+  }
+  // Production fallback for remote deployments if VITE_API_URL was omitted at build time
+  if (typeof window !== 'undefined' && window.location.hostname && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+    return 'https://partnexa-api.onrender.com/api';
   }
   return '/api';
 };

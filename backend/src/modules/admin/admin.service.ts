@@ -9,212 +9,271 @@ import { InventorySyncEngine } from '../inventory/inventorySync.service';
 // ============================================================================
 
 export const getAdminKPIs = async () => {
-  // Query all operational tables directly from database
-  const [orders, users, shops, deliveryPartners, usedParts, subscriptions, ledgers, supportTicketsCount] = await Promise.all([
-    prisma.order.findMany(),
-    prisma.user.findMany(),
-    prisma.shop.findMany(),
-    prisma.deliveryPartner.findMany({ include: { user: true } }),
-    prisma.usedPartListing.findMany(),
-    prisma.customerSubscription.findMany(),
-    prisma.commissionLedger.findMany(),
-    prisma.supportTicket.count().catch(() => 0),
-  ]);
+  try {
+    // Batch 1: Core transactional tables
+    const [orders, users, shops, deliveryPartners] = await Promise.all([
+      prisma.order.findMany({
+        select: { id: true, status: true, totalAmount: true, installationFee: true, homeVisitSurcharge: true },
+      }).catch(() => []),
+      prisma.user.findMany({
+        select: { id: true, role: true },
+      }).catch(() => []),
+      prisma.shop.findMany({
+        select: { id: true, name: true, verificationStatus: true, isActive: true },
+      }).catch(() => []),
+      prisma.deliveryPartner.findMany({
+        select: { id: true, isActivated: true, isOnline: true, cashInHand: true },
+      }).catch(() => []),
+    ]);
 
-  // Delivered orders & Sales
-  const deliveredOrders = orders.filter((o: any) => o.status === 'DELIVERED');
-  const validOrders = orders.filter((o: any) => o.status !== 'CANCELLED');
-  const deliveredSales = deliveredOrders.reduce((sum: number, o: any) => sum + Number(o.totalAmount || o.total || 0), 0);
-  const totalGMVOrders = validOrders.reduce((sum: number, o: any) => sum + Number(o.totalAmount || o.total || 0), 0);
+    // Batch 2: Auxiliary tables
+    const [usedParts, subscriptions, ledgers, supportTicketsCount] = await Promise.all([
+      prisma.usedPartListing.findMany({
+        select: { id: true, status: true, verificationStatus: true },
+      }).catch(() => []),
+      prisma.customerSubscription.findMany({
+        select: { id: true, status: true, price: true },
+      }).catch(() => []),
+      prisma.commissionLedger.findMany({
+        select: { id: true, commissionAmount: true, releaseStatus: true, shopPayout: true },
+      }).catch(() => []),
+      prisma.supportTicket.count().catch(() => 0),
+    ]);
 
-  // Subscriptions volume & active count
-  const activeSubscriptionsList = subscriptions.filter((s: any) => s.status === 'ACTIVE');
-  const activeSubscriptionsCount = activeSubscriptionsList.length;
-  const subRevenue = activeSubscriptionsList.reduce((sum: number, s: any) => sum + Number(s.price || 799), 0);
+    // Delivered orders & Sales
+    const deliveredOrders = orders.filter((o: any) => o.status === 'DELIVERED');
+    const validOrders = orders.filter((o: any) => o.status !== 'CANCELLED');
+    const deliveredSales = deliveredOrders.reduce((sum: number, o: any) => sum + Number(o.totalAmount || 0), 0);
+    const totalGMVOrders = validOrders.reduce((sum: number, o: any) => sum + Number(o.totalAmount || 0), 0);
 
-  // Gross Merchandise Value (GMV): all active/delivered orders + subscription volume
-  const totalGMV = totalGMVOrders + subRevenue;
+    // Subscriptions volume & active count
+    const activeSubscriptionsList = subscriptions.filter((s: any) => s.status === 'ACTIVE');
+    const activeSubscriptionsCount = activeSubscriptionsList.length;
+    const subRevenue = activeSubscriptionsList.reduce((sum: number, s: any) => sum + Number(s.price || 799), 0);
 
-  // Platform Net Revenue: ~15% parts margin on delivered orders + 12% DIFM cuts + subscription revenue
-  const difmFees = deliveredOrders.reduce(
-    (sum: number, o: any) => sum + Number(o.installationFee || 0) + Number(o.homeVisitSurcharge || 0),
-    0
-  );
-  const platformCommissions = Math.round(difmFees * 0.12);
-  const partsMargin = Math.round(deliveredSales * 0.15);
-  const platformRevenue = partsMargin + platformCommissions + subRevenue;
+    // Gross Merchandise Value (GMV)
+    const totalGMV = totalGMVOrders + subRevenue;
 
-  // Active in-flight orders
-  const activeOrders = orders.filter((o: any) =>
-    ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'OUT_FOR_DELIVERY', 'IN_TRANSIT'].includes(o.status)
-  ).length;
+    // Platform Net Revenue: ~15% parts margin + 12% DIFM + subscription revenue
+    const difmFees = deliveredOrders.reduce(
+      (sum: number, o: any) => sum + Number(o.installationFee || 0) + Number(o.homeVisitSurcharge || 0),
+      0
+    );
+    const platformCommissions = Math.round(difmFees * 0.12);
+    const partsMargin = Math.round(deliveredSales * 0.15);
+    const platformRevenue = partsMargin + platformCommissions + subRevenue;
 
-  // Used Parts
-  const usedPartTransactions = usedParts.length;
-  const verifiedUsedParts = usedParts.filter(
-    (u: any) => u.verificationStatus === 'VERIFIED' || u.status === 'VALUED' || u.status === 'SOLD'
-  ).length;
+    // Active in-flight orders
+    const activeOrders = orders.filter((o: any) =>
+      ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'OUT_FOR_DELIVERY', 'IN_TRANSIT'].includes(o.status)
+    ).length;
 
-  // Shop Commissions & Ledgers
-  const totalShopCommissions = ledgers.reduce((sum: number, c: any) => sum + Number(c.commissionAmount || 0), 0);
-  const releasedShopPayouts = ledgers
-    .filter((c: any) => c.releaseStatus === 'RELEASED')
-    .reduce((sum: number, c: any) => sum + Number(c.shopPayout || 0), 0);
+    // Used Parts
+    const usedPartTransactions = usedParts.length;
+    const verifiedUsedParts = usedParts.filter(
+      (u: any) => u.verificationStatus === 'VERIFIED' || u.status === 'VALUED' || u.status === 'SOLD'
+    ).length;
 
-  // Delivery Fleet
-  const activeRiders = deliveryPartners.filter((dp: any) => dp.isActivated);
-  const onlineRiders = activeRiders.filter((dp: any) => dp.isOnline).length;
-  const totalCashInHand = deliveryPartners.reduce((sum: number, dp: any) => sum + Number(dp.cashInHand || 0), 0);
+    // Shop Commissions & Ledgers
+    const totalShopCommissions = ledgers.reduce((sum: number, c: any) => sum + Number(c.commissionAmount || 0), 0);
+    const releasedShopPayouts = ledgers
+      .filter((c: any) => c.releaseStatus === 'RELEASED')
+      .reduce((sum: number, c: any) => sum + Number(c.shopPayout || 0), 0);
 
-  return {
-    kpis: {
-      totalCustomers: users.filter((u: any) => u.role === 'CUSTOMER').length,
-      totalShops: shops.length,
-      deliveryPartners: deliveryPartners.length,
-      totalOrders: orders.length,
-      orders: orders.length,
-      sales: deliveredSales,
-      monthlySales: deliveredSales > 0 ? deliveredSales : Math.round(totalGMVOrders * 0.4),
-      gmv: totalGMV,
-      platformRevenue,
-      subscriptions: activeSubscriptionsCount,
-      activeSubscriptions: activeSubscriptionsCount,
-      usedParts: usedPartTransactions,
-      usedPartTransactions,
-      verifiedUsedParts,
-      commissions: totalShopCommissions,
-      shopCommissions: totalShopCommissions,
-      releasedShopPayouts,
-      activeOrders,
-      deliveryActivity: {
-        totalPartners: deliveryPartners.length,
-        onlinePartners: onlineRiders,
-        totalCashInHand,
+    // Delivery Fleet
+    const activeRiders = deliveryPartners.filter((dp: any) => dp.isActivated);
+    const onlineRiders = activeRiders.filter((dp: any) => dp.isOnline).length;
+    const totalCashInHand = deliveryPartners.reduce((sum: number, dp: any) => sum + Number(dp.cashInHand || 0), 0);
+
+    return {
+      kpis: {
+        totalCustomers: users.filter((u: any) => u.role === 'CUSTOMER').length,
+        totalShops: shops.length,
+        deliveryPartners: deliveryPartners.length,
+        totalOrders: orders.length,
+        orders: orders.length,
+        sales: deliveredSales,
+        monthlySales: deliveredSales > 0 ? deliveredSales : Math.round(totalGMVOrders * 0.4),
+        gmv: totalGMV,
+        platformRevenue,
+        subscriptions: activeSubscriptionsCount,
+        activeSubscriptions: activeSubscriptionsCount,
+        usedParts: usedPartTransactions,
+        usedPartTransactions,
+        verifiedUsedParts,
+        commissions: totalShopCommissions,
+        shopCommissions: totalShopCommissions,
+        releasedShopPayouts,
+        activeOrders,
+        deliveryActivity: {
+          totalPartners: deliveryPartners.length,
+          onlinePartners: onlineRiders,
+          totalCashInHand,
+        },
       },
-    },
-    counts: {
-      customers: users.filter((u: any) => u.role === 'CUSTOMER').length,
-      shops: shops.length,
-      deliveryPartners: deliveryPartners.length,
-      orders: orders.length,
-      supportTickets: supportTicketsCount,
-    },
-  };
+      counts: {
+        customers: users.filter((u: any) => u.role === 'CUSTOMER').length,
+        shops: shops.length,
+        deliveryPartners: deliveryPartners.length,
+        orders: orders.length,
+        supportTickets: supportTicketsCount,
+      },
+    };
+  } catch (err: any) {
+    console.error('[AdminService] getAdminKPIs error:', err.message);
+    return {
+      kpis: {
+        totalCustomers: 0,
+        totalShops: 0,
+        deliveryPartners: 0,
+        totalOrders: 0,
+        orders: 0,
+        sales: 0,
+        monthlySales: 0,
+        gmv: 0,
+        platformRevenue: 0,
+        subscriptions: 0,
+        activeSubscriptions: 0,
+        usedParts: 0,
+        usedPartTransactions: 0,
+        verifiedUsedParts: 0,
+        commissions: 0,
+        shopCommissions: 0,
+        releasedShopPayouts: 0,
+        activeOrders: 0,
+        deliveryActivity: { totalPartners: 0, onlinePartners: 0, totalCashInHand: 0 },
+      },
+      counts: { customers: 0, shops: 0, deliveryPartners: 0, orders: 0, supportTickets: 0 },
+    };
+  }
 };
 
 export const getAdminCharts = async () => {
-  const [orders, shops, usedParts, subscriptions, ledgers] = await Promise.all([
-    prisma.order.findMany(),
-    prisma.shop.findMany(),
-    prisma.usedPartListing.findMany(),
-    prisma.customerSubscription.findMany(),
-    prisma.commissionLedger.findMany(),
-  ]);
+  try {
+    const [orders, shops, usedParts, subscriptions, ledgers] = await Promise.all([
+      prisma.order.findMany({
+        select: { id: true, status: true, totalAmount: true, createdAt: true },
+      }).catch(() => []),
+      prisma.shop.findMany({
+        select: { id: true, city: true },
+      }).catch(() => []),
+      prisma.usedPartListing.findMany({
+        select: { id: true, status: true },
+      }).catch(() => []),
+      prisma.customerSubscription.findMany({
+        select: { id: true, status: true, price: true },
+      }).catch(() => []),
+      prisma.commissionLedger.findMany({
+        select: { id: true, commissionAmount: true },
+      }).catch(() => []),
+    ]);
 
-  // 1. Order Status Distribution (100% database-derived)
-  const statusCounts: Record<string, number> = {
-    DELIVERED: 0,
-    IN_TRANSIT: 0,
-    OUT_FOR_DELIVERY: 0,
-    PROCESSING: 0,
-    CONFIRMED: 0,
-    CANCELLED: 0,
-  };
-  orders.forEach((o: any) => {
-    const s = o.status || 'CONFIRMED';
-    statusCounts[s] = (statusCounts[s] || 0) + 1;
-  });
+    // 1. Order Status Distribution (100% database-derived)
+    const statusCounts: Record<string, number> = {
+      DELIVERED: 0,
+      IN_TRANSIT: 0,
+      OUT_FOR_DELIVERY: 0,
+      PROCESSING: 0,
+      CONFIRMED: 0,
+      CANCELLED: 0,
+    };
+    orders.forEach((o: any) => {
+      const s = o.status || 'CONFIRMED';
+      statusCounts[s] = (statusCounts[s] || 0) + 1;
+    });
 
-  const orderStatusDistribution = [
-    { status: 'DELIVERED', count: statusCounts['DELIVERED'] || 0, label: 'Delivered', color: '#10B981' },
-    { status: 'IN_TRANSIT', count: (statusCounts['IN_TRANSIT'] || 0) + (statusCounts['OUT_FOR_DELIVERY'] || 0), label: 'In Transit', color: '#3B82F6' },
-    { status: 'PROCESSING', count: statusCounts['PROCESSING'] || 0, label: 'Processing', color: '#F59E0B' },
-    { status: 'CONFIRMED', count: statusCounts['CONFIRMED'] || 0, label: 'Confirmed', color: '#6366F1' },
-    { status: 'CANCELLED', count: statusCounts['CANCELLED'] || 0, label: 'Cancelled', color: '#EF4444' },
-  ];
+    const orderStatusDistribution = [
+      { status: 'DELIVERED', count: statusCounts['DELIVERED'] || 0, label: 'Delivered', color: '#10B981' },
+      { status: 'IN_TRANSIT', count: (statusCounts['IN_TRANSIT'] || 0) + (statusCounts['OUT_FOR_DELIVERY'] || 0), label: 'In Transit', color: '#3B82F6' },
+      { status: 'PROCESSING', count: statusCounts['PROCESSING'] || 0, label: 'Processing', color: '#F59E0B' },
+      { status: 'CONFIRMED', count: statusCounts['CONFIRMED'] || 0, label: 'Confirmed', color: '#6366F1' },
+      { status: 'CANCELLED', count: statusCounts['CANCELLED'] || 0, label: 'Cancelled', color: '#EF4444' },
+    ];
 
-  // 2. Revenue Breakdown (database-derived)
-  const deliveredSales = orders.filter((o: any) => o.status === 'DELIVERED').reduce((sum: number, o: any) => sum + Number(o.totalAmount || o.total || 0), 0);
-  const partsMargin = Math.round(deliveredSales * 0.15);
-  const shopCommissions = ledgers.reduce((sum: number, c: any) => sum + Number(c.commissionAmount || 0), 0);
-  const subRevenue = subscriptions.filter((s: any) => s.status === 'ACTIVE').reduce((sum: number, s: any) => sum + Number(s.price || 799), 0);
-  const usedPartsMargin = usedParts.filter((u: any) => u.status === 'SOLD').reduce((sum: number, u: any) => sum + 1200, 0);
+    // 2. Revenue Breakdown (database-derived)
+    const deliveredSales = orders.filter((o: any) => o.status === 'DELIVERED').reduce((sum: number, o: any) => sum + Number(o.totalAmount || 0), 0);
+    const partsMargin = Math.round(deliveredSales * 0.15);
+    const shopCommissions = ledgers.reduce((sum: number, c: any) => sum + Number(c.commissionAmount || 0), 0);
+    const subRevenue = subscriptions.filter((s: any) => s.status === 'ACTIVE').reduce((sum: number, s: any) => sum + Number(s.price || 799), 0);
+    const usedPartsMargin = usedParts.filter((u: any) => u.status === 'SOLD').reduce((sum: number, u: any) => sum + 1200, 0);
 
-  const totalRev = Math.max(1, partsMargin + shopCommissions + subRevenue + usedPartsMargin);
-  const revenueBreakdown = [
-    { source: 'Genuine Parts Sales', amount: partsMargin, percentage: Math.round((partsMargin / totalRev) * 100), color: '#3B82F6' },
-    { source: 'DIFM Workshop Commissions', amount: shopCommissions, percentage: Math.round((shopCommissions / totalRev) * 100), color: '#10B981' },
-    { source: 'Club Subscriptions', amount: subRevenue, percentage: Math.round((subRevenue / totalRev) * 100), color: '#F59E0B' },
-    { source: 'Used Parts Margin', amount: usedPartsMargin, percentage: Math.round((usedPartsMargin / totalRev) * 100), color: '#8B5CF6' },
-  ];
+    const totalRev = Math.max(1, partsMargin + shopCommissions + subRevenue + usedPartsMargin);
+    const revenueBreakdown = [
+      { source: 'Genuine Parts Sales', amount: partsMargin, percentage: Math.round((partsMargin / totalRev) * 100), color: '#3B82F6' },
+      { source: 'DIFM Workshop Commissions', amount: shopCommissions, percentage: Math.round((shopCommissions / totalRev) * 100), color: '#10B981' },
+      { source: 'Club Subscriptions', amount: subRevenue, percentage: Math.round((subRevenue / totalRev) * 100), color: '#F59E0B' },
+      { source: 'Used Parts Margin', amount: usedPartsMargin, percentage: Math.round((usedPartsMargin / totalRev) * 100), color: '#8B5CF6' },
+    ];
 
-  // 3. Monthly Sales Trajectory
-  const monthMap: Record<string, { sales: number; orders: number; gmv: number }> = {};
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    // 3. Monthly Sales Trajectory
+    const monthMap: Record<string, { sales: number; orders: number; gmv: number }> = {};
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  // Initialize past 6 months
-  const now = new Date();
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const key = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
-    monthMap[key] = { sales: 0, orders: 0, gmv: 0 };
-  }
-
-  orders.forEach((o: any) => {
-    const d = new Date(o.createdAt || Date.now());
-    const key = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
-    if (monthMap[key]) {
-      monthMap[key].orders += 1;
-      const amt = Number(o.totalAmount || o.total || 0);
-      monthMap[key].gmv += amt;
-      if (o.status === 'DELIVERED') {
-        monthMap[key].sales += amt;
-      }
+    // Initialize past 6 months
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+      monthMap[key] = { sales: 0, orders: 0, gmv: 0 };
     }
-  });
 
-  const monthlySales = Object.entries(monthMap).map(([month, data]) => ({
-    month,
-    sales: data.sales,
-    orders: data.orders,
-    gmv: data.gmv,
-  }));
+    orders.forEach((o: any) => {
+      const d = new Date(o.createdAt || Date.now());
+      const key = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+      if (monthMap[key]) {
+        monthMap[key].orders += 1;
+        const amt = Number(o.totalAmount || 0);
+        monthMap[key].gmv += amt;
+        if (o.status === 'DELIVERED') {
+          monthMap[key].sales += amt;
+        }
+      }
+    });
 
-  // 4. Regional Performance (derived from shops and orders cities)
-  const defaultCities = ['Bengaluru', 'Mumbai', 'Delhi NCR', 'Hyderabad'];
-  const cityMap: Record<string, { orders: number; revenue: number; partnerShops: number }> = {};
-  defaultCities.forEach((c) => {
-    cityMap[c] = { orders: 0, revenue: 0, partnerShops: 1 };
-  });
+    const monthlySales = Object.entries(monthMap).map(([month, data]) => ({
+      month,
+      sales: data.sales,
+      orders: data.orders,
+      gmv: data.gmv,
+    }));
 
-  shops.forEach((s: any) => {
-    const city = s.city || 'Bengaluru';
-    if (!cityMap[city]) cityMap[city] = { orders: 0, revenue: 0, partnerShops: 0 };
-    cityMap[city].partnerShops += 1;
-  });
+    // 4. Regional Performance (derived from shops)
+    const defaultCities = ['Bengaluru', 'Mumbai', 'Delhi NCR', 'Hyderabad'];
+    const cityMap: Record<string, { orders: number; revenue: number; partnerShops: number }> = {};
+    defaultCities.forEach((c) => {
+      cityMap[c] = { orders: 0, revenue: 0, partnerShops: 1 };
+    });
 
-  orders.forEach((o: any) => {
-    const city = o.address?.city || 'Bengaluru';
-    if (!cityMap[city]) cityMap[city] = { orders: 0, revenue: 0, partnerShops: 0 };
-    cityMap[city].orders += 1;
-    cityMap[city].revenue += Number(o.totalAmount || o.total || 0);
-  });
+    shops.forEach((s: any) => {
+      const city = s.city || 'Bengaluru';
+      if (!cityMap[city]) cityMap[city] = { orders: 0, revenue: 0, partnerShops: 0 };
+      cityMap[city].partnerShops += 1;
+    });
 
-  const regionalPerformance = Object.entries(cityMap).map(([city, data]) => ({
-    city,
-    orders: data.orders,
-    revenue: data.revenue,
-    partnerShops: data.partnerShops,
-    activeRiders: Math.max(1, Math.round(data.partnerShops * 0.75)),
-    growth: '+12.5%',
-  }));
+    const regionalPerformance = Object.entries(cityMap).map(([city, data]) => ({
+      city,
+      orders: data.orders,
+      revenue: data.revenue,
+      partnerShops: data.partnerShops,
+      activeRiders: Math.max(1, Math.round(data.partnerShops * 0.75)),
+      growth: '+12.5%',
+    }));
 
-  return {
-    monthlySales,
-    regionalPerformance,
-    revenueBreakdown,
-    orderStatusDistribution,
-  };
+    return {
+      monthlySales,
+      regionalPerformance,
+      revenueBreakdown,
+      orderStatusDistribution,
+    };
+  } catch (err: any) {
+    console.error('[AdminService] getAdminCharts error:', err.message);
+    return {
+      monthlySales: [],
+      regionalPerformance: [],
+      revenueBreakdown: [],
+      orderStatusDistribution: [],
+    };
+  }
 };
 
 // ============================================================================
@@ -250,9 +309,8 @@ export const listOrders = async (filters: {
       user: true,
       items: { include: { product: true } },
       payment: true,
-      difmRequest: true,
-      mechanicJob: { include: { shop: true } },
-      deliveryAssignment: { include: { deliveryPartner: { include: { user: true } } } },
+      difmRequest: { include: { shop: true } },
+      deliveryAssignments: { include: { deliveryPartner: { include: { user: true } } } },
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -260,8 +318,7 @@ export const listOrders = async (filters: {
   return orders.map((o: any) => {
     const user = o.user;
     const difm = o.difmRequest;
-    const mechanicJob = o.mechanicJob;
-    const delivery = o.deliveryAssignment;
+    const delivery = o.deliveryAssignments?.[0] || null;
 
     return {
       id: o.id,
@@ -278,8 +335,8 @@ export const listOrders = async (filters: {
       items: o.items || [],
       shippingAddress: o.shippingAddress || o.address || null,
       difmType: difm?.type || o.difmType || 'NO_INSTALLATION',
-      difmStatus: difm?.status || mechanicJob?.status || null,
-      difmShop: mechanicJob?.shop?.name || null,
+      difmStatus: difm?.status || null,
+      difmShop: difm?.shop?.name || null,
       deliveryStatus: delivery?.status || null,
       deliveryPartnerName: delivery?.deliveryPartner?.user
         ? `${delivery.deliveryPartner.user.firstName} ${delivery.deliveryPartner.user.lastName}`.trim()
@@ -297,9 +354,8 @@ export const getOrderById = async (id: string) => {
       user: true,
       items: { include: { product: true } },
       payment: true,
-      difmRequest: true,
-      mechanicJob: { include: { shop: true } },
-      deliveryAssignment: { include: { deliveryPartner: { include: { user: true } } } },
+      difmRequest: { include: { shop: true } },
+      deliveryAssignments: { include: { deliveryPartner: { include: { user: true } } } },
     },
   });
 
@@ -475,14 +531,14 @@ export const listCustomers = async (filters: { search?: string; status?: string 
   const users = await prisma.user.findMany({
     where,
     include: {
-      vehicles: true,
+      customerVehicles: true,
       orders: true,
     },
     orderBy: { createdAt: 'desc' },
   });
 
   return users.map((u: any) => {
-    const vehicles = u.vehicles || [];
+    const vehicles = u.customerVehicles || [];
     const orders = u.orders || [];
     const totalSpent = orders.reduce((sum: number, o: any) => sum + Number(o.totalAmount || o.total || 0), 0);
     return {
@@ -506,7 +562,7 @@ export const getCustomerById = async (id: string) => {
   const user = await prisma.user.findFirst({
     where: { id, role: 'CUSTOMER' },
     include: {
-      vehicles: true,
+      customerVehicles: true,
       orders: { include: { items: true } },
       addresses: true,
     },
@@ -557,23 +613,23 @@ export const listShops = async (filters: { status?: string; city?: string; searc
   const shops = await prisma.shop.findMany({
     where,
     include: {
-      jobs: true,
+      serviceBookings: true,
       commissionLedgers: true,
     },
     orderBy: { createdAt: 'desc' },
   });
 
   return shops.map((s: any) => {
-    const jobs = s.jobs || [];
+    const jobs = s.serviceBookings || [];
     const ledgers = s.commissionLedgers || [];
     const totalEarned = ledgers.reduce((sum: number, c: any) => sum + Number(c.shopPayout || 0), 0);
 
     return {
       ...s,
-      verificationStatus: s.verificationStatus || 'VERIFIED',
+      verificationStatus: s.verificationStatus || (s.isVerified ? 'VERIFIED' : 'PENDING'),
       commissionRate: s.commissionRate !== undefined ? Number(s.commissionRate) : 12.0,
       totalJobs: jobs.length,
-      completedJobs: jobs.filter((j: any) => j.status === 'COMPLETED').length,
+      completedJobs: jobs.filter((j: any) => j.isCompleted).length,
       totalEarned,
     };
   });
@@ -584,7 +640,7 @@ export const getShopById = async (id: string) => {
     where: { id },
     include: {
       owner: true,
-      jobs: true,
+      serviceBookings: true,
       commissionLedgers: true,
     },
   });
@@ -665,8 +721,11 @@ export const listDeliveryPartners = async (filters: { status?: string; search?: 
   const partners = await prisma.deliveryPartner.findMany({
     where,
     include: {
-      user: true,
-      kyc: { include: { documents: true } },
+      user: {
+        include: {
+          kyc: { include: { documents: true } },
+        },
+      },
       assignments: true,
     },
     orderBy: { createdAt: 'desc' },
@@ -674,7 +733,7 @@ export const listDeliveryPartners = async (filters: { status?: string; search?: 
 
   return partners.map((p: any) => {
     const user = p.user;
-    const kyc = p.kyc;
+    const kyc = user?.kyc;
     const docs = kyc?.documents || [];
     const jobs = p.assignments || [];
 
@@ -695,8 +754,11 @@ export const getDeliveryPartnerById = async (id: string) => {
   const partner = await prisma.deliveryPartner.findUnique({
     where: { id },
     include: {
-      user: true,
-      kyc: { include: { documents: true } },
+      user: {
+        include: {
+          kyc: { include: { documents: true } },
+        },
+      },
       assignments: { include: { order: true } },
     },
   });
