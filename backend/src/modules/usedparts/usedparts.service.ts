@@ -1,19 +1,8 @@
 import prisma from '../../config/prisma';
 import AppError from '../../utils/AppError';
+import { UsedPartStatus } from '@prisma/client';
 
-export enum UsedPartStatus {
-  DRAFT = 'DRAFT',
-  SUBMITTED = 'SUBMITTED',
-  VERIFICATION_PENDING = 'VERIFICATION_PENDING',
-  VERIFIED = 'VERIFIED',
-  REJECTED = 'REJECTED',
-  VALUED = 'VALUED',
-  PAYOUT_PENDING = 'PAYOUT_PENDING',
-  PAID = 'PAID',
-  LISTED = 'LISTED',
-  SOLD = 'SOLD',
-  CANCELLED = 'CANCELLED',
-}
+export { UsedPartStatus };
 
 export interface CreateUsedPartInput {
   title?: string;
@@ -33,6 +22,49 @@ export interface CreateUsedPartInput {
   payoutUpiId?: string;
   payoutBankAccount?: string;
 }
+
+// Format Prisma UsedPartListing with computed fields for UI/API compatibility
+export const formatListing = (listing: any) => {
+  if (!listing) return listing;
+  const askingPriceNum = Number(listing.askingPrice || 0);
+  const estimatedVal = calculateEstimatedValuation(askingPriceNum, listing.condition);
+
+  let vehicleModel = '';
+  let partNumber = '';
+  let location = '';
+  let pickupAddress = '';
+  if (listing.description) {
+    const lines = listing.description.split('\n');
+    for (const l of lines) {
+      if (l.startsWith('Vehicle: ')) vehicleModel = l.replace('Vehicle: ', '').trim();
+      if (l.startsWith('Part Number: ')) partNumber = l.replace('Part Number: ', '').trim();
+      if (l.startsWith('Location: ')) location = l.replace('Location: ', '').trim();
+      if (l.startsWith('Pickup Address: ')) pickupAddress = l.replace('Pickup Address: ', '').trim();
+    }
+  }
+
+  let mappedStatus = listing.status;
+  if (listing.status === UsedPartStatus.PENDING_VERIFICATION) mappedStatus = 'SUBMITTED';
+  else if (listing.status === UsedPartStatus.REJECTED) mappedStatus = 'CANCELLED';
+
+  return {
+    ...listing,
+    status: mappedStatus,
+    rawStatus: listing.status,
+    askingPrice: askingPriceNum,
+    expectedPrice: askingPriceNum,
+    estimatedValuation: estimatedVal,
+    vehicleModel: vehicleModel || 'Compatible Vehicle',
+    partNumber: partNumber || null,
+    location: location || 'Bangalore',
+    pickupAddress: pickupAddress || location,
+    verificationStatus: mappedStatus,
+    verificationNotes: listing.verification?.notes || 'Part listing submitted. PartSphere courier pickup will be scheduled within 24-48 hours.',
+    rejectionReason: listing.verification?.rejectionReason || null,
+    payoutStatus: listing.payout?.status || 'PENDING',
+    payoutAmount: Number(listing.payout?.amount || 0),
+  };
+};
 
 // Calculate estimated valuation based on expected price and condition
 export const calculateEstimatedValuation = (expectedPrice: number, condition: string): number => {
@@ -73,8 +105,8 @@ export const createUsedPartListing = async (sellerId: string, input: CreateUsedP
     throw new AppError(`Condition must be one of: ${validConditions.join(', ')}.`, 400);
   }
 
-  const description = (input.description || '').trim();
-  if (!description || description.length < 10) {
+  const rawDescription = (input.description || '').trim();
+  if (!rawDescription || rawDescription.length < 10) {
     throw new AppError('Description is required (minimum 10 characters detailing condition and history).', 400);
   }
 
@@ -85,40 +117,39 @@ export const createUsedPartListing = async (sellerId: string, input: CreateUsedP
 
   const images = Array.isArray(input.images) ? input.images.filter(Boolean) : [];
 
-  const estimatedValuation = calculateEstimatedValuation(expectedPriceNum, condition);
+  const fullDescription = [
+    rawDescription,
+    `Vehicle: ${vehicleModel}`,
+    input.partNumber ? `Part Number: ${input.partNumber.trim()}` : null,
+    `Location: ${location}`,
+    input.pickupAddress ? `Pickup Address: ${input.pickupAddress.trim()}` : null,
+    input.purchaseAge ? `Age: ${input.purchaseAge.trim()}` : null,
+    input.payoutMethod ? `Payout: ${input.payoutMethod.trim()}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
 
   const listing = await prisma.usedPartListing.create({
     data: {
       sellerId,
       title,
-      partNumber: input.partNumber?.trim() || null,
-      vehicleModel,
-      vehicleId: input.vehicleId || null,
-      category: input.category || 'PARTS',
-      condition,
-      conditionGrade: null,
-      description,
-      purchaseAge: input.purchaseAge?.trim() || '1-2 Years',
-      expectedPrice: expectedPriceNum,
+      description: fullDescription,
       askingPrice: expectedPriceNum,
-      estimatedValuation,
-      finalValuation: null,
-      payoutStatus: 'PENDING',
-      payoutAmount: 0,
-      payoutMethod: input.payoutMethod || 'UPI',
-      payoutTransactionRef: null,
+      condition,
       images,
-      location,
-      pickupAddress: input.pickupAddress?.trim() || location,
-      status: UsedPartStatus.SUBMITTED,
-      verificationStatus: 'SUBMITTED',
-      verificationNotes: 'Part listing submitted. PartSphere courier pickup will be scheduled within 24-48 hours.',
-      rejectionReason: null,
+      status: UsedPartStatus.PENDING_VERIFICATION,
       isSold: false,
+    },
+    include: {
+      verification: true,
+      payout: true,
+      seller: {
+        select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+      },
     },
   });
 
-  return listing;
+  return formatListing(listing);
 };
 
 // Get listings submitted by the logged-in customer
@@ -130,10 +161,11 @@ export const getCustomerListings = async (sellerId: string, statusFilter?: strin
 
   const listings = await prisma.usedPartListing.findMany({
     where,
+    include: { verification: true, payout: true },
     orderBy: { createdAt: 'desc' },
   });
 
-  return listings;
+  return listings.map(formatListing);
 };
 
 // Get a single listing by ID owned by the customer
@@ -151,13 +183,14 @@ export const getCustomerListingById = async (sellerId: string, listingId: string
     throw new AppError('You do not have permission to view this listing.', 403);
   }
 
-  return listing;
+  return formatListing(listing);
 };
 
 // Cancel a customer listing if still in submitted or pending verification state
 export const cancelCustomerListing = async (sellerId: string, listingId: string, reason?: string) => {
   const listing = await prisma.usedPartListing.findUnique({
     where: { id: listingId },
+    include: { verification: true },
   });
 
   if (!listing) {
@@ -170,9 +203,6 @@ export const cancelCustomerListing = async (sellerId: string, listingId: string,
 
   const nonCancellable = [
     UsedPartStatus.VERIFIED,
-    UsedPartStatus.VALUED,
-    UsedPartStatus.PAYOUT_PENDING,
-    UsedPartStatus.PAID,
     UsedPartStatus.LISTED,
     UsedPartStatus.SOLD,
   ];
@@ -184,20 +214,19 @@ export const cancelCustomerListing = async (sellerId: string, listingId: string,
     );
   }
 
-  if (listing.status === UsedPartStatus.CANCELLED) {
-    throw new AppError('Listing is already cancelled.', 400);
+  if (listing.status === UsedPartStatus.REJECTED) {
+    throw new AppError('Listing is already cancelled or rejected.', 400);
   }
 
   const updated = await prisma.usedPartListing.update({
     where: { id: listingId },
     data: {
-      status: UsedPartStatus.CANCELLED,
-      verificationStatus: 'CANCELLED',
-      verificationNotes: reason ? `Cancelled by seller: ${reason}` : 'Cancelled by seller.',
+      status: UsedPartStatus.REJECTED,
     },
+    include: { verification: true, payout: true },
   });
 
-  return updated;
+  return formatListing(updated);
 };
 
 // Public marketplace: list verified and relisted used parts for buyers

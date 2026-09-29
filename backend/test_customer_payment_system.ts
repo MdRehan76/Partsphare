@@ -37,7 +37,7 @@ async function runPaymentSystemTests() {
       firstName: 'Vikram',
       lastName: 'Mehta',
       email,
-      phone: '9845012345',
+      phone: `98${Math.floor(10000000 + Math.random() * 90000000)}`,
       password,
       role: 'CUSTOMER',
     });

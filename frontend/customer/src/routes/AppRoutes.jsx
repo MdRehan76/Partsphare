@@ -190,6 +190,15 @@ export const AppRoutes = () => {
         />
         <Route path="/support" element={<Navigate to="/customer/support" replace />} />
         <Route path="/profile" element={<Navigate to="/customer/profile" replace />} />
+
+        {/* Workshop direct aliases */}
+        <Route path="/calendar" element={<Navigate to="/shop/calendar" replace />} />
+        <Route path="/commission" element={<Navigate to="/shop/commission" replace />} />
+        <Route path="/deliveries" element={<Navigate to="/shop/deliveries" replace />} />
+
+        {/* Delivery direct aliases */}
+        <Route path="/kyc" element={<Navigate to="/delivery/kyc" replace />} />
+        <Route path="/cod" element={<Navigate to="/delivery/cod" replace />} />
       </Route>
 
       {/* ============================================================ */}

@@ -15,7 +15,7 @@ async function runTests() {
       lastName: 'Malhotra',
       email: testEmail,
       password: 'Password@123',
-      phone: '9876543210',
+      phone: `98${Math.floor(10000000 + Math.random() * 90000000)}`,
     });
 
     const token = regRes.data.data.accessToken;

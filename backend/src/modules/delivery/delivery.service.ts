@@ -139,6 +139,8 @@ export const registerDeliveryPartner = async (data: {
     partner: newPartner,
     kyc: newKyc,
     token,
+    accessToken: token,
+    refreshToken: token,
   };
 };
 

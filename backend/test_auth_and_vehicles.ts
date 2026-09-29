@@ -84,7 +84,7 @@ const runTests = async () => {
     const testUser = {
       name: 'Rohan Singhania',
       email: `rohan.${timestamp}@partnexa.in`,
-      mobileNumber: '9876543210',
+      mobileNumber: `98${Math.floor(10000000 + Math.random() * 90000000)}`,
       password: 'StrongP@ssword123',
       confirmPassword: 'StrongP@ssword123',
     };

@@ -345,7 +345,11 @@ export const createOrderDraft = async (
   });
 
   const orderNumber = generateOrderNumber();
-  const isOnlinePayment = data.paymentMethod === PaymentMethod.RAZORPAY;
+  const isOnlinePayment =
+    data.paymentMethod === PaymentMethod.RAZORPAY ||
+    data.paymentMethod === 'ONLINE_PREPAID' ||
+    data.paymentMethod === 'ONLINE';
+  const resolvedPaymentMethod = isOnlinePayment ? PaymentMethod.RAZORPAY : PaymentMethod.CASH_ON_DELIVERY;
 
   const newOrder = await prisma.$transaction(async (tx: any) => {
     // Deduct stock atomically in database with concurrency safety
@@ -389,7 +393,7 @@ export const createOrderDraft = async (
         userId,
         addressId: data.addressId,
         status: initialOrderStatus,
-        paymentMethod: data.paymentMethod || PaymentMethod.CASH_ON_DELIVERY,
+        paymentMethod: resolvedPaymentMethod,
         paymentStatus: initialPaymentStatus,
         subtotal: pricing.partSubtotal,
         deliveryFee: pricing.deliveryFee,
@@ -414,7 +418,7 @@ export const createOrderDraft = async (
         },
         payment: {
           create: {
-            method: data.paymentMethod || PaymentMethod.CASH_ON_DELIVERY,
+            method: resolvedPaymentMethod,
             amount: pricing.grandTotal,
             status: initialPaymentStatus,
             razorpayOrderId,
